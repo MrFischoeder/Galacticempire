@@ -6,23 +6,25 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 
 | Krok | Wersja | Gałąź | Zakres | Status |
 |---|---|---|---|---|
-| 0 | 0.0.0 | `v0.0.0-przygotowanie` | CLAUDE.md, dokumenty, pytania do specyfikacji | ✅ czeka na odpowiedzi |
+| 0 | 0.0.0 | `v0.0.0-przygotowanie` | CLAUDE.md, dokumenty, pytania do specyfikacji | ✅ |
+| 0 | 0.0.1 | `v0.0.1-odpowiedzi` | odpowiedzi właściciela, pytania uzupełniające | ✅ czeka na 1a, 5a, 6a |
 | 1.0 | 0.1.0 | `v0.1.0-szkielet` | monorepo, narzędzia, pusta scena 3D | ⬜ |
 | 1.1 | 0.1.1 | `v0.1.1-rdzen-symulacji` | zegar gry, RNG, kolejka zdarzeń, komendy | ⬜ |
-| 1.2 | 0.1.2 | `v0.1.2-konfiguracja` | wszystkie liczby jako dane, modyfikatory | ⬜ |
-| 1.3 | 0.1.3 | `v0.1.3-galaktyka` | generator galaktyki i tras | ⬜ |
-| 1.4a | 0.1.4 | `v0.1.4-produkcja` | wydobycie, przetwórstwo, magazyn, rdzeń, energia | ⬜ |
-| 1.4b | 0.1.5 | `v0.1.5-populacja` | populacja, robotnicy, żywność, silos, głód | ⬜ |
-| 1.5 | 0.1.6 | `v0.1.6-budowa` | budowa i ulepszenia budynków | ⬜ |
-| 1.6 | 0.1.7 | `v0.1.7-badania` | laboratorium i 13 technologii | ⬜ |
-| 1.7 | 0.1.8 | `v0.1.8-mapa-galaktyki` | Web Worker, mapa 3D | ⬜ |
-| 1.8 | 0.1.9 | `v0.1.9-widok-planety` | widok układu, panele, pasek czasu | ⬜ |
-| 1.9 | 0.1.10 | `v0.1.10-ruch-flot` | ruch flot, paliwo, kosmoport, hangary | ⬜ |
-| 1.10a | 0.1.11 | `v0.1.11-stocznia` | stocznia, utrzymanie | ⬜ |
-| 1.10b | 0.1.12 | `v0.1.12-transporty` | transporty, trasy cykliczne, kolonizacja | ⬜ |
-| 1.11 | 0.1.13 | `v0.1.13-mgla-wojny` | `getPlayerView`, sondy, skanery | ⬜ |
-| 1.12 | 0.1.14 | `v0.1.14-sojusze` | sojusze | ⬜ |
-| 1.13 | 0.1.15 | `v0.1.15-bot-symulacja` | bot ekonomiczny, `pnpm sim` | ⬜ |
+| 1.2a | 0.1.2 | `v0.1.2-konfiguracja` | wszystkie liczby jako dane, modyfikatory | ⬜ |
+| 1.2b | 0.1.3 | `v0.1.3-balans-ekonomii` | narzędzie liczące + tabela kosztów, czasów i wydajności budynków do akceptacji | ⬜ |
+| 1.3 | 0.1.4 | `v0.1.4-galaktyka` | generator galaktyki i tras | ⬜ |
+| 1.4a | 0.1.5 | `v0.1.5-produkcja` | wydobycie, przetwórstwo, magazyn, rdzeń, energia | ⬜ |
+| 1.4b | 0.1.6 | `v0.1.6-populacja` | populacja, robotnicy, żywność, silos, głód | ⬜ |
+| 1.5 | 0.1.7 | `v0.1.7-budowa` | budowa i ulepszenia budynków | ⬜ |
+| 1.6 | 0.1.8 | `v0.1.8-badania` | laboratorium i 13 technologii | ⬜ |
+| 1.7 | 0.1.9 | `v0.1.9-mapa-galaktyki` | Web Worker, mapa 3D | ⬜ |
+| 1.8 | 0.1.10 | `v0.1.10-widok-planety` | widok układu, panele, pasek czasu | ⬜ |
+| 1.9 | 0.1.11 | `v0.1.11-ruch-flot` | ruch flot, paliwo, kosmoport, hangary | ⬜ |
+| 1.10a | 0.1.12 | `v0.1.12-stocznia` | stocznia, utrzymanie | ⬜ |
+| 1.10b | 0.1.13 | `v0.1.13-transporty` | transporty, trasy cykliczne, kolonizacja | ⬜ |
+| 1.11 | 0.1.14 | `v0.1.14-mgla-wojny` | `getPlayerView`, sondy, skanery | ⬜ |
+| 1.12 | 0.1.15 | `v0.1.15-sojusze` | sojusze | ⬜ |
+| 1.13 | 0.1.16 | `v0.1.16-bot-symulacja` | bot ekonomiczny, `pnpm sim` | ⬜ |
 | 2.1–2.4 | 0.2.x | `v0.2.x-...` | walka | ⬜ |
 | 3.1–3.5 | 0.3.x → 1.0.0 | `v0.3.x-...`, `v1.0.0-gra-jednoosobowa` | AI i pierwsza grywalna wersja | ⬜ |
 | 4.x–6.x | 1.x | | serwer, mechaniki zaawansowane, balans | ⬜ |
@@ -30,6 +32,11 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.0.1: odpowiedzi właściciela (3.11.2026)
+- Odpowiedzi na pytania 1–6 i 11 zapisane w `docs/PYTANIA.md`.
+- Każda planeta ma złoża trzech surowców + biomasę, z jednym wiodącym; start z pustym magazynem; planeta startowa ma 16 pól do wyboru; koszty, czasy i wydajności budynków balansuje Claude (nowy krok 1.2b); mnożnik klasy w walce otwarty do kroku 2.1.
+- Pytania uzupełniające 1a, 5a, 6a (blokują krok 1.2a). Specyfikacja zostanie zaktualizowana do wersji 2.8 po odpowiedziach.
 
 ### 0.0.0: przygotowanie (krok 0)
 - Skopiowano specyfikację 2.7 (`docs/specyfikacja.md`), plan budowy (`docs/plan-budowy.md`) i README.
