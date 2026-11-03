@@ -19,14 +19,14 @@ describe('galaxy map layout (step 1.7)', () => {
     expect(text).toMatch(/→ .+: \d+(\.\d)? LY$/);
   });
 
-  it('formats route lengths and describes a system in Polish', () => {
+  it('formats route lengths and describes a system in English', () => {
     expect(formatLy(8.25)).toBe('8.3 LY');
     expect(formatLy(22.4)).toBe('22 LY');
     const start = galaxy.startSlots[0]!;
     const summary = systemSummary(galaxy, start);
     expect(summary.title).toBe(galaxy.systems[start]!.name);
-    expect(summary.lines).toContain('Pozycja startowa');
-    expect(summary.lines.some((l) => l.startsWith('Najbliższy układ: '))).toBe(true);
-    expect(summary.lines.some((l) => l.includes('16 pól') && l.endsWith('start'))).toBe(true);
+    expect(summary.lines).toContain('Start position');
+    expect(summary.lines.some((l) => l.startsWith('Nearest system: '))).toBe(true);
+    expect(summary.lines.some((l) => l.includes('16 fields') && l.endsWith('start'))).toBe(true);
   });
 });

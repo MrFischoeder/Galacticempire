@@ -19,7 +19,7 @@ function setup(lab = 1): { s: GameState; id: string } {
   let s = createGameState('research');
   const id = s.world.galaxy.systems[s.world.galaxy.startSlots[0]!]!.planets[0]!;
   const cmds: Command[] = [
-    { type: 'AddPlayer', playerId: 'p1', name: 'Gracz', race: 'merchants' },
+    { type: 'AddPlayer', playerId: 'p1', name: 'Player', race: 'merchants' },
     { type: 'DebugGivePlanet', playerId: 'p1', planetId: id },
     { type: 'DebugSetBuilding', planetId: id, kind: 'renewable', level: 1 },
     { type: 'DebugSetBuilding', planetId: id, kind: 'laboratory', level: lab },
@@ -99,7 +99,7 @@ describe('research jobs (step 1.6, owner rules 3.11.2026)', () => {
     s = advanceTo(s, 0.5 * H + 1);
     expect(s.planets[id]!.research).toHaveLength(0);
     expect(s.players.p1!.techs.mining).toBe(1);
-    expect(s.log.at(-1)?.text).toBe('Ukończono badanie: Technologie wydobycia poziom 1.');
+    expect(s.log.at(-1)?.text).toBe('Research complete: Mining technology level 1.');
   });
 
   it('without enough resources the time still runs; it ends once the rest is delivered', () => {
@@ -187,7 +187,7 @@ describe('research jobs (step 1.6, owner rules 3.11.2026)', () => {
     ).s;
     expect(s.planets[id]!.research).toHaveLength(0);
     expect(s.planets[id]!.stock.alloy).toBeCloseTo(300 - 128, 1);
-    expect(s.log.at(-1)?.text).toContain('Badanie przerwane');
+    expect(s.log.at(-1)?.text).toContain('Research aborted');
     s = advanceTo(s, 2 * H);
     expect(s.players.p1!.techs.mining ?? 0).toBe(0);
     expect(

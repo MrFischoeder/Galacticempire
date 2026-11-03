@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pl">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -12,40 +12,40 @@
     <div id="hud" class="panel">
       <span class="title">GALACTIC EMPIRE</span> <span id="version"></span>
       <div class="row">
-        <button id="toGalaxy">Mapa galaktyki</button>
-        <button id="toHome">Planeta macierzysta</button>
-        <button id="toResearch">Badania</button>
+        <button id="toGalaxy">Galaxy map</button>
+        <button id="toHome">Home planet</button>
+        <button id="toResearch">Research</button>
       </div>
     </div>
     <div id="debug" class="panel">
       <div class="panel-title collapsible" id="debugToggle">DEBUG ▾</div>
       <div id="debugBody">
-        <label>Ziarno <input id="seed" type="text" spellcheck="false" /></label>
+        <label>Seed <input id="seed" type="text" spellcheck="false" /></label>
         <label
-          >Układy <input id="systems" type="number" min="20" max="200" step="1" value="60"
+          >Systems <input id="systems" type="number" min="20" max="200" step="1" value="60"
         /></label>
         <label
-          >Rasa
+          >Race
           <select id="race">
-            <option value="merchants">Kupcy</option>
-            <option value="swarm">Rój</option>
-            <option value="colossi">Kolosy</option>
-            <option value="fortress">Forteca</option>
+            <option value="merchants">Merchants</option>
+            <option value="swarm">Swarm</option>
+            <option value="colossi">Colossi</option>
+            <option value="fortress">Fortress</option>
           </select>
         </label>
         <div class="row">
-          <button id="generate">Nowa gra</button>
-          <button id="random">Losowa galaktyka</button>
+          <button id="generate">New game</button>
+          <button id="random">Random galaxy</button>
         </div>
         <div class="row">
-          <button id="addRes">+500 zasobów</button>
+          <button id="addRes">+500 resources</button>
           <input id="skipHours" type="number" min="0.1" step="0.5" value="1" class="small-input" />
-          <button id="skip">Przewiń h</button>
+          <button id="skip">Skip h</button>
         </div>
         <div class="row">
           <select id="setKind"></select>
           <input id="setLevel" type="number" min="0" max="10" value="1" class="small-input" />
-          <button id="setBuilding">Ustaw</button>
+          <button id="setBuilding">Set</button>
         </div>
         <div id="stats" class="dim"></div>
       </div>
@@ -53,7 +53,7 @@
     <div id="side" class="panel" hidden></div>
     <div id="research" class="panel" hidden></div>
     <div id="timebar" class="panel">
-      <button data-speed="pause">Pauza</button>
+      <button data-speed="pause">Pause</button>
       <button data-speed="1">×1</button>
       <button data-speed="5">×5</button>
       <button data-speed="20">×20</button>

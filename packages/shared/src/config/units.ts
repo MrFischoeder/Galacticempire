@@ -129,7 +129,7 @@ const defense = (
 export const UNITS: Record<UnitId, UnitSpec> = {
   // --- 10.1 combat ships ---
   interceptor: ship({
-    name: 'Przechwytywacz',
+    name: 'Interceptor',
     size: 'small',
     cost: { alloy: 35, components: 3 },
     value: 132,
@@ -147,7 +147,7 @@ export const UNITS: Record<UnitId, UnitSpec> = {
     tags: ['lightWeapon', 'cargo'],
   }),
   fighter: ship({
-    name: 'Myśliwiec',
+    name: 'Fighter',
     size: 'small',
     cost: { alloy: 55, components: 6 },
     value: 219,
@@ -165,7 +165,7 @@ export const UNITS: Record<UnitId, UnitSpec> = {
     tags: ['lightWeapon', 'cargo'],
   }),
   frigate: ship({
-    name: 'Fregata',
+    name: 'Frigate',
     size: 'medium',
     cost: { alloy: 190, components: 20 },
     value: 750,
@@ -183,7 +183,7 @@ export const UNITS: Record<UnitId, UnitSpec> = {
     tags: ['lightWeapon', 'cargo'],
   }),
   bomber: ship({
-    name: 'Bombowiec',
+    name: 'Bomber',
     size: 'medium',
     cost: { alloy: 200, components: 35 },
     value: 915,
@@ -201,7 +201,7 @@ export const UNITS: Record<UnitId, UnitSpec> = {
     tags: ['heavyWeapon', 'cargo'],
   }),
   destroyer: ship({
-    name: 'Niszczyciel',
+    name: 'Destroyer',
     size: 'large',
     cost: { alloy: 450, components: 80 },
     value: 2070,
@@ -219,7 +219,7 @@ export const UNITS: Record<UnitId, UnitSpec> = {
     tags: ['heavyWeapon', 'cargo'],
   }),
   cruiser: ship({
-    name: 'Krążownik',
+    name: 'Cruiser',
     size: 'large',
     cost: { alloy: 700, components: 115 },
     value: 3135,
@@ -237,7 +237,7 @@ export const UNITS: Record<UnitId, UnitSpec> = {
     tags: ['heavyWeapon', 'cargo'],
   }),
   battleship: ship({
-    name: 'Pancernik',
+    name: 'Battleship',
     size: 'huge',
     cost: { alloy: 2800, components: 590 },
     value: 13710,
@@ -256,7 +256,7 @@ export const UNITS: Record<UnitId, UnitSpec> = {
   }),
   // --- 10.2 support ships (do not fire) ---
   probe: ship({
-    name: 'Sonda',
+    name: 'Probe',
     category: 'support',
     size: 'small',
     cost: { alloy: 30, components: 10 },
@@ -275,7 +275,7 @@ export const UNITS: Record<UnitId, UnitSpec> = {
     tags: ['probe'],
   }),
   transport: ship({
-    name: 'Transportowiec',
+    name: 'Transport',
     category: 'support',
     size: 'medium',
     cost: { alloy: 150 },
@@ -295,7 +295,7 @@ export const UNITS: Record<UnitId, UnitSpec> = {
     tags: ['cargo', 'transport'],
   }),
   heavyTransport: ship({
-    name: 'Ciężki transportowiec',
+    name: 'Heavy transport',
     category: 'support',
     size: 'large',
     cost: { alloy: 400, components: 40 },
@@ -315,7 +315,7 @@ export const UNITS: Record<UnitId, UnitSpec> = {
     tags: ['cargo', 'transport'],
   }),
   colonizer: ship({
-    name: 'Kolonizator',
+    name: 'Colonizer',
     category: 'support',
     size: 'medium',
     cost: { alloy: 300, components: 50, biomass: 200 },
@@ -334,7 +334,7 @@ export const UNITS: Record<UnitId, UnitSpec> = {
     tags: [],
   }),
   repairShip: ship({
-    name: 'Okręt naprawczy',
+    name: 'Repair ship',
     category: 'support',
     size: 'medium',
     cost: { alloy: 250, components: 40 },
@@ -354,7 +354,7 @@ export const UNITS: Record<UnitId, UnitSpec> = {
   }),
   // --- 10.3 ground units ---
   infantry: ground({
-    name: 'Piechota',
+    name: 'Infantry',
     size: 'small',
     cost: { alloy: 17 },
     value: 51,
@@ -369,7 +369,7 @@ export const UNITS: Record<UnitId, UnitSpec> = {
     shipyardLevel: 1,
   }),
   assaultTroops: ground({
-    name: 'Szturmowcy',
+    name: 'Assault troops',
     size: 'small',
     cost: { alloy: 35, components: 6 },
     value: 159,
@@ -384,7 +384,7 @@ export const UNITS: Record<UnitId, UnitSpec> = {
     shipyardLevel: 3,
   }),
   fieldArtillery: ground({
-    name: 'Artyleria polowa',
+    name: 'Field artillery',
     size: 'medium',
     cost: { alloy: 120, components: 18 },
     value: 522,
@@ -400,7 +400,7 @@ export const UNITS: Record<UnitId, UnitSpec> = {
     tags: ['artillery'],
   }),
   tank: ground({
-    name: 'Czołg',
+    name: 'Tank',
     size: 'large',
     cost: { alloy: 200, components: 42 },
     value: 978,
@@ -416,7 +416,7 @@ export const UNITS: Record<UnitId, UnitSpec> = {
   }),
   // --- 11.3 defensive buildings, 12.3 orbital station ---
   aaGun: defense({
-    name: 'Działko przeciwlotnicze',
+    name: 'Anti-aircraft gun',
     size: 'large',
     cost: { alloy: 240, components: 35 },
     value: 1035,
@@ -431,7 +431,7 @@ export const UNITS: Record<UnitId, UnitSpec> = {
     tags: ['lightWeapon'],
   }),
   torpedoLauncher: defense({
-    name: 'Wyrzutnia torped',
+    name: 'Torpedo launcher',
     size: 'large',
     cost: { alloy: 350, components: 56 },
     value: 1554,
@@ -446,7 +446,7 @@ export const UNITS: Record<UnitId, UnitSpec> = {
     tags: ['heavyWeapon'],
   }),
   defenseCannon: defense({
-    name: 'Działo obronne',
+    name: 'Defense cannon',
     size: 'large',
     cost: { alloy: 450, components: 65 },
     value: 1935,
@@ -461,7 +461,7 @@ export const UNITS: Record<UnitId, UnitSpec> = {
     tags: ['heavyWeapon'],
   }),
   orbitalStation: defense({
-    name: 'Stacja orbitalna',
+    name: 'Orbital station',
     size: 'huge',
     cost: { alloy: 600, components: 120 },
     value: 2880,

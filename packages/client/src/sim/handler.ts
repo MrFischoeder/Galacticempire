@@ -78,7 +78,7 @@ export function handleMessage(state: WorkerState, msg: ToWorker): FromWorker[] {
       const homePlanet = homeSystem?.planets.find((id) => galaxy.planets[id]?.starter) ?? '';
       // The start (spec 7, decisions 2.8): an empty starter planet; proper joining comes in 4.2.
       for (const command of [
-        { type: 'AddPlayer', playerId: state.playerId, name: 'Gracz', race: msg.race },
+        { type: 'AddPlayer', playerId: state.playerId, name: 'Player', race: msg.race },
         { type: 'DebugGivePlanet', playerId: state.playerId, planetId: homePlanet },
       ] as const) {
         game = applyCommand(game, command, 0).state;
@@ -95,7 +95,8 @@ export function handleMessage(state: WorkerState, msg: ToWorker): FromWorker[] {
       state.clock = setPaused(state.clock, msg.paused);
       return [];
     }
-    if (!state.game) return msg.type === 'tick' ? [] : [{ type: 'error', message: 'Brak gry.' }];
+    if (!state.game)
+      return msg.type === 'tick' ? [] : [{ type: 'error', message: 'No game running.' }];
     if (msg.type === 'tick') {
       state.clock = tickClock(state.clock, msg.realMs);
       catchUp(state);

@@ -1,6 +1,11 @@
 import { BUILD, BUILDINGS, CANCEL_REFUND, type BuildingId } from '../config/buildings';
 import { PLANET_TYPES } from '../config/planets';
-import type { MinedResource, ResourceAmounts, ResourceId } from '../config/resources';
+import {
+  RESOURCES,
+  type MinedResource,
+  type ResourceAmounts,
+  type ResourceId,
+} from '../config/resources';
 import { MS_PER_MINUTE } from '../config/time';
 import { UNITS, type UnitId } from '../config/units';
 import { fail, OK, type Result } from '../core/result';
@@ -57,20 +62,7 @@ function hasLevel(p: PlanetState, kind: BuildingId, level: number): boolean {
   return p.buildings.some((b) => b.kind === kind && b.level >= level);
 }
 
-const NAMES: Record<ResourceId, string> = {
-  metal: 'rudy metalu',
-  deuterium: 'lodu deuterowego',
-  titanium: 'rudy tytanu',
-  silicon: 'krzemu',
-  biomass: 'biomasy',
-  fissile: 'materiału rozpadowego',
-  crystalite: 'krystalitu',
-  helium3: 'helu-3',
-  exotic: 'egzotycznej materii',
-  fuel: 'paliwa',
-  alloy: 'stopów',
-  components: 'komponentów',
-};
+const name = (r: ResourceId) => RESOURCES[r].name.toLowerCase();
 
 /** Can the planet pay and store this cost right now? */
 export function checkCost(p: PlanetState, cost: ResourceAmounts): Result {
@@ -78,14 +70,17 @@ export function checkCost(p: PlanetState, cost: ResourceAmounts): Result {
     if (n > capacityOf(p, r)) {
       return fail(
         'COST_EXCEEDS_STORAGE',
-        `Koszt ${NAMES[r]} (${n}) przekracza pojemność magazynu. Najpierw rozbuduj magazyn.`,
+        `The cost in ${name(r)} (${n}) exceeds the storage capacity. Upgrade the warehouse first.`,
       );
     }
   }
   for (const [r, n] of Object.entries(cost) as [ResourceId, number][]) {
     const have = p.stock[r] ?? 0;
     if (have + 1e-9 < n) {
-      return fail('NOT_ENOUGH', `Za mało ${NAMES[r]}: potrzeba ${n}, jest ${Math.floor(have)}.`);
+      return fail(
+        'NOT_ENOUGH',
+        `Not enough ${name(r)}: ${n} needed, ${Math.floor(have)} available.`,
+      );
     }
   }
   return OK;
@@ -96,7 +91,7 @@ function checkRequirements(p: PlanetState, kind: BuildingId): Result {
     if (!hasLevel(p, req.building, req.level)) {
       return fail(
         'REQUIREMENT',
-        `Wymaga: ${BUILDINGS[req.building].name} poziom ${req.level} na tej planecie.`,
+        `Requires: ${BUILDINGS[req.building].name} level ${req.level} on this planet.`,
       );
     }
   }
@@ -112,29 +107,30 @@ export function canStartBuilding(
   ctx: ModifierContext = {},
 ): Result {
   const spec = BUILDINGS[kind];
-  if (!spec) return fail('NO_BUILDING', 'Nie ma takiego budynku.');
+  if (!spec) return fail('NO_BUILDING', 'No such building.');
   if (p.construction)
-    return fail('BUSY', 'Na tej planecie już trwa budowa. Poczekaj albo ją anuluj.');
-  if (fieldsUsed(p) >= planet.fields) return fail('NO_FIELDS', 'Brak wolnych pól na tej planecie.');
+    return fail('BUSY', 'A construction is already under way on this planet. Wait or cancel it.');
+  if (fieldsUsed(p) >= planet.fields)
+    return fail('NO_FIELDS', 'No free fields left on this planet.');
   if (planet.type === 'gasGiant' && !spec.gasGiantOk) {
-    return fail('GAS_GIANT', 'Na gazowym gigancie nie można postawić tego budynku.');
+    return fail('GAS_GIANT', 'This building cannot be built on a gas giant.');
   }
   if (!PLANET_TYPES[planet.type].housing && spec.effect.kind === 'housing') {
-    return fail('GAS_GIANT', 'Na gazowym gigancie nie można budować mieszkań.');
+    return fail('GAS_GIANT', 'Housing cannot be built on a gas giant.');
   }
   if (spec.effect.kind === 'renewable' && !planet.renewable) {
-    return fail('NO_RENEWABLE', 'Ta planeta nie ma źródła energii odnawialnej.');
+    return fail('NO_RENEWABLE', 'This planet has no renewable energy source.');
   }
   if (spec.effect.kind === 'mine') {
     if (!deposit || !planet.deposits.some((d) => d.resource === deposit)) {
-      return fail('NO_DEPOSIT', 'Kopalnia musi stać na złożu tej planety.');
+      return fail('NO_DEPOSIT', 'A mine must stand on a deposit of this planet.');
     }
   }
   const count = p.buildings.filter((b) => b.kind === kind).length;
   if (spec.unique && count > 0)
-    return fail('UNIQUE', 'Ten budynek może stać na planecie tylko raz.');
+    return fail('UNIQUE', 'Only one of these buildings can stand on a planet.');
   if (spec.maxCount !== undefined && count >= spec.maxCount) {
-    return fail('MAX_COUNT', `Na planecie może stać najwyżej ${spec.maxCount} takich budynków.`);
+    return fail('MAX_COUNT', `At most ${spec.maxCount} of these buildings can stand on a planet.`);
   }
   const req = checkRequirements(p, kind);
   if (!req.ok) return req;
@@ -144,11 +140,12 @@ export function canStartBuilding(
 /** Validation of an upgrade of the building `uid`. */
 export function canStartUpgrade(p: PlanetState, uid: number, ctx: ModifierContext = {}): Result {
   const b = findBuilding(p, uid);
-  if (!b) return fail('NO_SUCH_BUILDING', 'Nie ma takiego budynku na tej planecie.');
+  if (!b) return fail('NO_SUCH_BUILDING', 'No such building on this planet.');
   if (p.construction)
-    return fail('BUSY', 'Na tej planecie już trwa budowa. Poczekaj albo ją anuluj.');
+    return fail('BUSY', 'A construction is already under way on this planet. Wait or cancel it.');
   const spec = BUILDINGS[b.kind];
-  if (b.level >= spec.maxLevel) return fail('MAX_LEVEL', 'Ten budynek ma już najwyższy poziom.');
+  if (b.level >= spec.maxLevel)
+    return fail('MAX_LEVEL', 'This building is already at its highest level.');
   return checkCost(p, buildingCost(b.kind, b.level + 1, ctx));
 }
 

@@ -274,7 +274,7 @@ describe('planets in the game state', () => {
     let s = createGameState('econ');
     const planetId = s.world.galaxy.systems[s.world.galaxy.startSlots[0]!]!.planets[0]!;
     const steps: [Command, number][] = [
-      [{ type: 'AddPlayer', playerId: 'p1', name: 'Gracz' }, 0],
+      [{ type: 'AddPlayer', playerId: 'p1', name: 'Player' }, 0],
       [{ type: 'DebugGivePlanet', playerId: 'p1', planetId }, 0],
       [{ type: 'DebugSetBuilding', planetId, kind: 'renewable', level: 1 }, 0],
       [{ type: 'DebugSetBuilding', planetId, kind: 'mine', level: 1, deposit: 'metal' }, H],
@@ -312,7 +312,7 @@ describe('planets in the game state', () => {
     expect(later.planets[id]!.stock).toEqual(view.planet.stock);
   });
 
-  it('rejects bad debug commands in Polish', () => {
+  it('rejects bad debug commands with English messages', () => {
     const s = setup();
     const id = Object.keys(s.planets)[0]!;
     const out = applyCommand(
@@ -322,7 +322,7 @@ describe('planets in the game state', () => {
     );
     expect(out.result).toEqual({
       ok: false,
-      error: { code: 'NO_DEPOSIT', message: 'Kopalnia musi stać na złożu tej planety.' },
+      error: { code: 'NO_DEPOSIT', message: 'A mine must stand on a deposit of this planet.' },
     });
     const taken = applyCommand(s, { type: 'DebugGivePlanet', playerId: 'p1', planetId: id }, 3 * H);
     expect(taken.result.ok).toBe(false);

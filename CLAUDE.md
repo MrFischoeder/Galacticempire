@@ -4,8 +4,9 @@ Przeglądarkowa strategia kosmiczna w czasie rzeczywistym. Właściciel: Łukasz
 
 ## Język
 
-- Odpowiadaj po polsku.
-- Kod, nazwy, komentarze i komunikaty commitów w kodzie po angielsku. Teksty interfejsu (i komunikaty błędów komend) po polsku.
+- Odpowiadaj po polsku (rozmowa z właścicielem i dokumenty w `docs/` po polsku).
+- **Cała gra jest po angielsku** (decyzja właściciela 3.11.2026): interfejs, nazwy zasobów, budynków, jednostek, technologii, ras i planet, komunikaty błędów komend, wpisy dziennika.
+- Kod, nazwy, komentarze i komunikaty commitów po angielsku.
 
 ## Źródła prawdy
 
@@ -29,12 +30,13 @@ Przeglądarkowa strategia kosmiczna w czasie rzeczywistym. Właściciel: Łukasz
 - Wersja jest zapisana w `package.json` (główny) i widoczna w kliencie (od kroku 1.0). Każda wersja ma wpis w `docs/PROGRESS.md`.
 - W podsumowaniu kroku podaj nazwę gałęzi i link do pobrania:
   `https://github.com/MrFischoeder/Galacticempire/archive/refs/heads/<gałąź>.zip`
+  (repozytorium jest prywatne: link działa tylko po zalogowaniu na GitHub) i wyślij właścicielowi plik ZIP tej wersji (`git archive`) bezpośrednio w rozmowie.
 
 ## Architektura (sekcja 19 specyfikacji)
 
 - Monorepo pnpm: `packages/shared` (czysta logika: zero DOM, zero zależności od przeglądarki i Node), `packages/ai`, `packages/client`, później `packages/server`.
 - Logika to czyste funkcje `(stan, komenda, czasGry) => nowyStan`.
-- Gracz i AI zmieniają stan wyłącznie przez komendy walidowane w `shared`. Błąd komendy = kod + opis po polsku.
+- Gracz i AI zmieniają stan wyłącznie przez komendy walidowane w `shared`. Błąd komendy = kod + opis po angielsku.
 - Symulacja używa ZEGARA GRY (mnożnik ×1/×5/×20/×60, pauza), nigdy `Date.now()`, `new Date()`, `performance.now()` ani timerów w `shared`.
 - Cała losowość przez deterministyczny generator z ziarnem (osobne strumienie, np. galaktyka, bitwy). Zakaz `Math.random()` w `shared` i `ai`.
 - Produkcja liczona leniwie od znacznika czasu, odcinkami między „punktami zmiany” (pełny magazyn, pusty akumulator, koniec żywności, wyczerpane złoże). Zdarzenia (przyloty, końce budów, bitwy) w kolejce zdarzeń posortowanej po czasie gry, stabilnej dla równych czasów.

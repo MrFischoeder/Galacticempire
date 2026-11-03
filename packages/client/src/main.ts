@@ -58,7 +58,7 @@ function showError(message: string): void {
   errorPanel.textContent = message;
   window.setTimeout(() => (errorPanel.hidden = true), 5000);
 }
-sim.onError = (m) => showError(`Błąd: ${m}`);
+sim.onError = (m) => showError(`Error: ${m}`);
 
 async function send(command: Command): Promise<void> {
   const result = await sim.command(command);
@@ -101,7 +101,7 @@ function renderSide(): void {
     if (galaxy && map.selected !== null) {
       side.insertAdjacentHTML(
         'beforeend',
-        `<div class="row"><button data-action="open:${map.selected}">Otwórz układ</button></div>`,
+        `<div class="row"><button data-action="open:${map.selected}">Open system</button></div>`,
       );
     }
     lastSide = '';
@@ -115,7 +115,7 @@ function renderSide(): void {
       galaxy.planets[selectedPlanet] as NonNullable<Galaxy['planets'][string]>,
     );
   } else
-    html = `<div class="panel-title">${esc(galaxy.systems[openSystem]?.name ?? '')}</div><div class="dim">Kliknij planetę.</div>`;
+    html = `<div class="panel-title">${esc(galaxy.systems[openSystem]?.name ?? '')}</div><div class="dim">Click a planet.</div>`;
   side.hidden = false;
   if (html !== lastSide) {
     const scroll = side.scrollTop;
@@ -185,7 +185,7 @@ for (const button of document.querySelectorAll<HTMLButtonElement>('#timebar [dat
 
 function renderTimebar(): void {
   if (!snapshot) return;
-  $('#clock').textContent = `${formatGameTime(snapshot.time)}${snapshot.paused ? ' · PAUZA' : ''}`;
+  $('#clock').textContent = `${formatGameTime(snapshot.time)}${snapshot.paused ? ' · PAUSED' : ''}`;
   for (const button of document.querySelectorAll<HTMLButtonElement>('#timebar [data-speed]')) {
     const v = button.dataset.speed;
     button.classList.toggle(
@@ -251,7 +251,7 @@ $('#debugToggle').addEventListener('click', () => {
   body.hidden = !body.hidden;
 });
 $('#addRes').addEventListener('click', () => {
-  if (!selectedPlanet) return showError('Wybierz swoją planetę.');
+  if (!selectedPlanet) return showError('Select one of your planets.');
   const amounts = Object.fromEntries([...STORED_RESOURCES, 'biomass'].map((r) => [r, 500]));
   void send({ type: 'DebugAddResources', planetId: selectedPlanet, amounts });
 });
@@ -259,7 +259,7 @@ $('#skip').addEventListener('click', () =>
   sim.skip(Math.max(0, Number($<HTMLInputElement>('#skipHours').value) || 0)),
 );
 $('#setBuilding').addEventListener('click', () => {
-  if (!selectedPlanet) return showError('Wybierz swoją planetę.');
+  if (!selectedPlanet) return showError('Select one of your planets.');
   const level = Math.max(
     0,
     Math.min(10, Math.round(Number($<HTMLInputElement>('#setLevel').value) || 0)),

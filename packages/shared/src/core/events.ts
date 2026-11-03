@@ -59,15 +59,15 @@ export const EVENT_HANDLERS: Handlers = {
       const name = state.world.galaxy.planets[event.planetId]?.name ?? event.planetId;
       state.log.push({
         at: state.time,
-        text: `${name}: ${BUILDINGS[b.kind].name} poziom ${b.level} gotowy.`,
+        text: `${name}: ${BUILDINGS[b.kind].name} level ${b.level} completed.`,
       });
     }
   },
   DebugMarker(state, event) {
-    let text = `Znacznik: ${event.label}`;
+    let text = `Marker: ${event.label}`;
     if (event.roll !== undefined) {
       const rng = new Rng(state.rng);
-      text += ` (rzut ${rng.int(1, event.roll)})`;
+      text += ` (roll ${rng.int(1, event.roll)})`;
       state.rng = rng.state;
     }
     state.log.push({ at: state.time, text });

@@ -60,35 +60,35 @@ const SHIPS = { tags: ['ship'] } as const;
 
 export const TECHS: Record<TechId, TechSpec> = {
   lightWeapons: {
-    name: 'Broń lekka',
+    name: 'Light weapons',
     units: [{ stat: 'attack', add: 0.03, to: { tags: ['lightWeapon'] } }],
     economy: [],
     cost: { alloy: 120, components: 27 },
     special: 'fissile',
   },
   heavyWeapons: {
-    name: 'Broń ciężka',
+    name: 'Heavy weapons',
     units: [{ stat: 'attack', add: 0.03, to: { tags: ['heavyWeapon'] } }],
     economy: [],
     cost: { alloy: 180, components: 40 },
     special: 'fissile',
   },
   hullArmor: {
-    name: 'Pancerz kadłuba',
+    name: 'Hull armor',
     units: [{ stat: 'armor', add: 0.03, to: SHIPS }],
     economy: [],
     cost: { alloy: 180, components: 40 },
     special: 'crystalite',
   },
   shipShields: {
-    name: 'Tarcze okrętowe',
+    name: 'Ship shields',
     units: [{ stat: 'structure', add: 0.02, to: SHIPS }],
     economy: [],
     cost: { alloy: 180, components: 40 },
     special: 'crystalite',
   },
   groundTroops: {
-    name: 'Wojska lądowe',
+    name: 'Ground forces',
     units: [
       { stat: 'attack', add: 0.03, to: { units: ['infantry', 'assaultTroops', 'tank'] } },
       { stat: 'structure', add: 0.02, to: { units: ['infantry', 'assaultTroops', 'tank'] } },
@@ -98,7 +98,7 @@ export const TECHS: Record<TechId, TechSpec> = {
     special: 'fissile',
   },
   groundArtillery: {
-    name: 'Artyleria naziemna',
+    name: 'Ground artillery',
     units: [{ stat: 'attack', add: 0.03, to: { tags: ['artillery'] } }],
     economy: [],
     extraTargetsAt: [5, 10],
@@ -107,7 +107,7 @@ export const TECHS: Record<TechId, TechSpec> = {
     special: 'fissile',
   },
   planetaryDefense: {
-    name: 'Obrona planetarna',
+    name: 'Planetary defense',
     units: [
       { stat: 'attack', add: 0.03, to: { tags: ['defense'] } },
       { stat: 'armor', add: 0.03, to: { tags: ['defense'] } },
@@ -117,7 +117,7 @@ export const TECHS: Record<TechId, TechSpec> = {
     special: 'crystalite',
   },
   planetaryShields: {
-    name: 'Tarcze planetarne',
+    name: 'Planetary shields',
     units: [],
     economy: [
       { stat: 'shieldCapacity', add: 0.15 },
@@ -127,7 +127,7 @@ export const TECHS: Record<TechId, TechSpec> = {
     special: 'crystalite',
   },
   drives: {
-    name: 'Napędy',
+    name: 'Drives',
     units: [
       { stat: 'speed', add: 0.04, to: SHIPS },
       { stat: 'fuelUse', add: -0.02, to: SHIPS },
@@ -137,14 +137,14 @@ export const TECHS: Record<TechId, TechSpec> = {
     special: 'helium3',
   },
   cargoHolds: {
-    name: 'Ładownie',
+    name: 'Cargo holds',
     units: [{ stat: 'cargo', add: 0.05, to: { tags: ['cargo'] } }],
     economy: [],
     cost: { alloy: 80, components: 18 },
     special: 'helium3',
   },
   sensors: {
-    name: 'Czujniki',
+    name: 'Sensors',
     units: [],
     economy: [
       { stat: 'scanRange', add: 0.1 },
@@ -154,14 +154,14 @@ export const TECHS: Record<TechId, TechSpec> = {
     special: 'crystalite',
   },
   mining: {
-    name: 'Technologie wydobycia',
+    name: 'Mining technology',
     units: [],
     economy: [{ stat: 'mining', add: 0.03 }],
     cost: { alloy: 160, components: 36 },
     special: 'helium3',
   },
   shipyardEngineering: {
-    name: 'Inżynieria stoczniowa',
+    name: 'Shipyard engineering',
     units: [{ stat: 'buildTime', add: -0.04, to: { categories: ['combat', 'support', 'ground'] } }],
     economy: [],
     cost: { alloy: 160, components: 36 },

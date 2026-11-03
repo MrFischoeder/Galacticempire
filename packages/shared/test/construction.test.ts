@@ -17,7 +17,7 @@ function setup(): { s: GameState; id: string } {
   let s = createGameState('build');
   const id = s.world.galaxy.systems[s.world.galaxy.startSlots[0]!]!.planets[0]!;
   for (const c of [
-    { type: 'AddPlayer', playerId: 'p1', name: 'Gracz' },
+    { type: 'AddPlayer', playerId: 'p1', name: 'Player' },
     { type: 'AddPlayer', playerId: 'p2', name: 'Inny' },
     { type: 'DebugGivePlanet', playerId: 'p1', planetId: id },
   ] as Command[]) {
@@ -91,7 +91,7 @@ describe('construction commands (step 1.5)', () => {
     const b = s.planets[id]!.buildings[0]!;
     expect(b).toMatchObject({ kind: 'mine', deposit: 'metal', level: 1, uid: 1 });
     expect(s.planets[id]!.construction).toBeNull();
-    expect(s.log.at(-1)?.text).toContain('Kopalnia poziom 1 gotowy');
+    expect(s.log.at(-1)?.text).toContain('Mine level 1 completed');
   });
 
   it('upgrades a building; it keeps working at the old level until done', () => {
@@ -115,7 +115,7 @@ describe('construction commands (step 1.5)', () => {
     expect(s.planets[id]!.buildings[0]!.level).toBe(2);
   });
 
-  it('rejects what the rules forbid, in Polish', () => {
+  it('rejects what the rules forbid, with English messages', () => {
     const setupResult = setup();
     const id = setupResult.id;
     let s = setupResult.s;
@@ -132,7 +132,7 @@ describe('construction commands (step 1.5)', () => {
       0,
     );
     expect(msg.result.ok ? '' : msg.result.error.message).toBe(
-      'Za mało rudy metalu: potrzeba 25, jest 0.',
+      'Not enough metal ore: 25 needed, 0 available.',
     );
     s = ok(
       s,

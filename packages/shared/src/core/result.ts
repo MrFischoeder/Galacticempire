@@ -1,4 +1,4 @@
-/** Outcome of validating or applying a command. Messages are Polish (shown in the UI). */
+/** Outcome of validating or applying a command. Messages are English (shown in the UI). */
 export interface CommandError {
   readonly code: string;
   readonly message: string;

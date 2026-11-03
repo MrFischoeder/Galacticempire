@@ -43,7 +43,7 @@ export interface PlanetTypeSpec {
 
 export const PLANET_TYPES: Record<PlanetTypeId, PlanetTypeSpec> = {
   rocky: {
-    name: 'Skalista',
+    name: 'Rocky',
     specialisations: [{ resource: 'metal', weight: 1 }],
     fertility: [
       { value: 0, weight: 2 },
@@ -55,7 +55,7 @@ export const PLANET_TYPES: Record<PlanetTypeId, PlanetTypeSpec> = {
     color: 0xb08a6a,
   },
   volcanic: {
-    name: 'Wulkaniczna',
+    name: 'Volcanic',
     specialisations: [{ resource: 'titanium', weight: 1 }],
     fertility: [{ value: 0, weight: 1 }],
     renewable: { kind: 'geothermal', chance: 0.7 },
@@ -64,7 +64,7 @@ export const PLANET_TYPES: Record<PlanetTypeId, PlanetTypeSpec> = {
     color: 0xff5a2e,
   },
   ice: {
-    name: 'Lodowa',
+    name: 'Ice',
     specialisations: [{ resource: 'deuterium', weight: 1 }],
     fertility: [{ value: 0, weight: 1 }],
     renewable: null,
@@ -73,7 +73,7 @@ export const PLANET_TYPES: Record<PlanetTypeId, PlanetTypeSpec> = {
     color: 0xbfe9ff,
   },
   gasGiant: {
-    name: 'Gazowy gigant',
+    name: 'Gas giant',
     // About a third of gas giants are "stormy" and hold helium-3 (docs/SUROWCE.md).
     specialisations: [
       { resource: 'deuterium', weight: 2 },
@@ -86,7 +86,7 @@ export const PLANET_TYPES: Record<PlanetTypeId, PlanetTypeSpec> = {
     color: 0xe0b060,
   },
   desert: {
-    name: 'Pustynna',
+    name: 'Desert',
     specialisations: [{ resource: 'silicon', weight: 1 }],
     fertility: [
       { value: 0, weight: 3 },
@@ -98,7 +98,7 @@ export const PLANET_TYPES: Record<PlanetTypeId, PlanetTypeSpec> = {
     color: 0xe8c66a,
   },
   radioactive: {
-    name: 'Radioaktywna',
+    name: 'Radioactive',
     specialisations: [{ resource: 'fissile', weight: 1 }],
     fertility: [{ value: 0, weight: 1 }],
     renewable: null,
@@ -107,7 +107,7 @@ export const PLANET_TYPES: Record<PlanetTypeId, PlanetTypeSpec> = {
     color: 0x9dff3a,
   },
   oceanic: {
-    name: 'Oceaniczna',
+    name: 'Oceanic',
     specialisations: [],
     fertility: [
       { value: 1.5, weight: 2 },
@@ -119,7 +119,7 @@ export const PLANET_TYPES: Record<PlanetTypeId, PlanetTypeSpec> = {
     color: 0x2e7dff,
   },
   green: {
-    name: 'Zielona',
+    name: 'Green',
     // Poor metal is its basic deposit; no rich speciality, high fertility instead.
     specialisations: [],
     fertility: [
@@ -132,7 +132,7 @@ export const PLANET_TYPES: Record<PlanetTypeId, PlanetTypeSpec> = {
     color: 0x39ff7a,
   },
   crystalline: {
-    name: 'Krystaliczna',
+    name: 'Crystalline',
     specialisations: [{ resource: 'crystalite', weight: 1 }],
     fertility: [{ value: 0, weight: 1 }],
     renewable: { kind: 'solar', chance: 0.3 },
@@ -141,7 +141,7 @@ export const PLANET_TYPES: Record<PlanetTypeId, PlanetTypeSpec> = {
     color: 0xc77dff,
   },
   anomaly: {
-    name: 'Anomalia',
+    name: 'Anomaly',
     specialisations: [{ resource: 'exotic', weight: 1 }],
     fertility: [{ value: 0, weight: 1 }],
     renewable: null,

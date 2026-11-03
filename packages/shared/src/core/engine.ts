@@ -52,7 +52,7 @@ export function applyCommand(state: GameState, command: Command, time: number): 
   if (!Number.isFinite(time) || time < state.time) {
     return {
       state,
-      result: fail('TIME_IN_PAST', 'Polecenie z czasem wcześniejszym niż czas gry.'),
+      result: fail('TIME_IN_PAST', 'The command is dated before the current game time.'),
     };
   }
   const next = cloneState(state);

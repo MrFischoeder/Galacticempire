@@ -113,27 +113,27 @@ export function canStartResearch(
   tech: TechId,
 ): Result {
   const p = state.planets[planetId];
-  if (!p) return fail('NOT_OWNED', 'Ta planeta nie należy do nikogo.');
-  if (p.owner !== playerId) return fail('NOT_YOURS', 'To nie jest Twoja planeta.');
-  if (!TECHS[tech]) return fail('NO_TECH', 'Nie ma takiej technologii.');
+  if (!p) return fail('NOT_OWNED', 'This planet has no owner.');
+  if (p.owner !== playerId) return fail('NOT_YOURS', 'This is not your planet.');
+  if (!TECHS[tech]) return fail('NO_TECH', 'No such technology.');
   const lab = laboratoryLevel(p);
-  if (lab === 0) return fail('NO_LAB', 'Badania wymagają laboratorium na tej planecie.');
+  if (lab === 0) return fail('NO_LAB', 'Research needs a laboratory on this planet.');
   const jobs = playerJobs(state, playerId);
   if (jobs.some((j) => j.job.tech === tech))
-    return fail('ALREADY_RESEARCHING', 'Ta technologia jest już badana.');
+    return fail('ALREADY_RESEARCHING', 'This technology is already being researched.');
   if (jobs.length >= researchSlots(state, playerId)) {
     return fail(
       'NO_SLOT',
-      'Wszystkie miejsca na badania są zajęte (drugie od laboratorium poziomu 5).',
+      'All research slots are busy (a second one comes with a level 5 laboratory).',
     );
   }
   const level = (state.players[playerId]?.techs[tech] ?? 0) + 1;
   if (level > RESEARCH.maxLevel)
-    return fail('MAX_LEVEL', 'Ta technologia ma już najwyższy poziom.');
+    return fail('MAX_LEVEL', 'This technology is already at its highest level.');
   if (level > techLimit(lab)) {
     return fail(
       'LAB_TOO_LOW',
-      `Laboratorium poziomu ${lab} pozwala badać do poziomu ${techLimit(lab)}.`,
+      `A level ${lab} laboratory allows research up to level ${techLimit(lab)}.`,
     );
   }
   return OK;
@@ -176,7 +176,7 @@ export function finalizeResearch(state: GameState, planetId: string): ResearchJo
     for (const job of p.research) {
       state.log.push({
         at: state.time,
-        text: `Badanie przerwane (brak laboratorium): ${TECHS[job.tech].name} poziom ${job.level}. Zapłacone zasoby przepadły.`,
+        text: `Research aborted (no laboratory): ${TECHS[job.tech].name} level ${job.level}. The resources paid are lost.`,
       });
     }
     p.research = [];
@@ -190,7 +190,7 @@ export function finalizeResearch(state: GameState, planetId: string): ResearchJo
     if (player) player.techs[job.tech] = Math.max(player.techs[job.tech] ?? 0, job.level);
     state.log.push({
       at: job.doneAt ?? state.time,
-      text: `Ukończono badanie: ${TECHS[job.tech].name} poziom ${job.level}.`,
+      text: `Research complete: ${TECHS[job.tech].name} level ${job.level}.`,
     });
   }
   return done;

@@ -33,7 +33,7 @@ export function systemSummary(galaxy: Galaxy, id: SystemId): { title: string; li
   const lines = s.planets.map((pid) => {
     const p = galaxy.planets[pid];
     if (!p) return pid;
-    const tags = [PLANET_TYPES[p.type].name, `${p.fields} pól`];
+    const tags = [PLANET_TYPES[p.type].name, `${p.fields} fields`];
     if (p.speciality) tags.push(RESOURCES[p.speciality].name.toLowerCase());
     if (p.starter) tags.push('start');
     return `${p.name}: ${tags.join(', ')}`;
@@ -41,11 +41,11 @@ export function systemSummary(galaxy: Galaxy, id: SystemId): { title: string; li
   const nearest = nearestSystem(galaxy, id);
   const extra = [
     ...(nearest
-      ? [`Najbliższy układ: ${galaxy.systems[nearest.id]?.name} (${formatLy(nearest.ly)})`]
+      ? [`Nearest system: ${galaxy.systems[nearest.id]?.name} (${formatLy(nearest.ly)})`]
       : []),
-    `Układy w promieniu ${NEAR_LY} LY: ${systemsWithin(galaxy, id, NEAR_LY).length}`,
-    ...(s.rich ? ['Układ bogaty'] : []),
-    ...(galaxy.startSlots.includes(id) ? ['Pozycja startowa'] : []),
+    `Systems within ${NEAR_LY} LY: ${systemsWithin(galaxy, id, NEAR_LY).length}`,
+    ...(s.rich ? ['Rich system'] : []),
+    ...(galaxy.startSlots.includes(id) ? ['Start position'] : []),
   ];
   return { title: s.name, lines: [...extra, ...lines] };
 }

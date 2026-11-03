@@ -1,6 +1,6 @@
 {
   "name": "@ge/ai",
-  "version": "0.1.10",
+  "version": "0.1.10a",
   "private": true,
   "type": "module",
   "main": "src/index.ts",

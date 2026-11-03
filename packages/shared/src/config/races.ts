@@ -35,7 +35,7 @@ const MOBILE = { categories: ['combat', 'support', 'ground'] } as const;
 
 export const RACES: Record<RaceId, RaceSpec> = {
   merchants: {
-    name: 'Kupcy',
+    name: 'Merchants',
     color: 0xffd23f,
     units: [
       { stat: 'cargo', add: 0.25, to: { tags: ['transport'] } },
@@ -47,7 +47,7 @@ export const RACES: Record<RaceId, RaceSpec> = {
     mechanic: { kind: 'contracts', allyDeliveryBonus: 0.1, exchangeFee: 0, earlyOffersMinutes: 15 },
   },
   swarm: {
-    name: 'Rój',
+    name: 'Swarm',
     color: 0xff6a2e,
     units: [
       { stat: 'cost', add: -0.3, to: MOBILE },
@@ -60,7 +60,7 @@ export const RACES: Record<RaceId, RaceSpec> = {
     mechanic: { kind: 'wave', windowMinutes: 10, attackPerWave: 0.1, maxBonus: 0.3 },
   },
   colossi: {
-    name: 'Kolosy',
+    name: 'Colossi',
     color: 0x6f9fd8,
     units: [
       { stat: 'structure', add: 0.3, to: MOBILE },
@@ -79,7 +79,7 @@ export const RACES: Record<RaceId, RaceSpec> = {
     },
   },
   fortress: {
-    name: 'Forteca',
+    name: 'Fortress',
     color: 0x39ff7a,
     units: [
       { stat: 'cost', add: -0.3, to: { categories: ['defense'] } },

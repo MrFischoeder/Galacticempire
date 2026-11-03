@@ -26,6 +26,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.7 | 0.1.9 | `v0.1.9-mapa-galaktyki` | Web Worker, mapa 3D | ✅ |
 | 1.7 | 0.1.9a | `v0.1.9a-loty-bezposrednie` | bez tras: loty prosto między dowolnymi układami | ✅ |
 | 1.8 | 0.1.10 | `v0.1.10-widok-planety` | widok układu, panele, pasek czasu | ✅ |
+| 1.8 | 0.1.10a | `v0.1.10a-english` | cała gra po angielsku | ✅ |
 | 1.9 | 0.1.11 | `v0.1.11-ruch-flot` | ruch flot, paliwo, kosmoport, hangary | ⬜ |
 | 1.10a | 0.1.12 | `v0.1.12-stocznia` | stocznia, utrzymanie | ⬜ |
 | 1.10b | 0.1.13 | `v0.1.13-transporty` | transporty, trasy cykliczne, kolonizacja | ⬜ |
@@ -40,6 +41,12 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.1.10a: gra po angielsku (3.11.2026)
+- Decyzja właściciela: rozmowa i dokumenty po polsku, **cała gra po angielsku**. Zapisane w `CLAUDE.md` i specyfikacji (sekcja 0).
+- Przetłumaczone: nazwy zasobów, typów planet, budynków, jednostek, technologii i ras (`config/*.ts`), wszystkie komunikaty błędów komend i wpisy dziennika (`core/`, `economy/`), cały interfejs klienta (`index.html`, panele, formatowanie: „Day 3, 14:05”, liczby z kropką dziesiętną).
+- Testy zaktualizowane do angielskich tekstów; sprawdzone w przeglądarce (zrzut: `english-0.1.10a.png`).
+- Repozytorium jest prywatne: link do pobrania działa tylko po zalogowaniu na GitHub, dlatego każda wersja trafia też do właściciela jako plik ZIP w rozmowie.
 
 ### 0.1.10: widok układu, planety i interfejs (krok 1.8, 3.11.2026)
 - Worker trzyma stan gry i **zegar gry** (×1/×5/×20/×60, pauza, przewijanie): co 100 ms przelicza czas rzeczywisty na czas gry i przetwarza tylko zdarzenia, które nadeszły (planety rozliczają się leniwie), co 250 ms wysyła stronie migawkę (gracz, jego planety rozliczone na teraz z tempem produkcji, dziennik). Komendy dostają aktualny czas gry w workerze. Nowa gra: gracz „Gracz” z wybraną rasą na pustej planecie startowej pierwszej pozycji startowej (prawdziwe dołączanie: krok 4.2).

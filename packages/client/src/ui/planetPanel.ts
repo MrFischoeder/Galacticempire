@@ -78,10 +78,10 @@ function planetFacts(info: Planet): string {
   const t = PLANET_TYPES[info.type];
   const facts = [
     t.name,
-    `żyzność ${info.fertility}`,
+    `fertility ${info.fertility}`,
     info.renewable
-      ? `energia: ${{ solar: 'słoneczna', wind: 'wiatrowa', geothermal: 'geotermalna' }[info.renewable]}`
-      : 'bez energii odnawialnej',
+      ? `energy: ${{ solar: 'solar', wind: 'wind', geothermal: 'geothermal' }[info.renewable]}`
+      : 'no renewable energy',
   ];
   return facts.join(' · ');
 }
@@ -89,7 +89,7 @@ function planetFacts(info: Planet): string {
 function depositRows(info: Planet): string {
   return info.deposits
     .map((d) => {
-      const cls = { poor: 'ubogie', average: 'średnie', rich: 'bogate' }[d.class];
+      const cls = { poor: 'poor', average: 'average', rich: 'rich' }[d.class];
       return `<tr><td>${esc(resourceName(d.resource))}</td><td>${cls}</td><td class="num">${formatAmount(d.pool)} / ${formatAmount(d.initial)}</td></tr>`;
     })
     .join('');
@@ -98,8 +98,8 @@ function depositRows(info: Planet): string {
 /** A planet that is not ours: what is known about it. */
 export function foreignPlanetHTML(info: Planet): string {
   return `<div class="panel-title">${esc(info.name)}</div>
-<div class="dim">${esc(planetFacts(info))} · ${info.fields} pól</div>
-<div class="section">Złoża</div><table>${depositRows(info)}</table>`;
+<div class="dim">${esc(planetFacts(info))} · ${info.fields} fields</div>
+<div class="section">Deposits</div><table>${depositRows(info)}</table>`;
 }
 
 /** The full panel of an owned planet (step 1.8). Actions use data-action attributes. */
@@ -109,7 +109,7 @@ export function ownedPlanetHTML(view: PlanetView, player: Player, now: number): 
   const cap = resourceCapacity(p);
   const parts: string[] = [];
   parts.push(`<div class="panel-title">${esc(info.name)}</div>
-<div class="dim">${esc(planetFacts(info))} · pola ${fieldsUsed(p)}/${info.fields}</div>`);
+<div class="dim">${esc(planetFacts(info))} · fields ${fieldsUsed(p)}/${info.fields}</div>`);
 
   // Resources
   const rows = [...STORED_RESOURCES, 'biomass' as ResourceId]
@@ -121,22 +121,22 @@ export function ownedPlanetHTML(view: PlanetView, player: Player, now: number): 
       return `<tr><td>${esc(resourceName(r))}</td><td class="num ${full ? 'warn' : 'res'}">${formatAmount(p.stock[r] ?? 0)} / ${formatAmount(c)}</td><td class="num ${net < 0 ? 'bad' : 'good'}">${net === 0 ? '' : formatRate(net)}</td></tr>`;
     })
     .join('');
-  parts.push(`<div class="section">Zasoby</div><table>${rows}</table>`);
+  parts.push(`<div class="section">Resources</div><table>${rows}</table>`);
 
   // Energy and people
   const energyNet = rates.energyMade - rates.energyUsed;
-  parts.push(`<div class="section">Energia</div>
-<div>Produkcja ${formatAmount(rates.energyMade)}/h · zużycie ${formatAmount(rates.energyUsed)}/h · <span class="${energyNet < 0 ? 'bad' : 'good'}">${formatRate(energyNet)}</span></div>
-<div>Zapas ${formatAmount(p.energy)} / ${formatAmount(energyCapacity(p))}${rates.efficiency < 1 ? ` · <span class="bad">wydajność ${Math.round(rates.efficiency * 100)}%</span>` : ''}</div>`);
+  parts.push(`<div class="section">Energy</div>
+<div>Production ${formatAmount(rates.energyMade)}/h · use ${formatAmount(rates.energyUsed)}/h · <span class="${energyNet < 0 ? 'bad' : 'good'}">${formatRate(energyNet)}</span></div>
+<div>Stored ${formatAmount(p.energy)} / ${formatAmount(energyCapacity(p))}${rates.efficiency < 1 ? ` · <span class="bad">efficiency ${Math.round(rates.efficiency * 100)}%</span>` : ''}</div>`);
   const workers = view.planet.buildings.reduce((s, b) => s + BUILDINGS[b.kind].workers, 0);
-  parts.push(`<div class="section">Ludność</div>
-<div>Mieszkańcy ${p.population} / ${rates.housing}${rates.growth !== 0 ? ` · <span class="${rates.growth < 0 ? 'bad' : 'good'}">${formatRate(rates.growth)}</span>` : ''} · robotnicy potrzebni ${workers}${rates.starving ? ' · <span class="bad">GŁÓD</span>' : ''}</div>`);
+  parts.push(`<div class="section">Population</div>
+<div>Residents ${p.population} / ${rates.housing}${rates.growth !== 0 ? ` · <span class="${rates.growth < 0 ? 'bad' : 'good'}">${formatRate(rates.growth)}</span>` : ''} · workers needed ${workers}${rates.starving ? ' · <span class="bad">STARVING</span>' : ''}</div>`);
 
   // Construction
   if (p.construction) {
     const c = p.construction;
-    parts.push(`<div class="section">Budowa</div>
-<div class="row-line"><span>${esc(BUILDINGS[c.kind].name)} → poziom ${c.level} · zostało ${formatDuration(c.endsAt - now)}</span><button data-action="cancel">Anuluj</button></div>`);
+    parts.push(`<div class="section">Construction</div>
+<div class="row-line"><span>${esc(BUILDINGS[c.kind].name)} → level ${c.level} · ${formatDuration(c.endsAt - now)} left</span><button data-action="cancel">Cancel</button></div>`);
   }
 
   // Buildings
@@ -148,23 +148,23 @@ export function ownedPlanetHTML(view: PlanetView, player: Player, now: number): 
       const maxed = next > BUILDINGS[b.kind].maxLevel;
       const name = `${BUILDINGS[b.kind].name}${b.deposit ? ` (${SHORT[b.deposit]})` : ''}`;
       const button = maxed
-        ? '<span class="dim">maks.</span>'
+        ? '<span class="dim">max</span>'
         : `<button data-action="upgrade:${b.uid}" ${up?.ok ? '' : 'disabled'} title="${esc(up && !up.ok ? up.error.message : '')}">↑ ${esc(formatCost(buildingCost(b.kind, next, ctx)))} · ${formatDuration(buildingTime(b.kind, next))}</button>`;
-      return `<tr><td>${esc(name)}</td><td class="num">poz. ${b.level}</td><td class="num ${crew < 1 ? 'bad' : 'dim'}">${BUILDINGS[b.kind].workers > 0 ? `${Math.round(crew * 100)}%` : ''}</td><td>${button}</td></tr>`;
+      return `<tr><td>${esc(name)}</td><td class="num">lvl ${b.level}</td><td class="num ${crew < 1 ? 'bad' : 'dim'}">${BUILDINGS[b.kind].workers > 0 ? `${Math.round(crew * 100)}%` : ''}</td><td>${button}</td></tr>`;
     })
     .join('');
   parts.push(
-    `<div class="section">Budynki</div>${list ? `<table>${list}</table>` : '<div class="dim">Brak budynków. Rdzeń planety zbiera powoli surowce.</div>'}`,
+    `<div class="section">Buildings</div>${list ? `<table>${list}</table>` : '<div class="dim">No buildings. The planet core slowly gathers minerals.</div>'}`,
   );
 
   // New buildings
   const options = buildOptions(view, ctx)
     .map(
       (o) =>
-        `<tr class="${o.ok ? '' : 'dim'}"><td>${esc(o.label)}</td><td class="small">${esc(o.cost)} · ${esc(o.time)}</td><td><button data-action="build:${o.kind}:${o.deposit ?? ''}" ${o.ok ? '' : 'disabled'} title="${esc(o.reason)}">Buduj</button></td></tr>`,
+        `<tr class="${o.ok ? '' : 'dim'}"><td>${esc(o.label)}</td><td class="small">${esc(o.cost)} · ${esc(o.time)}</td><td><button data-action="build:${o.kind}:${o.deposit ?? ''}" ${o.ok ? '' : 'disabled'} title="${esc(o.reason)}">Build</button></td></tr>`,
     )
     .join('');
-  parts.push(`<div class="section">Nowy budynek</div><table>${options}</table>`);
-  parts.push(`<div class="section">Złoża</div><table>${depositRows(info)}</table>`);
+  parts.push(`<div class="section">New building</div><table>${options}</table>`);
+  parts.push(`<div class="section">Deposits</div><table>${depositRows(info)}</table>`);
   return parts.join('\n');
 }

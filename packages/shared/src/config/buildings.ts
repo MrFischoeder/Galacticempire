@@ -135,7 +135,7 @@ const gates = (...g: SpecialGate[]): SpecialGate[] => [...g, EXOTIC];
 
 export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
   mine: {
-    name: 'Kopalnia',
+    name: 'Mine',
     category: 'production',
     maxLevel: 10,
     unique: false,
@@ -149,7 +149,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     gasGiantOk: true,
   },
   refinery: {
-    name: 'Rafineria',
+    name: 'Refinery',
     category: 'production',
     maxLevel: 10,
     unique: false,
@@ -163,7 +163,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     gasGiantOk: true,
   },
   smelter: {
-    name: 'Huta',
+    name: 'Smelter',
     category: 'production',
     maxLevel: 10,
     unique: false,
@@ -176,7 +176,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     effect: { kind: 'recipe', recipe: 'smelter', growth: 1.25 },
   },
   workshop: {
-    name: 'Warsztat',
+    name: 'Workshop',
     category: 'production',
     maxLevel: 10,
     unique: false,
@@ -189,7 +189,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     effect: { kind: 'recipe', recipe: 'workshop', growth: 1.25 },
   },
   farm: {
-    name: 'Farma',
+    name: 'Farm',
     category: 'civil',
     maxLevel: 10,
     unique: false,
@@ -202,7 +202,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     effect: { kind: 'farm', perHour: 30, growth: 1.25 },
   },
   reactor: {
-    name: 'Reaktor',
+    name: 'Reactor',
     category: 'energy',
     maxLevel: 10,
     unique: false,
@@ -215,7 +215,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     effect: { kind: 'reactor', energyPerLevel: 100, fuel: 'fissile', fuelPerLevel: 10 },
   },
   fusionReactor: {
-    name: 'Reaktor fuzyjny',
+    name: 'Fusion reactor',
     category: 'energy',
     maxLevel: 10,
     unique: false,
@@ -229,7 +229,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     effect: { kind: 'reactor', energyPerLevel: 250, fuel: 'helium3', fuelPerLevel: 5 },
   },
   renewable: {
-    name: 'Elektrownia odnawialna',
+    name: 'Renewable power plant',
     category: 'energy',
     maxLevel: 10,
     unique: false,
@@ -243,7 +243,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     effect: { kind: 'renewable', perHour: 25, growth: 1.3 },
   },
   housing: {
-    name: 'Mieszkanie',
+    name: 'Housing',
     category: 'civil',
     maxLevel: 10,
     unique: false,
@@ -256,7 +256,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     effect: { kind: 'housing', perLevel: 20 },
   },
   warehouse: {
-    name: 'Magazyn',
+    name: 'Warehouse',
     category: 'storage',
     maxLevel: 10,
     unique: false,
@@ -270,7 +270,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     gasGiantOk: true,
   },
   accumulator: {
-    name: 'Akumulator',
+    name: 'Accumulator',
     category: 'storage',
     maxLevel: 10,
     unique: false,
@@ -284,7 +284,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     gasGiantOk: true,
   },
   silo: {
-    name: 'Silos',
+    name: 'Silo',
     category: 'storage',
     maxLevel: 10,
     unique: false,
@@ -297,7 +297,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     effect: { kind: 'storage', store: 'biomass', base: 300, growth: 1.3 },
   },
   bunker: {
-    name: 'Schron',
+    name: 'Bunker',
     category: 'storage',
     maxLevel: 10,
     unique: false,
@@ -325,7 +325,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     gasGiantOk: true,
   },
   shipyard: {
-    name: 'Stocznia',
+    name: 'Shipyard',
     category: 'military',
     maxLevel: 10,
     unique: true,
@@ -338,7 +338,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     effect: { kind: 'shipyard' },
   },
   spaceport: {
-    name: 'Kosmoport',
+    name: 'Spaceport',
     category: 'military',
     maxLevel: 10,
     unique: true,
@@ -353,7 +353,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     gasGiantOk: true,
   },
   scanner: {
-    name: 'Skaner',
+    name: 'Scanner',
     category: 'tech',
     maxLevel: 10,
     unique: true,
@@ -367,7 +367,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     gasGiantOk: true,
   },
   shieldGenerator: {
-    name: 'Generator tarczy',
+    name: 'Shield generator',
     category: 'defense',
     maxLevel: 10,
     unique: true,
@@ -381,7 +381,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     gasGiantOk: true,
   },
   laboratory: {
-    name: 'Laboratorium badawcze',
+    name: 'Research laboratory',
     category: 'tech',
     maxLevel: 10,
     unique: true,
@@ -394,7 +394,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     effect: { kind: 'laboratory', timeCutPerLevel: 0.05, techLimitPerLevel: 2, secondSlotLevel: 5 },
   },
   tradeExchange: {
-    name: 'Giełda handlowa',
+    name: 'Trade exchange',
     category: 'commerce',
     maxLevel: 5,
     unique: true,
@@ -407,7 +407,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     effect: { kind: 'exchange', offers: [2, 4, 6, 8, 10], feePercent: [2, 1.75, 1.5, 1.25, 1] },
   },
   adminCenter: {
-    name: 'Centrum administracyjne',
+    name: 'Administration center',
     category: 'tech',
     maxLevel: 1,
     unique: true,
@@ -420,7 +420,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     effect: { kind: 'admin', planetsPerCenter: 8 },
   },
   orbitalStation: {
-    name: 'Stacja orbitalna',
+    name: 'Orbital station',
     category: 'defense',
     maxLevel: 1,
     unique: true,
@@ -437,7 +437,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     gasGiantOk: true,
   },
   aaGun: {
-    name: 'Działko przeciwlotnicze',
+    name: 'Anti-aircraft gun',
     category: 'defense',
     maxLevel: 10,
     unique: false,
@@ -451,7 +451,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     gasGiantOk: true,
   },
   torpedoLauncher: {
-    name: 'Wyrzutnia torped',
+    name: 'Torpedo launcher',
     category: 'defense',
     maxLevel: 10,
     unique: false,
@@ -465,7 +465,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     gasGiantOk: true,
   },
   defenseCannon: {
-    name: 'Działo obronne',
+    name: 'Defense cannon',
     category: 'defense',
     maxLevel: 10,
     unique: false,

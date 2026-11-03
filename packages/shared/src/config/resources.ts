@@ -42,18 +42,18 @@ export interface ResourceSpec {
 }
 
 export const RESOURCES: Record<ResourceId, ResourceSpec> = {
-  metal: { name: 'Ruda metalu', kind: 'basic', value: 1 },
-  deuterium: { name: 'Lód deuterowy', kind: 'basic', value: 1 },
-  titanium: { name: 'Ruda tytanu', kind: 'basic', value: 1 },
-  silicon: { name: 'Krzem', kind: 'basic', value: 1 },
-  biomass: { name: 'Biomasa', kind: 'basic', value: 1 },
-  fissile: { name: 'Materiał rozpadowy', kind: 'special', value: 2 },
-  crystalite: { name: 'Krystalit', kind: 'special', value: 4 },
-  helium3: { name: 'Hel-3', kind: 'special', value: 4 },
-  exotic: { name: 'Egzotyczna materia', kind: 'special', value: 20 },
-  fuel: { name: 'Paliwo', kind: 'processed', value: 2 },
-  alloy: { name: 'Stopy', kind: 'processed', value: 3 },
-  components: { name: 'Komponenty', kind: 'processed', value: 9 },
+  metal: { name: 'Metal ore', kind: 'basic', value: 1 },
+  deuterium: { name: 'Deuterium ice', kind: 'basic', value: 1 },
+  titanium: { name: 'Titanium ore', kind: 'basic', value: 1 },
+  silicon: { name: 'Silicon', kind: 'basic', value: 1 },
+  biomass: { name: 'Biomass', kind: 'basic', value: 1 },
+  fissile: { name: 'Fissile material', kind: 'special', value: 2 },
+  crystalite: { name: 'Crystalite', kind: 'special', value: 4 },
+  helium3: { name: 'Helium-3', kind: 'special', value: 4 },
+  exotic: { name: 'Exotic matter', kind: 'special', value: 20 },
+  fuel: { name: 'Fuel', kind: 'processed', value: 2 },
+  alloy: { name: 'Alloys', kind: 'processed', value: 3 },
+  components: { name: 'Components', kind: 'processed', value: 9 },
 };
 
 /** Total balance value of an amount (spec 10.0). */

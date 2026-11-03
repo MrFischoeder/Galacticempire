@@ -119,9 +119,9 @@ const NAME_MAX = 24;
 
 function checkName(name: string): Result {
   const trimmed = name.trim();
-  if (trimmed.length === 0) return fail('NAME_EMPTY', 'Nazwa nie może być pusta.');
+  if (trimmed.length === 0) return fail('NAME_EMPTY', 'The name cannot be empty.');
   if (trimmed.length > NAME_MAX) {
-    return fail('NAME_TOO_LONG', `Nazwa może mieć najwyżej ${NAME_MAX} znaki.`);
+    return fail('NAME_TOO_LONG', `The name can have at most ${NAME_MAX} characters.`);
   }
   return OK;
 }
@@ -135,8 +135,8 @@ type Specs = { [K in Command['type']]: CommandSpec<Extract<Command, { type: K }>
 /** The planet must exist, be owned by the player; it is settled to now (validation reads it). */
 function ownedBy(state: Readonly<GameState>, playerId: PlayerId, planetId: string): Result {
   const p = state.planets[planetId];
-  if (!p) return fail('NOT_OWNED', 'Ta planeta nie należy do nikogo.');
-  if (p.owner !== playerId) return fail('NOT_YOURS', 'To nie jest Twoja planeta.');
+  if (!p) return fail('NOT_OWNED', 'This planet has no owner.');
+  if (p.owner !== playerId) return fail('NOT_YOURS', 'This is not your planet.');
   return OK;
 }
 
@@ -156,8 +156,8 @@ function schedule(state: GameState, planetId: string): void {
 export const COMMANDS: Specs = {
   StartResearch: {
     validate(state, c) {
-      if (!state.players[c.playerId]) return fail('NO_PLAYER', 'Nie ma takiego gracza.');
-      if (!state.planets[c.planetId]) return fail('NOT_OWNED', 'Ta planeta nie należy do nikogo.');
+      if (!state.players[c.playerId]) return fail('NO_PLAYER', 'No such player.');
+      if (!state.planets[c.planetId]) return fail('NOT_OWNED', 'This planet has no owner.');
       // Jobs that have just finished are counted as done (settled copy).
       return canStartResearch(settledCopy(state, c.planetId), c.playerId, c.planetId, c.tech);
     },
@@ -222,7 +222,7 @@ export const COMMANDS: Specs = {
       const own = ownedBy(state, c.playerId, c.planetId);
       if (!own.ok) return own;
       if (!state.planets[c.planetId]?.construction)
-        return fail('NOTHING_TO_CANCEL', 'Na tej planecie nic się nie buduje.');
+        return fail('NOTHING_TO_CANCEL', 'Nothing is being built on this planet.');
       return OK;
     },
     apply(state, c) {
@@ -233,9 +233,9 @@ export const COMMANDS: Specs = {
   AddPlayer: {
     validate(state, c) {
       if (state.players[c.playerId]) {
-        return fail('PLAYER_EXISTS', 'Gracz o tym identyfikatorze już istnieje.');
+        return fail('PLAYER_EXISTS', 'A player with this id already exists.');
       }
-      if (c.race !== undefined && !(c.race in RACES)) return fail('NO_RACE', 'Nie ma takiej rasy.');
+      if (c.race !== undefined && !(c.race in RACES)) return fail('NO_RACE', 'No such race.');
       return checkName(c.name);
     },
     apply(state, c) {
@@ -249,7 +249,7 @@ export const COMMANDS: Specs = {
   },
   RenamePlayer: {
     validate(state, c) {
-      if (!state.players[c.playerId]) return fail('NO_PLAYER', 'Nie ma takiego gracza.');
+      if (!state.players[c.playerId]) return fail('NO_PLAYER', 'No such player.');
       return checkName(c.name);
     },
     apply(state, c) {
@@ -260,13 +260,13 @@ export const COMMANDS: Specs = {
   DebugScheduleMarker: {
     validate(_state, c) {
       if (!Number.isFinite(c.delay) || c.delay < 0) {
-        return fail('BAD_DELAY', 'Opóźnienie musi być liczbą nieujemną.');
+        return fail('BAD_DELAY', 'The delay must be a non-negative number.');
       }
       if (c.roll !== undefined && (!Number.isInteger(c.roll) || c.roll < 1)) {
-        return fail('BAD_ROLL', 'Rzut musi być dodatnią liczbą całkowitą.');
+        return fail('BAD_ROLL', 'The roll must be a positive whole number.');
       }
       if (c.repeatEvery !== undefined && !(c.repeatEvery > 0)) {
-        return fail('BAD_REPEAT', 'Odstęp powtórzeń musi być dodatni.');
+        return fail('BAD_REPEAT', 'The repeat interval must be positive.');
       }
       return OK;
     },
@@ -282,10 +282,10 @@ export const COMMANDS: Specs = {
   },
   DebugGivePlanet: {
     validate(state, c) {
-      if (!state.players[c.playerId]) return fail('NO_PLAYER', 'Nie ma takiego gracza.');
-      if (!state.world.galaxy.planets[c.planetId])
-        return fail('NO_PLANET', 'Nie ma takiej planety.');
-      if (state.planets[c.planetId]) return fail('PLANET_TAKEN', 'Ta planeta ma już właściciela.');
+      if (!state.players[c.playerId]) return fail('NO_PLAYER', 'No such player.');
+      if (!state.world.galaxy.planets[c.planetId]) return fail('NO_PLANET', 'No such planet.');
+      if (state.planets[c.planetId])
+        return fail('PLANET_TAKEN', 'This planet already has an owner.');
       return OK;
     },
     apply(state, c) {
@@ -295,16 +295,16 @@ export const COMMANDS: Specs = {
   DebugSetBuilding: {
     validate(state, c) {
       const p = state.planets[c.planetId];
-      if (!p) return fail('NOT_OWNED', 'Ta planeta nie należy do nikogo.');
+      if (!p) return fail('NOT_OWNED', 'This planet has no owner.');
       const spec = BUILDINGS[c.kind];
-      if (!spec) return fail('NO_BUILDING', 'Nie ma takiego budynku.');
+      if (!spec) return fail('NO_BUILDING', 'No such building.');
       if (!Number.isInteger(c.level) || c.level < 0 || c.level > spec.maxLevel) {
-        return fail('BAD_LEVEL', `Poziom musi być od 0 do ${spec.maxLevel}.`);
+        return fail('BAD_LEVEL', `The level must be between 0 and ${spec.maxLevel}.`);
       }
       if (spec.effect.kind === 'mine') {
         const planet = state.world.galaxy.planets[c.planetId];
         if (!c.deposit || !planet?.deposits.some((d) => d.resource === c.deposit)) {
-          return fail('NO_DEPOSIT', 'Kopalnia musi stać na złożu tej planety.');
+          return fail('NO_DEPOSIT', 'A mine must stand on a deposit of this planet.');
         }
       }
       return OK;
@@ -334,13 +334,13 @@ export const COMMANDS: Specs = {
   },
   DebugAddResources: {
     validate(state, c) {
-      if (!state.planets[c.planetId]) return fail('NOT_OWNED', 'Ta planeta nie należy do nikogo.');
+      if (!state.planets[c.planetId]) return fail('NOT_OWNED', 'This planet has no owner.');
       for (const [r, n] of Object.entries(c.amounts)) {
         if (!(STORED_RESOURCES as readonly string[]).includes(r)) {
-          return fail('BAD_RESOURCE', 'Tego zasobu nie da się przechowywać w magazynie.');
+          return fail('BAD_RESOURCE', 'This resource cannot be kept in the warehouse.');
         }
         if (!Number.isFinite(n) || n < 0)
-          return fail('BAD_AMOUNT', 'Ilość musi być liczbą nieujemną.');
+          return fail('BAD_AMOUNT', 'The amount must be a non-negative number.');
       }
       return OK;
     },
@@ -363,7 +363,7 @@ function findBuilding(state: Readonly<GameState>, c: DebugSetBuildingCommand) {
 
 export function validateCommand(state: Readonly<GameState>, command: Command): Result {
   const spec = COMMANDS[command.type] as CommandSpec<Command> | undefined;
-  if (!spec) return fail('UNKNOWN_COMMAND', 'Nieznane polecenie.');
+  if (!spec) return fail('UNKNOWN_COMMAND', 'Unknown command.');
   return spec.validate(state, command);
 }
 

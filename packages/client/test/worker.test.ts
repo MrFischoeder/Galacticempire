@@ -70,7 +70,7 @@ describe('simulation worker (steps 1.7-1.8)', () => {
     const snap = buildSnapshot(state)!;
     expect(snap.time).toBeGreaterThan(2 * MS_PER_HOUR + 3 * MS_PER_MINUTE);
     expect(snap.planets[0]!.planet.buildings.map((b) => b.kind)).toEqual(['renewable']);
-    expect(snap.log.at(-1)?.text).toContain('Elektrownia odnawialna poziom 1 gotowy');
+    expect(snap.log.at(-1)?.text).toContain('Renewable power plant level 1 completed');
     const [bad] = handleMessage(state, {
       type: 'command',
       id: 8,

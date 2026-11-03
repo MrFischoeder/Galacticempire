@@ -28,7 +28,7 @@ describe('advanceTo', () => {
     s = run(s, marker(100, 'A'), 0);
     s = run(s, marker(200, 'B'), 0);
     s = advanceTo(s, 1000);
-    expect(labels(s)).toEqual(['100:Znacznik: A', '200:Znacznik: B', '300:Znacznik: C']);
+    expect(labels(s)).toEqual(['100:Marker: A', '200:Marker: B', '300:Marker: C']);
     expect(s.time).toBe(1000);
   });
 
@@ -36,7 +36,7 @@ describe('advanceTo', () => {
     let s = createGameState('t');
     for (const l of ['1', '2', '3']) s = run(s, marker(50, l), 0);
     s = advanceTo(s, 50);
-    expect(labels(s)).toEqual(['50:Znacznik: 1', '50:Znacznik: 2', '50:Znacznik: 3']);
+    expect(labels(s)).toEqual(['50:Marker: 1', '50:Marker: 2', '50:Marker: 3']);
   });
 
   it('stops exactly at the target time and leaves later events', () => {
@@ -44,7 +44,7 @@ describe('advanceTo', () => {
     s = run(s, marker(100, 'A'), 0);
     s = run(s, marker(101, 'B'), 0);
     s = advanceTo(s, 100);
-    expect(labels(s)).toEqual(['100:Znacznik: A']);
+    expect(labels(s)).toEqual(['100:Marker: A']);
     expect(s.events.items).toHaveLength(1);
   });
 
@@ -74,7 +74,7 @@ describe('applyCommand', () => {
     let s = run(createGameState('t'), marker(10, 'A'), 0);
     s = run(s, { type: 'AddPlayer', playerId: 'p1', name: 'Łukasz' }, 20);
     expect(s.time).toBe(20);
-    expect(labels(s)).toEqual(['10:Znacznik: A']);
+    expect(labels(s)).toEqual(['10:Marker: A']);
     expect(s.players.p1?.name).toBe('Łukasz');
   });
 
@@ -83,7 +83,7 @@ describe('applyCommand', () => {
     const out = applyCommand(s, { type: 'AddPlayer', playerId: 'p1', name: 'B' }, 5);
     expect(out.result).toEqual({
       ok: false,
-      error: { code: 'PLAYER_EXISTS', message: 'Gracz o tym identyfikatorze już istnieje.' },
+      error: { code: 'PLAYER_EXISTS', message: 'A player with this id already exists.' },
     });
     expect(out.state.players.p1?.name).toBe('A');
     s = out.state;
@@ -91,7 +91,7 @@ describe('applyCommand', () => {
     expect(empty.result.ok).toBe(false);
     if (!empty.result.ok) expect(empty.result.error.code).toBe('NAME_EMPTY');
     const missing = applyCommand(s, { type: 'RenamePlayer', playerId: 'nobody', name: 'X' }, 5);
-    if (!missing.result.ok) expect(missing.result.error.message).toBe('Nie ma takiego gracza.');
+    if (!missing.result.ok) expect(missing.result.error.message).toBe('No such player.');
     expect(applyCommand(s, marker(-1, 'x'), 5).result.ok).toBe(false);
   });
 
@@ -106,7 +106,7 @@ describe('applyCommand', () => {
 
 describe('determinism', () => {
   const script: TimedCommand[] = [
-    { at: 0, command: { type: 'AddPlayer', playerId: 'p1', name: 'Gracz' } },
+    { at: 0, command: { type: 'AddPlayer', playerId: 'p1', name: 'Player' } },
     { at: 0, command: marker(MS_PER_MINUTE, 'raz', { roll: 100 } as Partial<Command>) },
     {
       at: 1000,
