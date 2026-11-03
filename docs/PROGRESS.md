@@ -21,7 +21,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.4a | 0.1.5 | `v0.1.5-produkcja` | wydobycie, przetwórstwo, magazyn, rdzeń, energia | ✅ |
 | 1.4b | 0.1.6 | `v0.1.6-populacja` | populacja, robotnicy, żywność, silos, głód | ✅ |
 | 1.5 | 0.1.7 | `v0.1.7-budowa` | budowa i ulepszenia budynków | ✅ |
-| 1.6 | 0.1.8 | `v0.1.8-badania` | laboratorium i 13 technologii | ⬜ |
+| 1.6 | 0.1.8 | `v0.1.8-badania` | laboratorium i 13 technologii | ✅ |
 | 1.7 | 0.1.9 | `v0.1.9-mapa-galaktyki` | Web Worker, mapa 3D | ⬜ |
 | 1.8 | 0.1.10 | `v0.1.10-widok-planety` | widok układu, panele, pasek czasu | ⬜ |
 | 1.9 | 0.1.11 | `v0.1.11-ruch-flot` | ruch flot, paliwo, kosmoport, hangary | ⬜ |
@@ -37,6 +37,15 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.1.8: badania (krok 1.6, 3.11.2026)
+- Gracz ma rasę (opcjonalnie w `AddPlayer`) i poziomy technologii (`techs`); `ownerContext` podaje je modułowi modyfikatorów, więc badania od razu działają na produkcję (np. technologie wydobycia +3% za poziom) i na statystyki jednostek.
+- `economy/research.ts`: `researchCost` (koszt poz. 1 × 1,7^(poz−1) × rabat rasy 20% × doganianie; surowiec gałęzi od poz. 5, egzotyczna materia od poz. 8), `researchHours` (30 min × 1,6^(poz−1), −5% za każdy poziom laboratorium powyżej 1, doganianie), `catchUpDiscount` (30% poniżej średniej, 50% przy różnicy ≥ 3), `techLimit` (2 × poziom laboratorium), `researchSlots` (2 od laboratorium poz. 5), `canStartResearch`, `startResearch`, `finalizeResearch`.
+- Badanie to proces planety (`economy/planet.ts`): płaci koszt równomiernie przez cały czas badania z magazynu planety z laboratorium; brak zasobów spowalnia je do tempa dopływu (zupełny brak = pauza), wraca samo po dostawie; laboratorium potrzebuje prądu i obsady. Ukończenie to punkt zmiany (dokładny czas w dzienniku).
+- Komendy `StartResearch`, `CancelResearch` (bez zwrotu); zdarzenie `ResearchCheck` (sprawdza badanie w przewidywanym czasie końca; gdy stoi, co godzinę gry; stare sprawdzenia są pomijane). Ograniczenie: jeśli badanie przyspieszy po dostawie, technologia może zostać zapisana graczowi dopiero przy najbliższym sprawdzeniu albo przy dowolnym rozliczeniu tej planety (czas ukończenia w dzienniku jest dokładny).
+- Decyzje do potwierdzenia: pytanie 31 w `docs/PYTANIA.md`.
+- Stan gry w wersji 6. Testy (8 nowych): tabela kosztów i czasów 9.3.3, rabaty ras i doganianie, płacenie w trakcie i ukończenie w czasie, pauza i wznowienie po dostawie, efekt technologii na wydobycie, zasady (laboratorium, limit poziomu, miejsca), anulowanie.
+- Do sprawdzenia ręcznie: nic w grze (panel badań w kroku 1.8); `pnpm check`.
 
 ### 0.1.7: budowa i ulepszenia (krok 1.5, 3.11.2026)
 - `economy/construction.ts`: `buildingCost(rodzaj, poziom)` (koszt poziomu 1 × 1,6^(poz−1); surowce specjalne od progu: 20 × 1,6^(poz − próg), egzotyczna materia od poz. 9: 5 × 1,6^(poz − 9), bez podwójnego liczenia, gdy koszt bazowy już je zawiera; Forteca −30% dla obrony), `buildingTime` (czas poziomu 1 × 1,8^(poz−1), w pełnych sekundach), `canStartBuilding` / `canStartUpgrade` (jedna budowa naraz, wolne pola, gazowy gigant, energia odnawialna tylko gdy planeta ją ma, kopalnia na złożu planety, budynki jednorazowe, maks. 3 elektrownie, wymagania, koszt mieści się w magazynie, wystarczające zapasy), `startConstruction` (płaci od razu), `finishConstruction`, `cancelConstruction` (zwrot 75%, co się zmieści).

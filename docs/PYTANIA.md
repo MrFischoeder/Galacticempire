@@ -182,3 +182,10 @@ Plan budowy (krok 1.3) wymaga 12 pozycji startowych co najmniej 60 LY od siebie 
 ### 30. 🟢 Zwrot przy anulowaniu budowy (krok 1.5)
 Plan budowy każe ustalić zwrot części kosztu przy anulowaniu.
 **Decyzja przyjęta w kroku 1.5 (do potwierdzenia):** anulowanie zwraca 75% zapłaconego kosztu, niezależnie od tego, jak długo trwała budowa (to, co nie zmieści się w magazynie, przepada). Liczba w `CANCEL_REFUND` (`config/buildings.ts`).
+
+### 31. 🟢 Badania: zasady przyjęte w kroku 1.6 (do potwierdzenia)
+- Badanie biegnie w laboratorium wybranej planety i płaci z jej magazynu (propozycja z pytania 21); limit poziomu i skrócenie czasu liczy się od tego laboratorium; drugie miejsce na badanie, gdy gracz ma gdziekolwiek laboratorium poziomu 5.
+- Skrócenie czasu: 5% za każdy poziom laboratorium powyżej 1 (tabela 9.3.3 podaje czasy dla laboratorium poz. 1 bez skrócenia).
+- Brak zasobów: badanie zwalnia do tempa, w jakim dopływają zasoby (przy zupełnym braku stoi), i samo rusza po dostawie.
+- Anulowanie: zapłacona część przepada, postęp znika.
+- Doganianie: średnia ze wszystkich graczy w świecie (w grze jednoosobowej także AI, pytanie 22); rabat obejmuje koszt (także surowce specjalne) i czas.

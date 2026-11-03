@@ -11,6 +11,7 @@ import {
 } from '../config/resources';
 import { MS_PER_HOUR } from '../config/time';
 import type { PlayerId } from '../core/state';
+import type { TechId } from '../config/techs';
 import { economyBonus, type ModifierContext } from '../rules/modifiers';
 import type { Planet, PlanetId } from '../galaxy/types';
 
@@ -61,6 +62,25 @@ export interface PlanetState {
   construction: Construction | null;
   /** Next building uid. */
   nextUid: number;
+  /** Research run in this planet's laboratory, paid from its stores over time (spec 9.3). */
+  research: ResearchJob[];
+}
+
+/** One technology level being researched (spec 9.3.3). */
+export interface ResearchJob {
+  readonly id: string;
+  readonly tech: TechId;
+  readonly level: number;
+  /** Total cost, paid evenly over `hours` of full-speed research. */
+  readonly cost: Partial<Record<ResourceId, number>>;
+  readonly hours: number;
+  readonly startedAt: number;
+  /** 0..1; research slows down (pauses) while the stores cannot pay. */
+  progress: number;
+  /** Game time it reached 1. */
+  doneAt?: number;
+  /** Game time of the scheduled check (stale checks are ignored). */
+  checkAt?: number;
 }
 
 /** A building being built (level 1) or upgraded (spec 9). */
@@ -95,6 +115,7 @@ export function createPlanetState(
     growth: 0,
     construction: null,
     nextUid: 1,
+    research: [],
   };
 }
 
@@ -174,6 +195,8 @@ interface Process {
   readonly deposit?: MinedResource;
   /** The residents eating (not a building). */
   readonly people?: boolean;
+  /** A research job: its progress per hour at full speed. */
+  readonly research?: { readonly id: string; readonly perHour: number };
 }
 
 function depositOf(planet: Planet, r: MinedResource) {
@@ -262,6 +285,20 @@ function processes(
       powered: false,
     });
   }
+  // Research: pays its cost evenly while it runs, in the laboratory (spec 9.3.3).
+  const labIndex = p.buildings.findIndex((b) => BUILDINGS[b.kind].effect.kind === 'laboratory');
+  const labCrew = labIndex < 0 ? 0 : (staff[labIndex] ?? 1);
+  for (const job of p.research ?? []) {
+    if (job.progress >= 1 || labCrew <= 0) continue;
+    list.push({
+      label: `research:${job.id}`,
+      out: {},
+      inp: scaled(job.cost, labCrew / job.hours),
+      energyOut: 0,
+      powered: true,
+      research: { id: job.id, perHour: labCrew / job.hours },
+    });
+  }
   // The residents eat biomass (spec 6).
   const eat = p.population * POPULATION.biomassPerResident * economyBonus('populationFood', ctx);
   list.push({
@@ -317,6 +354,8 @@ export interface PlanetRates {
   /** Biomass ran out and the residents do not get enough (spec 6). */
   readonly starving: boolean;
   readonly housing: number;
+  /** Progress per hour of every research job. */
+  readonly research: Record<string, number>;
 }
 
 const EPS = 1e-9;
@@ -387,8 +426,11 @@ export function planetRates(
   const extraction: Partial<Record<MinedResource, number>> = {};
   const speed: Record<string, number> = {};
   let fed = 1;
+  const research: Record<string, number> = {};
   list.forEach((proc, i) => {
     speed[proc.label] = Math.max(speed[proc.label] ?? 0, f[i] as number);
+    if (proc.research)
+      research[proc.research.id] = proc.research.perHour * (f[i] as number) * efficiency;
     if (proc.people) fed = f[i] as number;
     if (proc.deposit) {
       const k = (f[i] as number) * efficiency;
@@ -434,6 +476,7 @@ export function planetRates(
     growth,
     starving,
     housing,
+    research,
   };
 }
 
@@ -456,6 +499,10 @@ export function nextChangePoint(p: PlanetState, planet: Planet, rates: PlanetRat
   for (const [r, v] of Object.entries(rates.extraction) as [MinedResource, number][]) {
     const dep = depositOf(planet, r);
     if (dep && v > EPS && dep.pool > EPS) t = Math.min(t, dep.pool / v);
+  }
+  for (const job of p.research ?? []) {
+    const v = rates.research[job.id] ?? 0;
+    if (v > EPS && job.progress < 1) t = Math.min(t, (1 - job.progress) / v);
   }
   const g = progressStart(p.growth, rates.growth);
   if (rates.growth > EPS) t = Math.min(t, (1 - g) / rates.growth);
@@ -528,6 +575,15 @@ export function settlePlanet(
     }
     p.growth = g;
     left -= dt;
+    for (const job of p.research ?? []) {
+      const v = rates.research[job.id] ?? 0;
+      if (v <= 0 || job.progress >= 1) continue;
+      job.progress += v * dt;
+      if (job.progress >= 1 - SNAP) {
+        job.progress = 1;
+        job.doneAt = Math.round(time - left * MS_PER_HOUR);
+      }
+    }
   }
   p.updatedAt = time;
   return segments;

@@ -1,6 +1,7 @@
 import { BUILDINGS } from '../config/buildings';
 import { settleOwned } from '../economy/access';
 import { finishConstruction } from '../economy/construction';
+import { scheduleResearchCheck } from '../economy/schedule';
 import { enqueue } from './queue';
 import { Rng } from './rng';
 import type { GameState } from './state';
@@ -9,7 +10,14 @@ import type { GameState } from './state';
  * Events processed by advanceTo at their game time. Later steps add arrivals, finished
  * buildings, battles and so on. `DebugMarker` exists for tests and the debug panel.
  */
-export type GameEvent = DebugMarkerEvent | ConstructionDoneEvent;
+export type GameEvent = DebugMarkerEvent | ConstructionDoneEvent | ResearchCheckEvent;
+
+/** Look at a research job: finish it, or check again at its new expected end (spec 9.3). */
+export interface ResearchCheckEvent {
+  readonly type: 'ResearchCheck';
+  readonly planetId: string;
+  readonly jobId: string;
+}
 
 /** A building or an upgrade finishes (spec 9). */
 export interface ConstructionDoneEvent {
@@ -34,6 +42,14 @@ type Handlers = { [K in GameEvent['type']]: Handler<Extract<GameEvent, { type: K
 
 /** Event handlers mutate the (already cloned) state passed in by advanceTo. */
 export const EVENT_HANDLERS: Handlers = {
+  ResearchCheck(state, event) {
+    const job = state.planets[event.planetId]?.research.find((j) => j.id === event.jobId);
+    if (!job || job.checkAt !== state.time) return; // finished, cancelled or a stale check
+    settleOwned(state, event.planetId); // finishes the job if it is done
+    if (state.planets[event.planetId]?.research.some((j) => j.id === event.jobId)) {
+      scheduleResearchCheck(state, event.planetId, event.jobId);
+    }
+  },
   ConstructionDone(state, event) {
     const p = settleOwned(state, event.planetId);
     const c = p?.construction;

@@ -1,4 +1,8 @@
 import { BUILDINGS, type BuildingId } from '../config/buildings';
+import { RACES, type RaceId } from '../config/races';
+import type { TechId } from '../config/techs';
+import { canStartResearch, startResearch } from '../economy/research';
+import { scheduleResearchCheck } from '../economy/schedule';
 import type { MinedResource, ResourceAmounts, ResourceId } from '../config/resources';
 import { galaxyPlanet, ownerContext, settleOwned } from '../economy/access';
 import {
@@ -17,6 +21,8 @@ import type { GameState, PlayerId } from './state';
  * has a validator (no side effects) and an apply step (mutates an already cloned state).
  */
 export type Command =
+  | StartResearchCommand
+  | CancelResearchCommand
   | StartBuildingCommand
   | StartUpgradeCommand
   | CancelConstructionCommand
@@ -26,6 +32,22 @@ export type Command =
   | DebugGivePlanetCommand
   | DebugSetBuildingCommand
   | DebugAddResourcesCommand;
+
+/** Research the next level of a technology in a planet's laboratory (spec 9.3). */
+export interface StartResearchCommand {
+  readonly type: 'StartResearch';
+  readonly playerId: PlayerId;
+  readonly planetId: string;
+  readonly tech: TechId;
+}
+
+/** Stop a research job. What was paid so far is lost (step 1.6 decision). */
+export interface CancelResearchCommand {
+  readonly type: 'CancelResearch';
+  readonly playerId: PlayerId;
+  readonly planetId: string;
+  readonly jobId: string;
+}
 
 /** Put up a new building (level 1) on an owned planet (spec 9). */
 export interface StartBuildingCommand {
@@ -83,6 +105,7 @@ export interface AddPlayerCommand {
   readonly type: 'AddPlayer';
   readonly playerId: PlayerId;
   readonly name: string;
+  readonly race?: RaceId;
 }
 
 export interface RenamePlayerCommand {
@@ -140,6 +163,41 @@ function schedule(state: GameState, planetId: string): void {
 }
 
 export const COMMANDS: Specs = {
+  StartResearch: {
+    validate(state, c) {
+      if (!state.players[c.playerId]) return fail('NO_PLAYER', 'Nie ma takiego gracza.');
+      if (!state.planets[c.planetId]) return fail('NOT_OWNED', 'Ta planeta nie należy do nikogo.');
+      // Jobs that have just finished are counted as done (settled copy).
+      return canStartResearch(settledCopy(state, c.planetId), c.playerId, c.planetId, c.tech);
+    },
+    apply(state, c) {
+      const p = settleOwned(state, c.planetId);
+      if (!p) return;
+      const job = startResearch(
+        state,
+        c.playerId,
+        c.planetId,
+        c.tech,
+        state.time,
+        ownerContext(state, p),
+      );
+      scheduleResearchCheck(state, c.planetId, job.id);
+    },
+  },
+  CancelResearch: {
+    validate(state, c) {
+      const own = ownedBy(state, c.playerId, c.planetId);
+      if (!own.ok) return own;
+      if (!state.planets[c.planetId]?.research.some((j) => j.id === c.jobId)) {
+        return fail('NO_SUCH_RESEARCH', 'Takie badanie nie trwa na tej planecie.');
+      }
+      return OK;
+    },
+    apply(state, c) {
+      const p = settleOwned(state, c.planetId);
+      if (p) p.research = p.research.filter((j) => j.id !== c.jobId);
+    },
+  },
   StartBuilding: {
     validate(state, c) {
       const own = ownedBy(state, c.playerId, c.planetId);
@@ -200,10 +258,16 @@ export const COMMANDS: Specs = {
       if (state.players[c.playerId]) {
         return fail('PLAYER_EXISTS', 'Gracz o tym identyfikatorze już istnieje.');
       }
+      if (c.race !== undefined && !(c.race in RACES)) return fail('NO_RACE', 'Nie ma takiej rasy.');
       return checkName(c.name);
     },
     apply(state, c) {
-      state.players[c.playerId] = { id: c.playerId, name: c.name.trim() };
+      state.players[c.playerId] = {
+        id: c.playerId,
+        name: c.name.trim(),
+        ...(c.race ? { race: c.race } : {}),
+        techs: {},
+      };
     },
   },
   RenamePlayer: {

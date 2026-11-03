@@ -1,14 +1,14 @@
 import type { GameState } from '../core/state';
 import type { Planet, PlanetId } from '../galaxy/types';
 import { settlePlanet, type PlanetState } from './planet';
+import { finalizeResearch } from './research';
 import type { ModifierContext } from '../rules/modifiers';
 
-/** Modifier context of a planet's owner (race and technologies come in later steps). */
+/** Modifier context of a planet's owner: race and researched technologies. */
 export function ownerContext(state: GameState, planet: PlanetState): ModifierContext {
-  // Race and technologies of the owner are added in steps 1.6 and 4.2.
-  void state;
-  void planet;
-  return {};
+  const player = state.players[planet.owner];
+  if (!player) return {};
+  return { ...(player.race ? { race: player.race } : {}), techs: player.techs };
 }
 
 export function galaxyPlanet(state: GameState, id: PlanetId): Planet {
@@ -23,6 +23,7 @@ export function settleOwned(state: GameState, id: PlanetId): PlanetState | undef
   if (!p) return undefined;
   if (p.updatedAt < state.time)
     settlePlanet(p, galaxyPlanet(state, id), state.time, ownerContext(state, p));
+  finalizeResearch(state, id);
   return p;
 }
 

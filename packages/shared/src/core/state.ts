@@ -1,18 +1,24 @@
 import { createQueue, type EventQueue } from './queue';
 import { hashString, type RngState } from './rng';
 import type { GameEvent } from './events';
+import type { RaceId } from '../config/races';
+import type { TechId } from '../config/techs';
 import { generateGalaxy, type GalaxyOptions } from '../galaxy/generate';
 import type { Galaxy, PlanetId } from '../galaxy/types';
 import type { PlanetState } from '../economy/planet';
 
 /** Bump when the shape of GameState changes (saves are migrated by version). */
-export const STATE_VERSION = 5;
+export const STATE_VERSION = 6;
 
 export type PlayerId = string;
 
 export interface Player {
   readonly id: PlayerId;
   name: string;
+  /** Race (spec 3); absent = no race modifiers (tests, debug). */
+  readonly race?: RaceId;
+  /** Researched technology levels (spec 9.3); they belong to the player, not a planet. */
+  techs: Partial<Record<TechId, number>>;
 }
 
 /** The generated world. Planets change during the game (owners, buildings, deposits). */
