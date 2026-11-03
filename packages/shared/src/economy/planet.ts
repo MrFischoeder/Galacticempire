@@ -36,6 +36,8 @@ export const STORED_RESOURCES: readonly ResourceId[] = [
 export const STOCKED: readonly ResourceId[] = [...STORED_RESOURCES, 'biomass'];
 
 export interface BuildingState {
+  /** Stable id within the planet (commands refer to buildings by it). */
+  readonly uid?: number;
   readonly kind: BuildingId;
   level: number;
   /** For a mine: the deposit it works. */
@@ -55,6 +57,25 @@ export interface PlanetState {
   population: number;
   /** Progress to the next resident (+1) or the next death (-1). */
   growth: number;
+  /** The one construction going on (spec 9: one at a time per planet). */
+  construction: Construction | null;
+  /** Next building uid. */
+  nextUid: number;
+}
+
+/** A building being built (level 1) or upgraded (spec 9). */
+export interface Construction {
+  readonly kind: BuildingId;
+  readonly deposit?: MinedResource;
+  /** The building being upgraded; absent for a new building (it gets `newUid`). */
+  readonly uid?: number;
+  readonly newUid?: number;
+  /** Level it reaches when done. */
+  readonly level: number;
+  readonly startedAt: number;
+  readonly endsAt: number;
+  /** What was paid (for refunds). */
+  readonly cost: Partial<Record<ResourceId, number>>;
 }
 
 export function createPlanetState(
@@ -63,7 +84,18 @@ export function createPlanetState(
   time: number,
   population: number = CORE.residents,
 ): PlanetState {
-  return { id, owner, updatedAt: time, buildings: [], stock: {}, energy: 0, population, growth: 0 };
+  return {
+    id,
+    owner,
+    updatedAt: time,
+    buildings: [],
+    stock: {},
+    energy: 0,
+    population,
+    growth: 0,
+    construction: null,
+    nextUid: 1,
+  };
 }
 
 const grow = (base: number, growth: number, level: number) => base * growth ** (level - 1);

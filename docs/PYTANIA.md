@@ -178,3 +178,7 @@ Plan budowy (krok 1.3) wymaga 12 pozycji startowych co najmniej 60 LY od siebie 
 **Rozwiązanie przyjęte w kroku 1.3 (do potwierdzenia):** domyślnie 60 układów (do ok. 10 graczy); większa gra dostaje większą galaktykę o tej samej gęstości: `systemsFor(gracze)` = max(60, 7 × gracze), np. 84 układy dla 12 graczy (zawsze 12 pozycji). Alternatywy: zmniejszyć odstęp startowy do ok. 50 LY albo zwiększyć gęstość układów.
 
 **Odpowiedź (3.11.2026):** zaakceptowane: 60 układów domyślnie, większa galaktyka o tej samej gęstości dla większej liczby graczy.
+
+### 30. 🟢 Zwrot przy anulowaniu budowy (krok 1.5)
+Plan budowy każe ustalić zwrot części kosztu przy anulowaniu.
+**Decyzja przyjęta w kroku 1.5 (do potwierdzenia):** anulowanie zwraca 75% zapłaconego kosztu, niezależnie od tego, jak długo trwała budowa (to, co nie zmieści się w magazynie, przepada). Liczba w `CANCEL_REFUND` (`config/buildings.ts`).

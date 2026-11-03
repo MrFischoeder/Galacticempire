@@ -20,7 +20,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.3 | 0.1.4 | `v0.1.4-galaktyka` | generator galaktyki i tras | ✅ |
 | 1.4a | 0.1.5 | `v0.1.5-produkcja` | wydobycie, przetwórstwo, magazyn, rdzeń, energia | ✅ |
 | 1.4b | 0.1.6 | `v0.1.6-populacja` | populacja, robotnicy, żywność, silos, głód | ✅ |
-| 1.5 | 0.1.7 | `v0.1.7-budowa` | budowa i ulepszenia budynków | ⬜ |
+| 1.5 | 0.1.7 | `v0.1.7-budowa` | budowa i ulepszenia budynków | ✅ |
 | 1.6 | 0.1.8 | `v0.1.8-badania` | laboratorium i 13 technologii | ⬜ |
 | 1.7 | 0.1.9 | `v0.1.9-mapa-galaktyki` | Web Worker, mapa 3D | ⬜ |
 | 1.8 | 0.1.10 | `v0.1.10-widok-planety` | widok układu, panele, pasek czasu | ⬜ |
@@ -37,6 +37,14 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.1.7: budowa i ulepszenia (krok 1.5, 3.11.2026)
+- `economy/construction.ts`: `buildingCost(rodzaj, poziom)` (koszt poziomu 1 × 1,6^(poz−1); surowce specjalne od progu: 20 × 1,6^(poz − próg), egzotyczna materia od poz. 9: 5 × 1,6^(poz − 9), bez podwójnego liczenia, gdy koszt bazowy już je zawiera; Forteca −30% dla obrony), `buildingTime` (czas poziomu 1 × 1,8^(poz−1), w pełnych sekundach), `canStartBuilding` / `canStartUpgrade` (jedna budowa naraz, wolne pola, gazowy gigant, energia odnawialna tylko gdy planeta ją ma, kopalnia na złożu planety, budynki jednorazowe, maks. 3 elektrownie, wymagania, koszt mieści się w magazynie, wystarczające zapasy), `startConstruction` (płaci od razu), `finishConstruction`, `cancelConstruction` (zwrot 75%, co się zmieści).
+- Komendy `StartBuilding`, `StartUpgrade` (budynki mają stałe `uid`), `CancelConstruction`; zdarzenie `ConstructionDone` w kolejce (zakończenie dokładnie w czasie gry, wpis w dzienniku; po anulowaniu stare zdarzenie nic nie robi). Budynek ulepszany działa na starym poziomie do końca budowy. Komunikaty po polsku (np. „Za mało rudy metalu: potrzeba 25, jest 0.”).
+- Decyzja do potwierdzenia (pytanie 30): anulowanie zwraca 75% kosztu.
+- Stan gry w wersji 5 (`construction`, `nextUid` na planecie).
+- Testy (9 nowych): koszty i czasy dla poziomów 1, 5, 10, progi surowców specjalnych, rabat Fortecy, budowa od początku do końca w dokładnym czasie, ulepszenie, odrzucenia (zasoby, cudza planeta, złoże, wymaganie, pojemność magazynu, zajęta kolejka, nieistniejący budynek), limity (jednorazowe, 3 elektrownie, pola), anulowanie ze zwrotem, pierwszy budynek po ok. 1,25 h od pustego startu.
+- Do sprawdzenia ręcznie: nic w grze (panel planety w kroku 1.8); `pnpm check`.
 
 ### 0.1.6: populacja, robotnicy, biomasa (krok 1.4b, 3.11.2026)
 - `economy/planet.ts` rozszerzony: mieszkańcy (`population`, liczeni w całych osobach) i postęp do następnego (`growth`: +1 przybywa mieszkaniec, −1 ktoś umiera; każda taka chwila to punkt zmiany, więc wynik nie zależy od długości kroków), pojemność mieszkań (rdzeń 10 + 20 na poziom mieszkania; gazowy gigant bez mieszkań), silosy (rdzeń 100 + 300 × 1,3^(poz−1)), farmy (30/h × 1,25^(poz−1) × żyzność), zbiór awaryjny biomasy 5/h na żyznej planecie.

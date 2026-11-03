@@ -6,7 +6,7 @@ import type { Galaxy, PlanetId } from '../galaxy/types';
 import type { PlanetState } from '../economy/planet';
 
 /** Bump when the shape of GameState changes (saves are migrated by version). */
-export const STATE_VERSION = 4;
+export const STATE_VERSION = 5;
 
 export type PlayerId = string;
 

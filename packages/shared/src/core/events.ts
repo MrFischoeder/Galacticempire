@@ -1,3 +1,6 @@
+import { BUILDINGS } from '../config/buildings';
+import { settleOwned } from '../economy/access';
+import { finishConstruction } from '../economy/construction';
 import { enqueue } from './queue';
 import { Rng } from './rng';
 import type { GameState } from './state';
@@ -6,7 +9,15 @@ import type { GameState } from './state';
  * Events processed by advanceTo at their game time. Later steps add arrivals, finished
  * buildings, battles and so on. `DebugMarker` exists for tests and the debug panel.
  */
-export type GameEvent = DebugMarkerEvent;
+export type GameEvent = DebugMarkerEvent | ConstructionDoneEvent;
+
+/** A building or an upgrade finishes (spec 9). */
+export interface ConstructionDoneEvent {
+  readonly type: 'ConstructionDone';
+  readonly planetId: string;
+  /** Identifies the construction: a cancelled one leaves a stale event that does nothing. */
+  readonly startedAt: number;
+}
 
 export interface DebugMarkerEvent {
   readonly type: 'DebugMarker';
@@ -23,6 +34,19 @@ type Handlers = { [K in GameEvent['type']]: Handler<Extract<GameEvent, { type: K
 
 /** Event handlers mutate the (already cloned) state passed in by advanceTo. */
 export const EVENT_HANDLERS: Handlers = {
+  ConstructionDone(state, event) {
+    const p = settleOwned(state, event.planetId);
+    const c = p?.construction;
+    if (!p || !c || c.startedAt !== event.startedAt) return;
+    const b = finishConstruction(p);
+    if (b) {
+      const name = state.world.galaxy.planets[event.planetId]?.name ?? event.planetId;
+      state.log.push({
+        at: state.time,
+        text: `${name}: ${BUILDINGS[b.kind].name} poziom ${b.level} gotowy.`,
+      });
+    }
+  },
   DebugMarker(state, event) {
     let text = `Znacznik: ${event.label}`;
     if (event.roll !== undefined) {

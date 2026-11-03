@@ -482,3 +482,6 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
 
 /** Ids in a stable order (for the UI and iteration). */
 export const BUILDING_IDS = Object.keys(BUILDINGS) as BuildingId[];
+
+/** Cancelling a construction returns this share of what was paid (step 1.5 decision). */
+export const CANCEL_REFUND = 0.75;

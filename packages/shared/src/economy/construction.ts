@@ -1,0 +1,218 @@
+import { BUILD, BUILDINGS, CANCEL_REFUND, type BuildingId } from '../config/buildings';
+import { PLANET_TYPES } from '../config/planets';
+import type { MinedResource, ResourceAmounts, ResourceId } from '../config/resources';
+import { MS_PER_MINUTE } from '../config/time';
+import { UNITS, type UnitId } from '../config/units';
+import { fail, OK, type Result } from '../core/result';
+import type { Planet } from '../galaxy/types';
+import { unitMultiplier, type ModifierContext } from '../rules/modifiers';
+import { capacityOf, type BuildingState, type PlanetState } from './planet';
+
+/** Building, upgrading and cancelling (spec 9, balance docs/BALANS.md), step 1.5. */
+
+/** Cost of reaching `level` (level 1 = putting the building up). */
+export function buildingCost(
+  kind: BuildingId,
+  level: number,
+  ctx: ModifierContext = {},
+): ResourceAmounts {
+  const spec = BUILDINGS[kind];
+  const k = BUILD.costGrowth ** (level - 1);
+  // Defensive structures are also units: race modifiers (e.g. Fortress -30%) apply.
+  const race =
+    kind in UNITS
+      ? unitMultiplier(kind as UnitId, 'cost', { ...(ctx.race ? { race: ctx.race } : {}) })
+      : 1;
+  const cost: ResourceAmounts = {};
+  for (const [r, n] of Object.entries(spec.cost) as [ResourceId, number][]) {
+    cost[r] = Math.round(n * k * race);
+  }
+  // Special resources from their gate level (docs/SUROWCE.md) unless the base cost has them.
+  for (const gate of spec.special) {
+    if (level < gate.fromLevel || spec.cost[gate.resource] !== undefined) continue;
+    const exotic = gate.resource === 'exotic';
+    const base = exotic ? BUILD.exoticBase : BUILD.specialBase;
+    cost[gate.resource] =
+      (cost[gate.resource] ?? 0) +
+      Math.round(base * BUILD.specialGrowth ** (level - gate.fromLevel));
+  }
+  return cost;
+}
+
+/** Build time of `level` in game ms. */
+export function buildingTime(kind: BuildingId, level: number): number {
+  const minutes = BUILDINGS[kind].buildMinutes * BUILD.timeGrowth ** (level - 1);
+  return Math.round(minutes * 60) * 1000;
+}
+
+export function fieldsUsed(p: PlanetState): number {
+  return p.buildings.length + (p.construction && p.construction.uid === undefined ? 1 : 0);
+}
+
+export function findBuilding(p: PlanetState, uid: number): BuildingState | undefined {
+  return p.buildings.find((b) => b.uid === uid);
+}
+
+function hasLevel(p: PlanetState, kind: BuildingId, level: number): boolean {
+  return p.buildings.some((b) => b.kind === kind && b.level >= level);
+}
+
+const NAMES: Record<ResourceId, string> = {
+  metal: 'rudy metalu',
+  deuterium: 'lodu deuterowego',
+  titanium: 'rudy tytanu',
+  silicon: 'krzemu',
+  biomass: 'biomasy',
+  fissile: 'materiału rozpadowego',
+  crystalite: 'krystalitu',
+  helium3: 'helu-3',
+  exotic: 'egzotycznej materii',
+  fuel: 'paliwa',
+  alloy: 'stopów',
+  components: 'komponentów',
+};
+
+/** Can the planet pay and store this cost right now? */
+export function checkCost(p: PlanetState, cost: ResourceAmounts): Result {
+  for (const [r, n] of Object.entries(cost) as [ResourceId, number][]) {
+    if (n > capacityOf(p, r)) {
+      return fail(
+        'COST_EXCEEDS_STORAGE',
+        `Koszt ${NAMES[r]} (${n}) przekracza pojemność magazynu. Najpierw rozbuduj magazyn.`,
+      );
+    }
+  }
+  for (const [r, n] of Object.entries(cost) as [ResourceId, number][]) {
+    const have = p.stock[r] ?? 0;
+    if (have + 1e-9 < n) {
+      return fail('NOT_ENOUGH', `Za mało ${NAMES[r]}: potrzeba ${n}, jest ${Math.floor(have)}.`);
+    }
+  }
+  return OK;
+}
+
+function checkRequirements(p: PlanetState, kind: BuildingId): Result {
+  for (const req of BUILDINGS[kind].requires) {
+    if (!hasLevel(p, req.building, req.level)) {
+      return fail(
+        'REQUIREMENT',
+        `Wymaga: ${BUILDINGS[req.building].name} poziom ${req.level} na tej planecie.`,
+      );
+    }
+  }
+  return OK;
+}
+
+/** Validation of a new building (level 1). */
+export function canStartBuilding(
+  p: PlanetState,
+  planet: Planet,
+  kind: BuildingId,
+  deposit: MinedResource | undefined,
+  ctx: ModifierContext = {},
+): Result {
+  const spec = BUILDINGS[kind];
+  if (!spec) return fail('NO_BUILDING', 'Nie ma takiego budynku.');
+  if (p.construction)
+    return fail('BUSY', 'Na tej planecie już trwa budowa. Poczekaj albo ją anuluj.');
+  if (fieldsUsed(p) >= planet.fields) return fail('NO_FIELDS', 'Brak wolnych pól na tej planecie.');
+  if (planet.type === 'gasGiant' && !spec.gasGiantOk) {
+    return fail('GAS_GIANT', 'Na gazowym gigancie nie można postawić tego budynku.');
+  }
+  if (!PLANET_TYPES[planet.type].housing && spec.effect.kind === 'housing') {
+    return fail('GAS_GIANT', 'Na gazowym gigancie nie można budować mieszkań.');
+  }
+  if (spec.effect.kind === 'renewable' && !planet.renewable) {
+    return fail('NO_RENEWABLE', 'Ta planeta nie ma źródła energii odnawialnej.');
+  }
+  if (spec.effect.kind === 'mine') {
+    if (!deposit || !planet.deposits.some((d) => d.resource === deposit)) {
+      return fail('NO_DEPOSIT', 'Kopalnia musi stać na złożu tej planety.');
+    }
+  }
+  const count = p.buildings.filter((b) => b.kind === kind).length;
+  if (spec.unique && count > 0)
+    return fail('UNIQUE', 'Ten budynek może stać na planecie tylko raz.');
+  if (spec.maxCount !== undefined && count >= spec.maxCount) {
+    return fail('MAX_COUNT', `Na planecie może stać najwyżej ${spec.maxCount} takich budynków.`);
+  }
+  const req = checkRequirements(p, kind);
+  if (!req.ok) return req;
+  return checkCost(p, buildingCost(kind, 1, ctx));
+}
+
+/** Validation of an upgrade of the building `uid`. */
+export function canStartUpgrade(p: PlanetState, uid: number, ctx: ModifierContext = {}): Result {
+  const b = findBuilding(p, uid);
+  if (!b) return fail('NO_SUCH_BUILDING', 'Nie ma takiego budynku na tej planecie.');
+  if (p.construction)
+    return fail('BUSY', 'Na tej planecie już trwa budowa. Poczekaj albo ją anuluj.');
+  const spec = BUILDINGS[b.kind];
+  if (b.level >= spec.maxLevel) return fail('MAX_LEVEL', 'Ten budynek ma już najwyższy poziom.');
+  return checkCost(p, buildingCost(b.kind, b.level + 1, ctx));
+}
+
+/** Starts building (the planet must be settled to `now` and validated). Pays the cost. */
+export function startConstruction(
+  p: PlanetState,
+  target: { kind: BuildingId; deposit?: MinedResource; uid?: number },
+  now: number,
+  ctx: ModifierContext = {},
+): PlanetState['construction'] {
+  const existing = target.uid !== undefined ? findBuilding(p, target.uid) : undefined;
+  const level = existing ? existing.level + 1 : 1;
+  const cost = buildingCost(target.kind, level, ctx);
+  for (const [r, n] of Object.entries(cost) as [ResourceId, number][]) {
+    p.stock[r] = Math.max(0, (p.stock[r] ?? 0) - n);
+  }
+  p.construction = {
+    kind: target.kind,
+    ...(target.deposit ? { deposit: target.deposit } : {}),
+    ...(existing ? { uid: target.uid as number } : { newUid: p.nextUid++ }),
+    level,
+    startedAt: now,
+    endsAt: now + buildingTime(target.kind, level),
+    cost,
+  };
+  return p.construction;
+}
+
+/** Finishes the construction (the planet must be settled to its end time). */
+export function finishConstruction(p: PlanetState): BuildingState | undefined {
+  const c = p.construction;
+  if (!c) return undefined;
+  p.construction = null;
+  if (c.uid !== undefined) {
+    const b = findBuilding(p, c.uid);
+    if (b) b.level = c.level;
+    return b;
+  }
+  const b: BuildingState = {
+    uid: c.newUid as number,
+    kind: c.kind,
+    level: 1,
+    ...(c.deposit ? { deposit: c.deposit } : {}),
+  };
+  p.buildings.push(b);
+  return b;
+}
+
+/** Cancels the construction and returns CANCEL_REFUND of what was paid (what fits). */
+export function cancelConstruction(p: PlanetState): ResourceAmounts {
+  const c = p.construction;
+  if (!c) return {};
+  p.construction = null;
+  const back: ResourceAmounts = {};
+  for (const [r, n] of Object.entries(c.cost) as [ResourceId, number][]) {
+    const refund = Math.floor(n * CANCEL_REFUND);
+    const room = capacityOf(p, r) - (p.stock[r] ?? 0);
+    const got = Math.max(0, Math.min(refund, room));
+    p.stock[r] = (p.stock[r] ?? 0) + got;
+    back[r] = got;
+  }
+  return back;
+}
+
+/** Minutes of a level, for the UI. */
+export const buildingMinutes = (kind: BuildingId, level: number) =>
+  buildingTime(kind, level) / MS_PER_MINUTE;

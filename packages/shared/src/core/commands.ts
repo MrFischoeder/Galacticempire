@@ -1,6 +1,12 @@
 import { BUILDINGS, type BuildingId } from '../config/buildings';
 import type { MinedResource, ResourceAmounts, ResourceId } from '../config/resources';
-import { settleOwned } from '../economy/access';
+import { galaxyPlanet, ownerContext, settleOwned } from '../economy/access';
+import {
+  canStartBuilding,
+  canStartUpgrade,
+  cancelConstruction,
+  startConstruction,
+} from '../economy/construction';
 import { createPlanetState, resourceCapacity, STORED_RESOURCES } from '../economy/planet';
 import { scheduleEvent } from './events';
 import { fail, OK, type Result } from './result';
@@ -11,12 +17,40 @@ import type { GameState, PlayerId } from './state';
  * has a validator (no side effects) and an apply step (mutates an already cloned state).
  */
 export type Command =
+  | StartBuildingCommand
+  | StartUpgradeCommand
+  | CancelConstructionCommand
   | AddPlayerCommand
   | RenamePlayerCommand
   | DebugScheduleMarkerCommand
   | DebugGivePlanetCommand
   | DebugSetBuildingCommand
   | DebugAddResourcesCommand;
+
+/** Put up a new building (level 1) on an owned planet (spec 9). */
+export interface StartBuildingCommand {
+  readonly type: 'StartBuilding';
+  readonly playerId: PlayerId;
+  readonly planetId: string;
+  readonly kind: BuildingId;
+  /** For a mine: the deposit it works. */
+  readonly deposit?: MinedResource;
+}
+
+/** Raise a building one level (spec 9). */
+export interface StartUpgradeCommand {
+  readonly type: 'StartUpgrade';
+  readonly playerId: PlayerId;
+  readonly planetId: string;
+  readonly uid: number;
+}
+
+/** Stop the construction going on; part of the cost comes back (CANCEL_REFUND). */
+export interface CancelConstructionCommand {
+  readonly type: 'CancelConstruction';
+  readonly playerId: PlayerId;
+  readonly planetId: string;
+}
 
 /** Debug only: makes a player the owner of a free planet (proper start positions: step 4.2). */
 export interface DebugGivePlanetCommand {
@@ -84,7 +118,83 @@ interface CommandSpec<C extends Command> {
 }
 type Specs = { [K in Command['type']]: CommandSpec<Extract<Command, { type: K }>> };
 
+/** The planet must exist, be owned by the player; it is settled to now (validation reads it). */
+function ownedBy(state: Readonly<GameState>, playerId: PlayerId, planetId: string): Result {
+  const p = state.planets[planetId];
+  if (!p) return fail('NOT_OWNED', 'Ta planeta nie należy do nikogo.');
+  if (p.owner !== playerId) return fail('NOT_YOURS', 'To nie jest Twoja planeta.');
+  return OK;
+}
+
+/** Validation reads the stores, so it works on a settled copy (validate must not mutate). */
+function settledCopy(state: Readonly<GameState>, planetId: string): GameState {
+  const copy = JSON.parse(JSON.stringify(state)) as GameState;
+  settleOwned(copy, planetId);
+  return copy;
+}
+
+function schedule(state: GameState, planetId: string): void {
+  const c = state.planets[planetId]?.construction;
+  if (c)
+    scheduleEvent(state, c.endsAt, { type: 'ConstructionDone', planetId, startedAt: c.startedAt });
+}
+
 export const COMMANDS: Specs = {
+  StartBuilding: {
+    validate(state, c) {
+      const own = ownedBy(state, c.playerId, c.planetId);
+      if (!own.ok) return own;
+      const s = settledCopy(state, c.planetId);
+      const p = s.planets[c.planetId] as NonNullable<GameState['planets'][string]>;
+      return canStartBuilding(
+        p,
+        galaxyPlanet(s, c.planetId),
+        c.kind,
+        c.deposit,
+        ownerContext(s, p),
+      );
+    },
+    apply(state, c) {
+      const p = settleOwned(state, c.planetId);
+      if (!p) return;
+      startConstruction(
+        p,
+        { kind: c.kind, ...(c.deposit ? { deposit: c.deposit } : {}) },
+        state.time,
+        ownerContext(state, p),
+      );
+      schedule(state, c.planetId);
+    },
+  },
+  StartUpgrade: {
+    validate(state, c) {
+      const own = ownedBy(state, c.playerId, c.planetId);
+      if (!own.ok) return own;
+      const s = settledCopy(state, c.planetId);
+      const p = s.planets[c.planetId] as NonNullable<GameState['planets'][string]>;
+      return canStartUpgrade(p, c.uid, ownerContext(s, p));
+    },
+    apply(state, c) {
+      const p = settleOwned(state, c.planetId);
+      const b = p?.buildings.find((x) => x.uid === c.uid);
+      if (!p || !b) return;
+      startConstruction(p, { kind: b.kind, uid: c.uid }, state.time, ownerContext(state, p));
+      schedule(state, c.planetId);
+    },
+  },
+  CancelConstruction: {
+    validate(state, c) {
+      const own = ownedBy(state, c.playerId, c.planetId);
+      if (!own.ok) return own;
+      if (!state.planets[c.planetId]?.construction)
+        return fail('NOTHING_TO_CANCEL', 'Na tej planecie nic się nie buduje.');
+      return OK;
+    },
+    apply(state, c) {
+      const p = settleOwned(state, c.planetId);
+      if (p) cancelConstruction(p);
+    },
+  },
   AddPlayer: {
     validate(state, c) {
       if (state.players[c.playerId]) {
@@ -168,6 +278,7 @@ export const COMMANDS: Specs = {
         existing.level = c.level;
       } else {
         p.buildings.push({
+          uid: p.nextUid++,
           kind: c.kind,
           level: c.level,
           ...(c.deposit ? { deposit: c.deposit } : {}),
