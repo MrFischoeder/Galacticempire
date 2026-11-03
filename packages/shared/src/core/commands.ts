@@ -9,9 +9,16 @@ import {
   canStartBuilding,
   canStartUpgrade,
   cancelConstruction,
+  firstFreeSlot,
   startConstruction,
 } from '../economy/construction';
-import { createPlanetState, resourceCapacity, STORED_RESOURCES } from '../economy/planet';
+import {
+  capacityOf,
+  createPlanetState,
+  resourceCapacity,
+  STOCKED,
+  STORED_RESOURCES,
+} from '../economy/planet';
 import { scheduleEvent } from './events';
 import { fail, OK, type Result } from './result';
 import type { GameState, PlayerId } from './state';
@@ -48,6 +55,8 @@ export interface StartBuildingCommand {
   readonly kind: BuildingId;
   /** For a mine: the deposit it works. */
   readonly deposit?: MinedResource;
+  /** The field to build on (planet surface view); default: the first free one. */
+  readonly slot?: number;
 }
 
 /** Raise a building one level (spec 9). */
@@ -187,14 +196,20 @@ export const COMMANDS: Specs = {
         c.kind,
         c.deposit,
         ownerContext(s, p),
+        c.slot,
       );
     },
     apply(state, c) {
       const p = settleOwned(state, c.planetId);
       if (!p) return;
+      const fields = galaxyPlanet(state, c.planetId).fields;
       startConstruction(
         p,
-        { kind: c.kind, ...(c.deposit ? { deposit: c.deposit } : {}) },
+        {
+          kind: c.kind,
+          ...(c.deposit ? { deposit: c.deposit } : {}),
+          slot: c.slot ?? firstFreeSlot(p, fields),
+        },
         state.time,
         ownerContext(state, p),
       );
@@ -318,7 +333,10 @@ export const COMMANDS: Specs = {
       } else if (existing) {
         existing.level = c.level;
       } else {
+        const fields = state.world.galaxy.planets[c.planetId]?.fields ?? 0;
+        const slot = firstFreeSlot(p, fields);
         p.buildings.push({
+          ...(slot >= 0 ? { slot } : {}),
           uid: p.nextUid++,
           kind: c.kind,
           level: c.level,
@@ -336,8 +354,8 @@ export const COMMANDS: Specs = {
     validate(state, c) {
       if (!state.planets[c.planetId]) return fail('NOT_OWNED', 'This planet has no owner.');
       for (const [r, n] of Object.entries(c.amounts)) {
-        if (!(STORED_RESOURCES as readonly string[]).includes(r)) {
-          return fail('BAD_RESOURCE', 'This resource cannot be kept in the warehouse.');
+        if (!(STOCKED as readonly string[]).includes(r)) {
+          return fail('BAD_RESOURCE', 'This resource cannot be kept on a planet.');
         }
         if (!Number.isFinite(n) || n < 0)
           return fail('BAD_AMOUNT', 'The amount must be a non-negative number.');
@@ -347,9 +365,8 @@ export const COMMANDS: Specs = {
     apply(state, c) {
       const p = settleOwned(state, c.planetId);
       if (!p) return;
-      const cap = resourceCapacity(p);
       for (const [r, n] of Object.entries(c.amounts) as [ResourceId, number][]) {
-        p.stock[r] = Math.min(cap, (p.stock[r] ?? 0) + n);
+        p.stock[r] = Math.min(capacityOf(p, r), (p.stock[r] ?? 0) + n);
       }
     },
   },

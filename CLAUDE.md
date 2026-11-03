@@ -52,7 +52,7 @@ Przeglądarkowa strategia kosmiczna w czasie rzeczywistym. Właściciel: Łukasz
 - Badania (`economy/research.ts`, `economy/schedule.ts`): zadanie badawcze zabiera z magazynu planety z laboratorium wszystko, czego jeszcze potrzebuje (`paid`), czas biegnie niezależnie; koniec = czas minął i koszt zapłacony; bez anulowania, przerywa je tylko brak laboratorium; `finalizeResearch` w `settleOwned` przenosi ukończone do `player.techs`; zdarzenie `ResearchCheck` pilnuje ukończenia. `ownerContext` = rasa + technologie gracza.
 - Efektywne statystyki: wyłącznie `packages/shared/src/rules/modifiers.ts` (`effectiveUnit`, `economyBonus`, `researchCostMultiplier`). W obrębie jednego źródła bonusy się dodają, różne źródła mnożą.
 
-- Klient (`packages/client/src/`): `sim/` (Web Worker ze stanem gry i zegarem gry; `handler.ts` testowalny, migawki co 250 ms, `SimClient` na stronie), `map/` (mapa galaktyki), `system/` (widok układu), `ui/` (panele DOM: `planetPanel`, `researchPanel`, `format`; akcje przez `data-action` i `pointerdown`). W trybie dev `window.__map`, `__system`, `__sim` (debug).
+- Klient (`packages/client/src/`): `sim/` (Web Worker ze stanem gry i zegarem gry; `handler.ts` testowalny, migawki co 250 ms, `SimClient` na stronie), `map/` (mapa galaktyki), `system/` (widok układu), `surface/` (powierzchnia planety w rzucie izometrycznym: heksy pól z `hexSpiral`, sceneria typu planety w `themes.ts`, modele budynków w `buildingModels.ts`, `SurfaceView`), `ui/` (panele DOM: `planetPanel`, `researchPanel`, `format`; akcje przez `data-action` i `pointerdown`). W trybie dev `window.__map`, `__system`, `__surface`, `__sim` (debug).
 
 ## Polecenia
 

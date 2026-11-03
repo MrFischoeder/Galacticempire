@@ -1,6 +1,6 @@
 {
   "name": "@ge/shared",
-  "version": "0.1.10a",
+  "version": "0.1.11",
   "private": true,
   "type": "module",
   "main": "src/index.ts",

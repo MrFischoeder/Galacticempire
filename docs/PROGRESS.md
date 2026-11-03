@@ -27,12 +27,13 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.7 | 0.1.9a | `v0.1.9a-loty-bezposrednie` | bez tras: loty prosto między dowolnymi układami | ✅ |
 | 1.8 | 0.1.10 | `v0.1.10-widok-planety` | widok układu, panele, pasek czasu | ✅ |
 | 1.8 | 0.1.10a | `v0.1.10a-english` | cała gra po angielsku | ✅ |
-| 1.9 | 0.1.11 | `v0.1.11-ruch-flot` | ruch flot, paliwo, kosmoport, hangary | ⬜ |
-| 1.10a | 0.1.12 | `v0.1.12-stocznia` | stocznia, utrzymanie | ⬜ |
-| 1.10b | 0.1.13 | `v0.1.13-transporty` | transporty, trasy cykliczne, kolonizacja | ⬜ |
-| 1.11 | 0.1.14 | `v0.1.14-mgla-wojny` | `getPlayerView`, sondy, skanery | ⬜ |
-| 1.12 | 0.1.15 | `v0.1.15-sojusze` | sojusze | ⬜ |
-| 1.13 | 0.1.16 | `v0.1.16-bot-symulacja` | bot ekonomiczny, `pnpm sim` | ⬜ |
+| 1.8a | 0.1.11 | `v0.1.11-powierzchnia-planety` | powierzchnia planety: heksy, budowa na polu, grafika wg typu planety | ✅ |
+| 1.9 | 0.1.12 | `v0.1.12-ruch-flot` | ruch flot, paliwo, kosmoport, hangary | ⬜ |
+| 1.10a | 0.1.13 | `v0.1.13-stocznia` | stocznia, utrzymanie | ⬜ |
+| 1.10b | 0.1.14 | `v0.1.14-transporty` | transporty, trasy cykliczne, kolonizacja | ⬜ |
+| 1.11 | 0.1.15 | `v0.1.15-mgla-wojny` | `getPlayerView`, sondy, skanery | ⬜ |
+| 1.12 | 0.1.16 | `v0.1.16-sojusze` | sojusze | ⬜ |
+| 1.13 | 0.1.17 | `v0.1.17-bot-symulacja` | bot ekonomiczny, `pnpm sim` | ⬜ |
 | 5.1 | — | — | blokady: usunięte (decyzja 3.11.2026) | ✖ |
 | 2.1–2.4 | 0.2.x | `v0.2.x-...` | walka | ⬜ |
 | 3.1–3.5 | 0.3.x → 1.0.0 | `v0.3.x-...`, `v1.0.0-gra-jednoosobowa` | AI i pierwsza grywalna wersja | ⬜ |
@@ -41,6 +42,13 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.1.11: powierzchnia planety (krok 1.8a, prośba właściciela, 3.11.2026)
+- Kliknięcie planety (w widoku układu albo „Home”) otwiera jej powierzchnię w rzucie izometrycznym: pola budowy to heksy ułożone spiralą (tyle, ile planeta ma pól), w tle sceneria typu planety: wulkany i lawa (wulkaniczna), lodowce (lodowa), pływające platformy i pasy chmur (gazowy gigant), wydmy i płaskowyże (pustynna), toksyczne jeziora (radioaktywna), woda i fale (oceaniczna), drzewa i wzgórza (zielona), góry i kratery (skalista), iglice kryształów (krystaliczna), monolity i łuki ruin (anomalia).
+- Każdy budynek ma swój model low-poly na polu i etykietę poziomu; budowa w toku to rusztowanie. Klik w puste pole: lista budynków do postawienia na nim; klik w budynek: załoga, ulepszenie; klik w budowę: anulowanie. Przycisk „System” wraca do układu.
+- Logika (`shared`): budynek i budowa pamiętają pole (`slot`), `slotsOf`, `firstFreeSlot`; `StartBuilding` przyjmuje `slot` (błędy `BAD_SLOT`, `SLOT_TAKEN`), bez pola stawia na pierwszym wolnym; stare budynki bez pola wypełniają wolne pola. Wersja stanu 8.
+- Poprawka: przycisk debug „+500 resources” dodaje też biomasę (do pojemności silosu) zamiast błędu.
+- Testy: `shared/test/slots.test.ts`, `client/test/surface.test.ts`.
 
 ### 0.1.10a: gra po angielsku (3.11.2026)
 - Decyzja właściciela: rozmowa i dokumenty po polsku, **cała gra po angielsku**. Zapisane w `CLAUDE.md` i specyfikacji (sekcja 0).

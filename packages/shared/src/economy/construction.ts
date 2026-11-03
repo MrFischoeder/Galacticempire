@@ -54,6 +54,40 @@ export function fieldsUsed(p: PlanetState): number {
   return p.buildings.length + (p.construction && p.construction.uid === undefined ? 1 : 0);
 }
 
+/**
+ * What stands on every field (0..fields-1): a building, the new building under construction,
+ * or null. Buildings without a recorded field (older saves, debug) take the first free fields
+ * in order, so the result is the same every time.
+ */
+export type SlotContent =
+  { readonly building: BuildingState } | { readonly construction: true } | null;
+
+export function slotsOf(p: PlanetState, fields: number): SlotContent[] {
+  const slots: SlotContent[] = new Array<SlotContent>(fields).fill(null);
+  const placed = (i: number | undefined) =>
+    i !== undefined && i >= 0 && i < fields && slots[i] === null;
+  const unplaced: BuildingState[] = [];
+  for (const b of p.buildings) {
+    if (placed(b.slot)) slots[b.slot as number] = { building: b };
+    else unplaced.push(b);
+  }
+  const c = p.construction;
+  if (c && c.uid === undefined && placed(c.slot)) slots[c.slot as number] = { construction: true };
+  for (const b of unplaced) {
+    const free = slots.indexOf(null);
+    if (free >= 0) slots[free] = { building: b };
+  }
+  if (c && c.uid === undefined && !slots.some((x) => x !== null && 'construction' in x)) {
+    const free = slots.indexOf(null);
+    if (free >= 0) slots[free] = { construction: true };
+  }
+  return slots;
+}
+
+export function firstFreeSlot(p: PlanetState, fields: number): number {
+  return slotsOf(p, fields).indexOf(null);
+}
+
 export function findBuilding(p: PlanetState, uid: number): BuildingState | undefined {
   return p.buildings.find((b) => b.uid === uid);
 }
@@ -105,6 +139,7 @@ export function canStartBuilding(
   kind: BuildingId,
   deposit: MinedResource | undefined,
   ctx: ModifierContext = {},
+  slot?: number,
 ): Result {
   const spec = BUILDINGS[kind];
   if (!spec) return fail('NO_BUILDING', 'No such building.');
@@ -112,6 +147,12 @@ export function canStartBuilding(
     return fail('BUSY', 'A construction is already under way on this planet. Wait or cancel it.');
   if (fieldsUsed(p) >= planet.fields)
     return fail('NO_FIELDS', 'No free fields left on this planet.');
+  if (slot !== undefined) {
+    if (!Number.isInteger(slot) || slot < 0 || slot >= planet.fields)
+      return fail('BAD_SLOT', 'No such field on this planet.');
+    if (slotsOf(p, planet.fields)[slot] !== null)
+      return fail('SLOT_TAKEN', 'This field is already taken.');
+  }
   if (planet.type === 'gasGiant' && !spec.gasGiantOk) {
     return fail('GAS_GIANT', 'This building cannot be built on a gas giant.');
   }
@@ -152,7 +193,7 @@ export function canStartUpgrade(p: PlanetState, uid: number, ctx: ModifierContex
 /** Starts building (the planet must be settled to `now` and validated). Pays the cost. */
 export function startConstruction(
   p: PlanetState,
-  target: { kind: BuildingId; deposit?: MinedResource; uid?: number },
+  target: { kind: BuildingId; deposit?: MinedResource; uid?: number; slot?: number },
   now: number,
   ctx: ModifierContext = {},
 ): PlanetState['construction'] {
@@ -166,6 +207,7 @@ export function startConstruction(
     kind: target.kind,
     ...(target.deposit ? { deposit: target.deposit } : {}),
     ...(existing ? { uid: target.uid as number } : { newUid: p.nextUid++ }),
+    ...(!existing && target.slot !== undefined ? { slot: target.slot } : {}),
     level,
     startedAt: now,
     endsAt: now + buildingTime(target.kind, level),
@@ -189,6 +231,7 @@ export function finishConstruction(p: PlanetState): BuildingState | undefined {
     kind: c.kind,
     level: 1,
     ...(c.deposit ? { deposit: c.deposit } : {}),
+    ...(c.slot !== undefined ? { slot: c.slot } : {}),
   };
   p.buildings.push(b);
   return b;

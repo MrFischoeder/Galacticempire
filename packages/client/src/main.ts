@@ -2,6 +2,7 @@ import {
   BUILDING_IDS,
   BUILDINGS,
   STORED_RESOURCES,
+  slotsOf,
   validateConfig,
   type BuildingId,
   type Command,
@@ -17,10 +18,11 @@ import { GalaxyMap } from './map/galaxyMap';
 import { SimClient, type World } from './sim/client';
 import type { Snapshot } from './sim/protocol';
 import { SystemView } from './system/systemView';
+import { SurfaceView } from './surface/surfaceView';
 import { formatGameTime } from './ui/format';
 import { esc } from './ui/html';
 import { renderStats, renderSystemPanel } from './ui/panels';
-import { foreignPlanetHTML, ownedPlanetHTML } from './ui/planetPanel';
+import { foreignPlanetHTML, surfacePanelHTML } from './ui/planetPanel';
 import { researchHTML } from './ui/researchPanel';
 import { versionLabel } from './version';
 
@@ -40,7 +42,11 @@ document.title = `Galactic Empire ${versionLabel(__GAME_VERSION__)}`;
 const canvas = $<HTMLCanvasElement>('#scene');
 const map = new GalaxyMap(canvas, $('#labels'));
 const system = new SystemView(map.renderer, canvas, $('#labels'));
-map.onResize = (w, h) => system.resize(w, h);
+const surface = new SurfaceView(map.renderer, canvas, $('#labels'));
+map.onResize = (w, h) => {
+  system.resize(w, h);
+  surface.resize(w, h);
+};
 const sim = new SimClient();
 const side = $('#side');
 const researchPanel = $('#research');
@@ -49,7 +55,7 @@ const errorPanel = $('#error');
 let world: World | null = null;
 let galaxy: Galaxy | null = null;
 let snapshot: Snapshot | null = null;
-let mode: 'galaxy' | 'system' = 'galaxy';
+let mode: 'galaxy' | 'system' | 'planet' = 'galaxy';
 let openSystem: SystemId | null = null;
 let selectedPlanet: PlanetId | null = null;
 
@@ -71,27 +77,52 @@ function ownedIds(): Set<PlanetId> {
   return new Set(snapshot?.planets.map((v) => v.planet.id) ?? []);
 }
 
-function setMode(next: 'galaxy' | 'system'): void {
+function setMode(next: 'galaxy' | 'system' | 'planet'): void {
   mode = next;
   map.setActive(next === 'galaxy');
   system.setActive(next === 'system');
+  surface.setActive(next === 'planet');
   renderSide();
 }
 
-function openSystemView(id: SystemId, planet: PlanetId | null = null): void {
+/** The surface of a planet: hex fields on its terrain (owner's request). */
+function openPlanet(id: PlanetId): void {
+  if (!galaxy) return;
+  const info = galaxy.planets[id];
+  if (!info) return;
+  selectedPlanet = id;
+  openSystem = info.system;
+  refreshSurface();
+  surface.select(null);
+  setMode('planet');
+}
+
+function refreshSurface(): void {
+  if (!galaxy || !selectedPlanet) return;
+  const view = snapshot?.planets.find((v) => v.planet.id === selectedPlanet);
+  const info = view?.info ?? galaxy.planets[selectedPlanet];
+  if (!info) return;
+  surface.show(
+    info,
+    view ? slotsOf(view.planet, info.fields) : new Array(info.fields).fill(null),
+    view?.planet ?? null,
+  );
+}
+
+function openSystemView(id: SystemId): void {
   if (!galaxy) return;
   openSystem = id;
   system.show(galaxy, id, ownedIds());
   setMode('system');
-  if (planet) system.select(planet);
 }
 
 map.onSelect = () => renderSide();
 map.onOpen = (id) => openSystemView(id);
 system.onSelect = (id) => {
-  selectedPlanet = id;
-  renderSide();
+  // Clicking a planet in the system opens its surface.
+  if (id) openPlanet(id);
 };
+surface.onSelect = () => renderSide();
 
 let lastSide = '';
 function renderSide(): void {
@@ -109,8 +140,17 @@ function renderSide(): void {
   }
   if (!galaxy || openSystem === null) return;
   const view = snapshot?.planets.find((v) => v.planet.id === selectedPlanet);
-  if (view && snapshot) html = ownedPlanetHTML(view, snapshot.player, snapshot.time);
-  else if (selectedPlanet && galaxy.planets[selectedPlanet]) {
+  if (mode === 'system') {
+    html = `<div class="panel-title">${esc(galaxy.systems[openSystem]?.name ?? '')}</div><div class="dim">Click a planet to open its surface.</div>`;
+  } else if (view && snapshot) {
+    html = surfacePanelHTML(
+      view,
+      snapshot.player,
+      snapshot.time,
+      slotsOf(view.planet, view.info.fields),
+      surface.selected,
+    );
+  } else if (mode === 'planet' && selectedPlanet && galaxy.planets[selectedPlanet]) {
     html = foreignPlanetHTML(
       galaxy.planets[selectedPlanet] as NonNullable<Galaxy['planets'][string]>,
     );
@@ -160,10 +200,12 @@ researchPanel.addEventListener('pointerdown', onAction);
 
 function goHome(): void {
   if (!world || !galaxy) return;
-  const planet = galaxy.planets[world.homePlanet];
-  if (planet) openSystemView(planet.system, world.homePlanet);
+  openPlanet(world.homePlanet);
 }
 $('#toGalaxy').addEventListener('click', () => setMode('galaxy'));
+$('#toSystem').addEventListener('click', () => {
+  if (openSystem !== null) openSystemView(openSystem);
+});
 $('#toHome').addEventListener('click', goHome);
 $('#toResearch').addEventListener('click', () => {
   researchPanel.hidden = !researchPanel.hidden;
@@ -213,6 +255,7 @@ sim.onSnapshot = (s) => {
   if (mode === 'system' && galaxy && openSystem !== null && ownedIds().size !== ownedBefore.size) {
     system.show(galaxy, openSystem, ownedIds());
   }
+  if (mode === 'planet') refreshSurface();
   renderSide();
   renderResearch();
   renderTimebar();
@@ -281,7 +324,7 @@ window.addEventListener('resize', () => map.resize());
 
 // Debugging handles in development builds only.
 if (import.meta.env.DEV)
-  Object.assign(window as object, { __map: map, __system: system, __sim: sim });
+  Object.assign(window as object, { __map: map, __system: system, __surface: surface, __sim: sim });
 
 const statsEl = $('#stats');
 let frames = 0;
@@ -289,7 +332,8 @@ let fps = 60;
 let last = performance.now();
 map.renderer.setAnimationLoop((ms: number) => {
   if (mode === 'galaxy') map.render(ms / 1000);
-  else system.render(ms / 1000);
+  else if (mode === 'system') system.render(ms / 1000);
+  else surface.render(ms / 1000);
   frames++;
   const now = performance.now();
   if (now - last >= 500) {

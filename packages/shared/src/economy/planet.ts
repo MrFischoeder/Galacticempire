@@ -43,6 +43,8 @@ export interface BuildingState {
   level: number;
   /** For a mine: the deposit it works. */
   readonly deposit?: MinedResource;
+  /** The field (0..fields-1) it stands on, chosen by the player (planet surface view). */
+  slot?: number;
 }
 
 export interface PlanetState {
@@ -92,6 +94,8 @@ export interface Construction {
   /** The building being upgraded; absent for a new building (it gets `newUid`). */
   readonly uid?: number;
   readonly newUid?: number;
+  /** Field of a new building. */
+  readonly slot?: number;
   /** Level it reaches when done. */
   readonly level: number;
   readonly startedAt: number;

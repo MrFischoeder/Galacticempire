@@ -254,3 +254,8 @@ button:disabled {
 .job {
   margin: 4px 0;
 }
+
+.label.level {
+  color: #ffd23f;
+  font-size: 11px;
+}
