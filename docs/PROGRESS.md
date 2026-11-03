@@ -18,7 +18,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.2b | 0.1.3 | `v0.1.3-balans-ekonomii` | narzędzie liczące + tabela kosztów, czasów i wydajności budynków do akceptacji | ✅ |
 | 1.2b | 0.1.3a | `v0.1.3a-balans-imperium` | analiza wielu planet: kolonie wspierane dowozem | ✅ zaakceptowane |
 | 1.3 | 0.1.4 | `v0.1.4-galaktyka` | generator galaktyki i tras | ✅ |
-| 1.4a | 0.1.5 | `v0.1.5-produkcja` | wydobycie, przetwórstwo, magazyn, rdzeń, energia | ⬜ |
+| 1.4a | 0.1.5 | `v0.1.5-produkcja` | wydobycie, przetwórstwo, magazyn, rdzeń, energia | ✅ |
 | 1.4b | 0.1.6 | `v0.1.6-populacja` | populacja, robotnicy, żywność, silos, głód | ⬜ |
 | 1.5 | 0.1.7 | `v0.1.7-budowa` | budowa i ulepszenia budynków | ⬜ |
 | 1.6 | 0.1.8 | `v0.1.8-badania` | laboratorium i 13 technologii | ⬜ |
@@ -37,6 +37,15 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.1.5: produkcja planety (krok 1.4a, 3.11.2026)
+- `packages/shared/src/economy/planet.ts`: stan posiadanej planety (`PlanetState`: właściciel, budynki z poziomami, kopalnia przypisana do złoża, zapasy, zgromadzona energia, czas ostatniego rozliczenia), pojemności (rdzeń + magazyny, rdzeń + akumulatory), `planetRates` (stałe tempo do następnej zmiany), `nextChangePoint`, `settlePlanet` (rozliczenie odcinkami od zmiany do zmiany: pełny lub pusty zapas, pełne lub puste akumulatory, wyczerpane złoże).
+- Zasady: kopalnia 60/h × 1,25^(poz−1) × klasa złoża (uboga 0,7, średnia 1, bogata 1,4) × bonus wydobycia, złoże specjalne 1/3 tempa; zbiór awaryjny rdzenia 20/h każdego minerału podstawowego bez kopalni (bez prądu, nie uszczupla złoża); przetwórstwo według przepisów (×1,25 na poziom) zwalnia do tego, co dopływa; pełny magazyn zatrzymuje produkcję; energia: elektrownie odnawialne i rdzeń 5/h (tylko gdy planeta ma energię odnawialną), reaktor spala materiał rozpadowy (gaśnie bez paliwa); niedobór najpierw rozładowuje rdzeń i akumulatory, potem wszystkie budynki zasilane działają z wydajnością = produkcja / zużycie (spec 5); zapasy powyżej pojemności są przycinane.
+- `economy/access.ts`: `settleOwned` (silnik rozlicza planetę przed zmianą), `planetAt` (podgląd planety w przyszłości bez zmiany stanu), `ownerContext` (rasa i technologie dojdą w krokach 1.6 i 4.2).
+- Stan gry: `planets` (posiadane planety), wersja stanu 3. Komendy testowe na potrzeby panelu debug: `DebugGivePlanet`, `DebugSetBuilding`, `DebugAddResources`.
+- Testy (13 nowych): zbiór awaryjny i jego wyłączenie przez kopalnię, klasy złóż i złoża specjalne, pojemność rdzeń + magazyn (550 na poz. 1, zapełnienie po 9,2 h), niedobór energii z akumulatorem, przetwórstwo ograniczone dopływem, reaktor, wyczerpanie złoża, 10 h w jednym kroku = 600 kroków minutowych, 200 losowych planet bez wartości ujemnych i NaN, komendy w silniku, `planetAt` bez zmiany stanu.
+- Na później (krok 1.4b): populacja, robotnicy (teraz każdy budynek ma pełną obsadę), farmy i biomasa, silos, głód; porównanie silnika z modelem balansu z `tools/balance` (model zawiera też populację).
+- Do sprawdzenia ręcznie: nic w grze (widok planety w kroku 1.8); `pnpm check`.
 
 ### 0.1.4: generator galaktyki (krok 1.3, 3.11.2026)
 - `packages/shared/src/galaxy/`: `types.ts` (Galaxy, StarSystem, Planet, Deposit, Route), `graph.ts` (sąsiedztwo, Dijkstra po LY, liczba skoków, `shortestPath`, spójność), `names.ts` (nazwy gwiazd z sylab, planety z cyframi rzymskimi), `generate.ts` (`generateGalaxy(seed, {systems, radius, startSlots})`, `systemsFor(gracze)`, `radiusFor(układy)`); `config/galaxy.ts` (`GALAXY`). Stan gry (`World.galaxy`, wersja stanu 2) dostaje galaktykę przy `createGameState`.
