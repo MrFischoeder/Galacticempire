@@ -1,6 +1,6 @@
 # Balans ekonomii (krok 1.2b)
 
-Plik generowany przez `pnpm balance` (`tools/balance/`). Liczby pochodzą z `packages/shared/src/config/`; zmiana liczby = zmiana konfiguracji i ponowne uruchomienie. **Do akceptacji przez właściciela.**
+Plik generowany przez `pnpm balance` (`tools/balance/`). Liczby pochodzą z `packages/shared/src/config/`; zmiana liczby = zmiana konfiguracji i ponowne uruchomienie. **Zaakceptowane przez właściciela 3.11.2026.**
 
 ## Zasady
 

@@ -16,7 +16,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.1 | 0.1.1 | `v0.1.1-rdzen-symulacji` | zegar gry, RNG, kolejka zdarzeń, komendy | ✅ |
 | 1.2a | 0.1.2 | `v0.1.2-konfiguracja` | wszystkie liczby jako dane, modyfikatory | ✅ |
 | 1.2b | 0.1.3 | `v0.1.3-balans-ekonomii` | narzędzie liczące + tabela kosztów, czasów i wydajności budynków do akceptacji | ✅ |
-| 1.2b | 0.1.3a | `v0.1.3a-balans-imperium` | analiza wielu planet: kolonie wspierane dowozem | ✅ czeka na akceptację |
+| 1.2b | 0.1.3a | `v0.1.3a-balans-imperium` | analiza wielu planet: kolonie wspierane dowozem | ✅ zaakceptowane |
 | 1.3 | 0.1.4 | `v0.1.4-galaktyka` | generator galaktyki i tras | ⬜ |
 | 1.4a | 0.1.5 | `v0.1.5-produkcja` | wydobycie, przetwórstwo, magazyn, rdzeń, energia | ⬜ |
 | 1.4b | 0.1.6 | `v0.1.6-populacja` | populacja, robotnicy, żywność, silos, głód | ⬜ |
@@ -39,6 +39,7 @@ Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział 
 ## Wpisy
 
 ### 0.1.3a: tempo przy wielu planetach (3.11.2026)
+- **Zaakceptowane przez właściciela (3.11.2026)** razem z balansem z 0.1.3.
 - Uwaga właściciela: im więcej planet, tym szybciej powinien iść rozwój, bo zasoby można rozdzielać między systemami.
 - Model (`tools/balance/economy.ts`, `SimOptions`): kolonia (rdzeń, 10 osób, mieszkanie poz. 1, spec 10.5) i stały dowóz każdego minerału z reszty imperium. Raport (`docs/BALANS.md`, sekcja „Wiele planet”): kolonia bez wsparcia 8,9 dnia do maksimum bez surowców specjalnych, z 1 planetą wspierającą (60/h każdego minerału) 5,5 dnia, z 2 — 4,1, z 4 i więcej — 2,7 dnia (dolna granica: jedna budowa naraz i wzrost populacji).
 - Koszt dowozu: ok. 1 transportowiec na wspierającą planetę przy 30 LY (paliwo ok. 9% ładunku); w tym samym układzie prawie darmowo, przez całą galaktykę ok. 1/4 ładunku.
