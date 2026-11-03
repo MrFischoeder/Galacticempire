@@ -25,7 +25,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.6 | 0.1.8a | `v0.1.8a-badania-zasady` | zasady badań właściciela: zabiera zasoby od razu, bez anulowania | ✅ |
 | 1.7 | 0.1.9 | `v0.1.9-mapa-galaktyki` | Web Worker, mapa 3D | ✅ |
 | 1.7 | 0.1.9a | `v0.1.9a-loty-bezposrednie` | bez tras: loty prosto między dowolnymi układami | ✅ |
-| 1.8 | 0.1.10 | `v0.1.10-widok-planety` | widok układu, panele, pasek czasu | ⬜ |
+| 1.8 | 0.1.10 | `v0.1.10-widok-planety` | widok układu, panele, pasek czasu | ✅ |
 | 1.9 | 0.1.11 | `v0.1.11-ruch-flot` | ruch flot, paliwo, kosmoport, hangary | ⬜ |
 | 1.10a | 0.1.12 | `v0.1.12-stocznia` | stocznia, utrzymanie | ⬜ |
 | 1.10b | 0.1.13 | `v0.1.13-transporty` | transporty, trasy cykliczne, kolonizacja | ⬜ |
@@ -40,6 +40,18 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.1.10: widok układu, planety i interfejs (krok 1.8, 3.11.2026)
+- Worker trzyma stan gry i **zegar gry** (×1/×5/×20/×60, pauza, przewijanie): co 100 ms przelicza czas rzeczywisty na czas gry i przetwarza tylko zdarzenia, które nadeszły (planety rozliczają się leniwie), co 250 ms wysyła stronie migawkę (gracz, jego planety rozliczone na teraz z tempem produkcji, dziennik). Komendy dostają aktualny czas gry w workerze. Nowa gra: gracz „Gracz” z wybraną rasą na pustej planecie startowej pierwszej pozycji startowej (prawdziwe dołączanie: krok 4.2).
+- Widok układu (`src/system/systemView.ts`): gwiazda i planety jako płasko cieniowane wielościany z neonowymi krawędziami na orbitach (kolor wg typu, wielkość wg liczby pól, gazowe giganty z pierścieniem), własne planety z zielonym pierścieniem, klik zaznacza planetę; wejście z mapy galaktyki podwójnym kliknięciem albo przyciskiem „Otwórz układ”.
+- Panel planety (`src/ui/planetPanel.ts`): zasoby (zapas / pojemność, zmiana na godzinę), energia (produkcja, zużycie, zapas, wydajność przy niedoborze), ludność (mieszkańcy / mieszkania, przyrost, robotnicy, głód), budowa w toku z „Anuluj”, budynki z poziomem, obsadą i przyciskiem ulepszenia (koszt, czas, powód blokady w podpowiedzi), lista „Nowy budynek” (tylko to, co pasuje do planety; niedostępne wyszarzone z powodem), złoża z pozostałą pulą. Cudza lub wolna planeta: typ, żyzność, energia, złoża.
+- Panel badań (`src/ui/researchPanel.ts`): 13 technologii z poziomem, przycisk „Badaj” z kosztem i czasem w laboratorium wybranej planety, trwające badania z postępem i informacją o czekaniu na zasoby.
+- Pasek czasu na dole (Pauza, ×1, ×5, ×20, ×60, czas gry „Dzień N, GG:MM”), dziennik ostatnich zdarzeń, błędy komend po polsku (znikają po 5 s), górny pasek: mapa galaktyki, planeta macierzysta, badania.
+- Panel debug: ziarno, liczba układów, rasa, „Nowa gra”, „Losowa galaktyka”, +500 zasobów na wybranej planecie, przewiń o X godzin, ustaw poziom budynku.
+- Akcje w panelach reagują na wciśnięcie przycisku myszy (`pointerdown`), więc odświeżanie panelu nie gubi kliknięć.
+- Sprawdzone w przeglądarce: pusta planeta, rdzeń zbiera 20/h, budowa elektrowni po 2 h, przyspieszenie ×60, gotowy budynek w dzienniku.
+- Testy (8 nowych w kliencie): zegar w workerze (prędkość, pauza, przewijanie), komendy w czasie gry i zakończona budowa w migawce, formatowanie po polsku, lista budynków do zbudowania, panel planety i badań.
+- Do sprawdzenia przez właściciela: zagraj ok. 15 minut na ×60 (kolejność rozwoju z 7.1: energia, farma, kopalnie, mieszkania, magazyn...). Co jest nudne albo nieczytelne?
 
 ### 0.1.9a: loty bezpośrednie, bez tras (3.11.2026)
 - Decyzja właściciela: gracz leci prosto do wybranego układu (czas i paliwo za odległość), bez tras i przeskakiwania przez układy. Zapisane w specyfikacji (sekcja 0) i w pytaniach 29 i 32.

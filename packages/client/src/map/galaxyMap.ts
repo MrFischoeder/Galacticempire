@@ -77,9 +77,21 @@ export class GalaxyMap {
   private readonly raycaster = new THREE.Raycaster();
   private readonly pointer = new THREE.Vector2();
   private pointerDown: { x: number; y: number } | null = null;
+  active = true;
+  /** Other views sharing the canvas are told about resizes. */
+  onResize: (w: number, h: number) => void = () => {};
   hovered: SystemId | null = null;
   selected: SystemId | null = null;
   onSelect: (id: SystemId | null) => void = () => {};
+  /** Double click on a system. */
+  onOpen: (id: SystemId) => void = () => {};
+
+  setActive(active: boolean): void {
+    this.active = active;
+    this.controls.enabled = active;
+    this.labels.domElement.style.display = active ? '' : 'none';
+    if (!active) this.hovered = null;
+  }
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -246,6 +258,7 @@ export class GalaxyMap {
     const w = window.innerWidth;
     const h = window.innerHeight;
     this.renderer.setSize(w, h, false);
+    this.onResize(w, h);
     this.labels.setSize(w, h);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();

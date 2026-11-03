@@ -11,21 +11,56 @@
     <div id="labels"></div>
     <div id="hud" class="panel">
       <span class="title">GALACTIC EMPIRE</span> <span id="version"></span>
+      <div class="row">
+        <button id="toGalaxy">Mapa galaktyki</button>
+        <button id="toHome">Planeta macierzysta</button>
+        <button id="toResearch">Badania</button>
+      </div>
     </div>
     <div id="debug" class="panel">
-      <div class="panel-title">DEBUG</div>
-      <label>Ziarno <input id="seed" type="text" spellcheck="false" /></label>
-      <label
-        >Układy <input id="systems" type="number" min="20" max="200" step="1" value="60"
-      /></label>
-      <div class="row">
-        <button id="generate">Generuj</button>
-        <button id="random">Nowa galaktyka</button>
+      <div class="panel-title collapsible" id="debugToggle">DEBUG ▾</div>
+      <div id="debugBody">
+        <label>Ziarno <input id="seed" type="text" spellcheck="false" /></label>
+        <label
+          >Układy <input id="systems" type="number" min="20" max="200" step="1" value="60"
+        /></label>
+        <label
+          >Rasa
+          <select id="race">
+            <option value="merchants">Kupcy</option>
+            <option value="swarm">Rój</option>
+            <option value="colossi">Kolosy</option>
+            <option value="fortress">Forteca</option>
+          </select>
+        </label>
+        <div class="row">
+          <button id="generate">Nowa gra</button>
+          <button id="random">Losowa galaktyka</button>
+        </div>
+        <div class="row">
+          <button id="addRes">+500 zasobów</button>
+          <input id="skipHours" type="number" min="0.1" step="0.5" value="1" class="small-input" />
+          <button id="skip">Przewiń h</button>
+        </div>
+        <div class="row">
+          <select id="setKind"></select>
+          <input id="setLevel" type="number" min="0" max="10" value="1" class="small-input" />
+          <button id="setBuilding">Ustaw</button>
+        </div>
+        <div id="stats" class="dim"></div>
       </div>
-      <div id="stats" class="dim"></div>
-      <div class="dim help">Lewy przycisk: obrót · prawy: przesuw · kółko: zoom · klik: układ</div>
     </div>
-    <div id="system" class="panel" hidden></div>
+    <div id="side" class="panel" hidden></div>
+    <div id="research" class="panel" hidden></div>
+    <div id="timebar" class="panel">
+      <button data-speed="pause">Pauza</button>
+      <button data-speed="1">×1</button>
+      <button data-speed="5">×5</button>
+      <button data-speed="20">×20</button>
+      <button data-speed="60">×60</button>
+      <span id="clock"></span>
+    </div>
+    <div id="log" class="panel"></div>
     <div id="error" class="panel" hidden></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
