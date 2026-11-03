@@ -92,7 +92,9 @@ galactic-empire/
 
 ## Uruchomienie
 
-Wymagania: Node.js 20 lub nowszy i pnpm.
+**Windows, jedno kliknięcie:** uruchom `start-gry.bat`. Sprawdza Node.js (w razie braku instaluje go przez winget), instaluje pnpm i biblioteki gry, a potem otwiera grę w przeglądarce (http://localhost:5173).
+
+Ręcznie: wymagany Node.js 20 lub nowszy i pnpm.
 
 ```bash
 pnpm install
