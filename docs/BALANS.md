@@ -111,3 +111,29 @@ Ograniczenia w czasie 21 dni: brak energii 4.0 h, brak rąk do pracy 9.7 h, czek
 - 36.3 h: Stocznia: poziom 1
 - 37.0 h: Elektrownia odnawialna: poziom 3
 
+## Wiele planet: kolonie wspierane przez imperium
+
+Im więcej planet, tym szybciej rozwija się każda następna, bo dojrzałe planety wysyłają jej surowce transportami. Model: nowa kolonia (rdzeń, 10 osób, mieszkanie poz. 1, te same złoża co planeta startowa) dostaje stały dowóz każdego z 4 minerałów. Przyjmuję, że jedna dojrzała planeta oddaje ok. 60/h każdego minerału (ok. połowę wydobycia na poziomie 5; reszta idzie na jej własną flotę i przetwórstwo).
+
+| Planet wspierających | Dowóz każdego minerału | Stocznia gotowa | 16 pól zajętych | Maksimum bez specjalnych | Czekanie na zasoby |
+|---|---|---|---|---|---|
+| 0 | 0/h | 1.4 d | 1.6 d | 8.9 d | 6.2 d |
+| 1 | 60/h | 0.3 d | 0.3 d | 5.5 d | 2.8 d |
+| 2 | 120/h | 0.2 d | 0.2 d | 4.1 d | 1.4 d |
+| 3 | 180/h | 0.1 d | 0.1 d | 3.3 d | 0.6 d |
+| 4 | 240/h | 0.1 d | 0.1 d | 2.7 d | 0.0 d |
+| 6 | 360/h | 0.1 d | 0.1 d | 2.7 d | 0.0 d |
+| 10 | 600/h | 0.1 d | 0.1 d | 2.7 d | 0.0 d |
+
+**Dolna granica:** nawet przy nieograniczonym dowozie planeta potrzebuje **2.7 d**, bo buduje jedną rzecz naraz (kolejka budowy) i musi wyhodować ludzi do pracy. To naturalny hamulec: zasoby przyspieszają rozwój kolonii z ok. 9 do ok. 3 dni, ale nie do zera.
+
+### Ile kosztuje taki dowóz
+
+Transportowiec wozi 500 jednostek. Lot w obie strony (spec 12.1.4): 10 LY = 14 paliwa (ok. 4% wartości ładunku), 30 LY = 34 (9%), 60 LY = 64 (17%), 100 LY = 104 (28%). Przy odległości ok. 30 LY jeden transportowiec robi kurs w ok. 1,7 h i przewozi ok. 300 jednostek/h, więc wsparcie 60/h każdego z 4 minerałów (240/h) to ok. 1 transportowiec na wspierającą planetę. Wspieranie kolonii w tym samym układzie (1–5 LY) jest prawie darmowe, z drugiego końca galaktyki traci się ćwierć ładunku.
+
+### Wnioski
+
+- **Tempo rośnie z liczbą planet**, tak jak chcesz: kolonia bez wsparcia potrzebuje 8.9 d do maksimum bez surowców specjalnych, wspierana przez 1 planetę 5.5 d, przez 2 4.1 d, przez 4 i więcej 2.7 d (dolna granica).
+- **Hamulce przed kulą śnieżną** (już w specyfikacji): kolejka jednej budowy na planetę (dolna granica ok. 3 dni), koszt paliwa rosnący z odległością, koszt kolonizatora (300 stopów, 50 komponentów, 200 biomasy), utrzymanie floty w biomasie, surowce specjalne powyżej poziomu 4–5, zasięg administracji (−5% produkcji za każde 20 LY ponad 80 LY od stolicy, sekcja 14) i 70% zajętości mapy.
+- **Propozycja do decyzji:** gdyby w testach z AI imperia rosły za szybko, najprostsze dodatkowe hamulce to (a) koszt kolonizatora rosnący z liczbą posiadanych planet (np. +15% za każdą) albo (b) dłuższy czas budowy na koloniach daleko od stolicy. Na razie niczego takiego nie dodaję.
+

@@ -29,3 +29,23 @@ describe('economy balance (step 1.2b)', () => {
     expect(r.hours.workersShort).toBeLessThan(24);
   });
 });
+
+describe('many planets (step 1.2b)', () => {
+  const capWith = (imports: number) =>
+    simulate(standardPlan(), 21, { colony: true, importPerHour: imports }).milestones[
+      'every building at its basic cap'
+    ] ?? Infinity;
+
+  it('a colony supported by the empire develops faster, never instantly', () => {
+    const alone = capWith(0);
+    const two = capWith(120);
+    const four = capWith(240);
+    const unlimited = capWith(1e6);
+    expect(two).toBeLessThan(alone * 0.75);
+    expect(four).toBeLessThan(two);
+    expect(unlimited).toBeLessThanOrEqual(four);
+    // The one-at-a-time build queue and population growth keep a floor of about 2-4 days.
+    expect(unlimited).toBeGreaterThan(2 * 24);
+    expect(unlimited).toBeLessThan(4 * 24);
+  });
+});

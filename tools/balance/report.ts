@@ -168,7 +168,56 @@ for (const l of r.log.slice(0, 22)) {
 }
 out();
 
+// --- Many planets: colonies supported by the rest of the empire ---
+const PER_SUPPORTER = 60;
+out('## Wiele planet: kolonie wspierane przez imperium');
+out();
+out(
+  `Im więcej planet, tym szybciej rozwija się każda następna, bo dojrzałe planety wysyłają jej surowce transportami. Model: nowa kolonia (rdzeń, 10 osób, mieszkanie poz. 1, te same złoża co planeta startowa) dostaje stały dowóz każdego z 4 minerałów. Przyjmuję, że jedna dojrzała planeta oddaje ok. ${PER_SUPPORTER}/h każdego minerału (ok. połowę wydobycia na poziomie 5; reszta idzie na jej własną flotę i przetwórstwo).`,
+);
+out();
+out(
+  '| Planet wspierających | Dowóz każdego minerału | Stocznia gotowa | 16 pól zajętych | Maksimum bez specjalnych | Czekanie na zasoby |',
+);
+out('|---|---|---|---|---|---|');
+const days = (h: number | null | undefined) => (h == null ? '—' : `${(h / 24).toFixed(1)} d`);
+const colonyRows: { k: number; cap: number }[] = [];
+for (const k of [0, 1, 2, 3, 4, 6, 10]) {
+  const c = simulate(standardPlan(), DAYS, { colony: true, importPerHour: k * PER_SUPPORTER });
+  const m = c.milestones;
+  colonyRows.push({ k, cap: m['every building at its basic cap'] ?? Infinity });
+  out(
+    `| ${k} | ${n(k * PER_SUPPORTER)}/h | ${days(m['built:shipyard'])} | ${days(m['all fields used'])} | ${days(m['every building at its basic cap'])} | ${days(c.hours.waiting)} |`,
+  );
+}
+const floor = simulate(standardPlan(), DAYS, { colony: true, importPerHour: 1e6 });
+out();
+out(
+  `**Dolna granica:** nawet przy nieograniczonym dowozie planeta potrzebuje **${days(floor.milestones['every building at its basic cap'])}**, bo buduje jedną rzecz naraz (kolejka budowy) i musi wyhodować ludzi do pracy. To naturalny hamulec: zasoby przyspieszają rozwój kolonii z ok. 9 do ok. 3 dni, ale nie do zera.`,
+);
+out();
+out('### Ile kosztuje taki dowóz');
+out();
+out(
+  'Transportowiec wozi 500 jednostek. Lot w obie strony (spec 12.1.4): 10 LY = 14 paliwa (ok. 4% wartości ładunku), 30 LY = 34 (9%), 60 LY = 64 (17%), 100 LY = 104 (28%). Przy odległości ok. 30 LY jeden transportowiec robi kurs w ok. 1,7 h i przewozi ok. 300 jednostek/h, więc wsparcie 60/h każdego z 4 minerałów (240/h) to ok. 1 transportowiec na wspierającą planetę. Wspieranie kolonii w tym samym układzie (1–5 LY) jest prawie darmowe, z drugiego końca galaktyki traci się ćwierć ładunku.',
+);
+out();
+out('### Wnioski');
+out();
+const capOf = (k: number) => days(colonyRows.find((c) => c.k === k)?.cap);
+out(
+  `- **Tempo rośnie z liczbą planet**, tak jak chcesz: kolonia bez wsparcia potrzebuje ${capOf(0)} do maksimum bez surowców specjalnych, wspierana przez 1 planetę ${capOf(1)}, przez 2 ${capOf(2)}, przez 4 i więcej ${capOf(4)} (dolna granica).`,
+);
+out(
+  '- **Hamulce przed kulą śnieżną** (już w specyfikacji): kolejka jednej budowy na planetę (dolna granica ok. 3 dni), koszt paliwa rosnący z odległością, koszt kolonizatora (300 stopów, 50 komponentów, 200 biomasy), utrzymanie floty w biomasie, surowce specjalne powyżej poziomu 4–5, zasięg administracji (−5% produkcji za każde 20 LY ponad 80 LY od stolicy, sekcja 14) i 70% zajętości mapy.',
+);
+out(
+  '- **Propozycja do decyzji:** gdyby w testach z AI imperia rosły za szybko, najprostsze dodatkowe hamulce to (a) koszt kolonizatora rosnący z liczbą posiadanych planet (np. +15% za każdą) albo (b) dłuższy czas budowy na koloniach daleko od stolicy. Na razie niczego takiego nie dodaję.',
+);
+out();
+
 writeFileSync(new URL('../../docs/BALANS.md', import.meta.url), lines.join('\n') + '\n');
 console.log('docs/BALANS.md written');
+console.log(colonyRows);
 for (const [k, v] of Object.entries(r.milestones)) console.log(k.padEnd(34), fmtH(v));
 console.log(r.hours);

@@ -98,12 +98,21 @@ export interface Report {
   fullBy: Record<string, number>;
 }
 
-export function simulate(plan: PlanItem[], days: number): Report {
+/** Options for planets that are not the lone starting planet (step 1.2b, empire analysis). */
+export interface SimOptions {
+  /** Minerals shipped in from the rest of the empire, per mineral per hour (after fuel). */
+  importPerHour?: number;
+  /** A colony (spec 10.5): starts with a level 1 housing besides the core's 10 people. */
+  colony?: boolean;
+}
+
+export function simulate(plan: PlanItem[], days: number, opts: SimOptions = {}): Report {
   const res: Record<string, number> = Object.fromEntries(STORED.map((r) => [r, 0]));
   res.biomass = 0;
   let energy = 0;
   let pop: number = CORE.residents;
-  const buildings: Building[] = [];
+  const buildings: Building[] = opts.colony ? [{ id: 'housing', level: 1 }] : [];
+  const imports = opts.importPerHour ?? 0;
   let construction: { item: PlanItem; target?: Building; end: number } | null = null;
   const log: Report['log'] = [];
   const milestones: Report['milestones'] = {};
@@ -112,6 +121,7 @@ export function simulate(plan: PlanItem[], days: number): Report {
   const snapshots: Report['snapshots'] = [];
   const dt = 1 / 60;
   let planIndex = 0;
+  let built = 0;
   const say = (t: number, text: string) => log.push({ t, text });
   const mark = (key: string, t: number) => {
     if (milestones[key] === undefined) milestones[key] = t;
@@ -157,7 +167,8 @@ export function simulate(plan: PlanItem[], days: number): Report {
       const name = `${item.id}${item.mineral ? `(${item.mineral})` : ''}`;
       say(t, `done ${name} -> ${target ? target.level : 1}`);
       mark(`built:${item.id}`, t);
-      if (buildings.length === 1) mark('first building done', t);
+      built++;
+      if (built === 1) mark('first building done', t);
       if (buildings.length === 5) mark('5 buildings', t);
       if (buildings.length === 10) mark('10 buildings', t);
       if (buildings.length === STARTER_PLANET.fields) mark('all fields used', t);
@@ -216,7 +227,7 @@ export function simulate(plan: PlanItem[], days: number): Report {
               ...(target ? { target } : {}),
               end: t + levelMinutes(item.id, level) / 60,
             };
-            if (buildings.length === 0) mark('first building started', t);
+            if (built === 0) mark('first building started', t);
           } else if (milestones['every building at its basic cap'] === undefined) {
             hours.waiting += dt;
           }
@@ -286,6 +297,7 @@ export function simulate(plan: PlanItem[], days: number): Report {
       const mines = buildings.filter((b) => b.id === 'mine' && b.mineral === m);
       const cls = DEPOSIT_CLASS[STARTER_PLANET.deposits[m]];
       if (mines.length === 0) add(m, CORE.tricklePerHour * dt);
+      if (imports > 0) add(m, imports * dt);
       for (const b of mines) add(m, mineOut(b.level) * cls * eff * (staff.get(b) ?? 1) * dt);
     }
     // processing
