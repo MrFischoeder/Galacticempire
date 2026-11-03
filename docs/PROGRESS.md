@@ -13,7 +13,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 0 | 0.0.4 | `v0.0.4-surowce-4` | 4 surowce specjalne zamiast 6 | ✅ zaakceptowane |
 | 1.0 | 0.1.0 | `v0.1.0-szkielet` | monorepo, narzędzia, pusta scena 3D | ✅ |
 | 1.0 | 0.1.0a | `v0.1.0a-start-bat` | `start-gry.bat`: uruchamianie jednym kliknięciem | ✅ |
-| 1.1 | 0.1.1 | `v0.1.1-rdzen-symulacji` | zegar gry, RNG, kolejka zdarzeń, komendy | ⬜ |
+| 1.1 | 0.1.1 | `v0.1.1-rdzen-symulacji` | zegar gry, RNG, kolejka zdarzeń, komendy | ✅ |
 | 1.2a | 0.1.2 | `v0.1.2-konfiguracja` | wszystkie liczby jako dane, modyfikatory | ⬜ |
 | 1.2b | 0.1.3 | `v0.1.3-balans-ekonomii` | narzędzie liczące + tabela kosztów, czasów i wydajności budynków do akceptacji | ⬜ |
 | 1.3 | 0.1.4 | `v0.1.4-galaktyka` | generator galaktyki i tras | ⬜ |
@@ -36,6 +36,20 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.1.1: rdzeń symulacji (krok 1.1, 3.11.2026)
+- `packages/shared/src/core/`:
+  - `clock.ts`: zegar gry (czas gry w ms, mnożnik ×1/×5/×20/×60 z `config/time.ts`, pauza), `tickClock` przelicza czas rzeczywisty na czas gry.
+  - `rng.ts`: generator sfc32 z ziarnem (hash cyrb128), stan = 4 liczby (zapisywalny w stanie gry), klasa `Rng` (`int`, `float`, `range`, `chance`, `pick`, `shuffle`), `rngStream(ziarno, 'etykieta')` = niezależne strumienie (np. galaktyka, bitwy).
+  - `queue.ts`: kolejka zdarzeń jako kopiec w zwykłej tablicy (serializowalna), stabilna dla równych czasów (numer kolejny `seq`).
+  - `state.ts`: `GameState` (wersja, czas, świat, gracze, stan generatora zdarzeń, kolejka, dziennik), wyłącznie dane JSON.
+  - `commands.ts`: komendy z walidacją (kod błędu + komunikat po polsku) i zastosowaniem; na razie `AddPlayer`, `RenamePlayer` i `DebugScheduleMarker` (do testów i przyszłego panelu debug).
+  - `events.ts`: obsługa zdarzeń; na razie `DebugMarker` (zapis do dziennika, opcjonalny rzut kością z generatora stanu, opcjonalne powtórzenia).
+  - `engine.ts`: `advanceTo(stan, czas)` przetwarza zdarzenia do zadanego czasu; `applyCommand(stan, komenda, czas)` = przesunięcie czasu + walidacja + zastosowanie; `replay` odtwarza listę komend. Obie funkcje nie zmieniają stanu wejściowego (kopia), komenda z przeszłości jest odrzucana.
+- Testy (33 w `shared`): powtarzalność generatora, niezależność strumieni, wznowienie z zapisanego stanu, równomierność; pauza i mnożniki zegara; kolejność i stabilność kolejki (2000 losowych zdarzeń); kolejność zdarzeń w silniku, łańcuchy zdarzeń, brak mutacji wejścia, błędy komend po polsku; determinizm: to samo ziarno i komendy = identyczny stan, wiele małych kroków = jeden duży, zapis i wczytanie w połowie daje ten sam wynik.
+- Decyzje: kopia stanu przez JSON przy każdej komendzie i `advanceTo` (prosto i bezpiecznie; jeśli kiedyś będzie za wolno, zmienimy na kopiowanie tylko zmienionych części). Zdarzenia nie mogą być planowane w przeszłości (wyjątek), a jedno przesunięcie czasu przetwarza najwyżej milion zdarzeń (ochrona przed nieskończoną pętlą).
+- Klient bez zmian poza numerem wersji (krok nie obejmuje interfejsu).
+- Do sprawdzenia ręcznie: nic w grze (to fundament); `pnpm check`.
 
 ### 0.1.0a: start jednym kliknięciem (3.11.2026)
 - `start-gry.bat` (Windows): sprawdza Node.js ≥ 20 (brak lub stara wersja → instalacja/aktualizacja Node.js LTS przez winget; bez winget otwiera nodejs.org), instaluje pnpm (`npm install -g`, a w razie problemu uruchamia go przez `npx`), `pnpm install`, `pnpm dev --open` (gra otwiera się w przeglądarce).

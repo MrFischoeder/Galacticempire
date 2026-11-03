@@ -3,7 +3,5 @@
 
 export const GAME_NAME = 'Galactic Empire';
 
-/** Clamp a value into [min, max]. Placeholder utility until step 1.1. */
-export function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
+export * from './config';
+export * from './core';
