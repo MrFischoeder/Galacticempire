@@ -214,3 +214,15 @@ Skutki, które trzeba rozstrzygnąć (nic z tego jeszcze nie jest zbudowane, dot
 ### 33. 🟡 Stacja orbitalna bez blokad
 Stacja orbitalna służyła tylko do blokady stałej przy pełnej kontroli układu (spec 2.4, 12.3). Po usunięciu blokad nie ma zadania.
 **Propozycja:** stacja orbitalna staje się najsilniejszą obroną planety (dostępną tylko przy pełnej kontroli układu), która broni każdej Twojej planety w tym układzie (nie tylko tej, przy której stoi). Alternatywa: usunąć ją z gry. Do decyzji przed fazą 2 (walka).
+
+**Odpowiedź (3.11.2026):** stacja orbitalna = najsilniejsza obrona całego układu: gdy którakolwiek planeta właściciela w układzie jest atakowana, stacja jej broni. Do rozstrzygnięcia: warunek budowy przy układach współdzielonych (pytanie 34).
+
+### 34. 🟡 Układy współdzielone przez graczy, którzy nie są sojusznikami
+Właściciel pyta: czy dwie osoby mogą zajmować różne planety tego samego układu i żyć obok siebie, nie będąc sojusznikami?
+Stan specyfikacji: tak, planety jednego układu mogą należeć do różnych graczy (2.2); kontrola układu od 50% planet daje +15% produkcji, 100% daje +25% (2.4); wolne planety w układzie kontrolowanym przez kogoś innego można kolonizować dopiero po wygraniu bitwy z jego flotą lub stacją (10.5); między nie-sojusznikami nie ma żadnej umowy, każdy może zaatakować każdego.
+**Propozycja:**
+1. **Współżycie domyślnie pokojowe w praktyce:** nikt nie walczy sam z siebie; bitwa jest tylko wtedy, gdy ktoś wyśle flotę na atak. Sąsiedzi w jednym układzie widzą się nawzajem (ten sam układ) i mają do siebie bardzo blisko (1–5 LY, lot w kilka minut), więc ostrzeżenia przed atakiem są krótkie: to naturalne napięcie.
+2. **Pakt o nieagresji** (nowy, lżejszy od sojuszu): dwóch graczy zawiera go w kilka sekund; daje tylko zakaz atakowania się nawzajem (walidacja komend), bez wspólnej mapy i transportów. Zerwanie paktu działa z opóźnieniem (np. 12 h), żeby nikt nie zerwał go tuż przed atakiem.
+3. **Stacja orbitalna w układzie współdzielonym:** może ją postawić gracz, który kontroluje układ (≥ 50% planet, liczone razem z sojusznikami); broni tylko planet swojego właściciela (i sojuszników), nigdy cudzych. Przy 100% kontroli dalej działa jak w odpowiedzi do pytania 33. Jeżeli właściciel straci kontrolę (np. ktoś skolonizuje kolejne planety), stacja zostaje, ale przestaje działać, dopóki kontrola nie wróci.
+4. **Kolonizacja wolnych planet przy sąsiedzie:** zostaje zasada 10.5 (nie da się kolonizować w układzie kontrolowanym przez innego gracza bez wygranej bitwy), chyba że gracze mają pakt o nieagresji albo sojusz: wtedy kolonizacja jest dozwolona bez walki.
+
