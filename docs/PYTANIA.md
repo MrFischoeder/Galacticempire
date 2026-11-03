@@ -147,10 +147,24 @@ Zgodnie z Twoją prośbą: każdy krok trafia na nową gałąź (`v0.1.0-szkiele
 (b) Biomasa: specyfikacja 2.0 zamieniła ją na żyzność. Czy biomasa ma być magazynowanym surowcem produkowanym przez farmę (z żyzności), z którego potem powstaje żywność (np. w przetwórni) i może coś jeszcze (np. paliwo bio, plastik)? Czy po prostu tak nazywamy żywność?
 **Propozycja:** farma produkuje biomasę (z żyzności), przetwórnia żywności zamienia 2 biomasy → 1 żywność; biomasa może też zasilać reaktor biomasowy na planetach bez materiału rozpadowego. Do decyzji.
 
+**Odpowiedź (3.11.2026):**
+- Każda planeta ma surowce podstawowe, wystarczające do zbudowania podstawowej floty. Planeta specjalizuje się w jednym dodatkowym surowcu (albo jest bogata w któryś z podstawowych, to inny przypadek).
+- Do dalszej rozbudowy trzeba podbijać planety z lepszymi surowcami. Złoża się wyczerpują; gracz widzi, ile zostało i jak szybko można je wydobyć.
+- Biomasa = zasób żywności. Farma wytwarza biomasę (na bieżąco, podobnie jak energię), z niej żyje populacja. W kodzie: zasób `biomass` zamiast osobnej „żywności”.
+- Pomysły na przyszłe rasy (nie teraz, do rozwinięcia): rasa robotów bez potrzeby biomasy, za to z dużym zużyciem energii; rasa budująca statki organiczne, dla której biomasa jest podstawowym materiałem, a energii potrzebuje mało. Dlatego koszty i utrzymanie w konfiguracji mają być ogólne (dowolny zasób), nie na sztywno „żywność”.
+
+**Pytanie 1b (🟡, do kroku 1.2a):** które surowce są podstawowe? Podstawowa flota (przechwytywacz, myśliwiec) kosztuje stopy (metal + tytan) i komponenty (krzem + stop), a lot wymaga paliwa (lód).
+**Propozycja:** podstawowe na każdej planecie (ubogie złoża): metal, lód, tytan, krzem. Specjalizacja to jedno bogate złoże: albo któryś z podstawowych (skalista = metal, lodowa/gazowy gigant = lód, wulkaniczna = tytan, pustynna = krzem), albo surowiec specjalny dostępny tylko przez specjalizację: materiał rozpadowy (radioaktywna) i 1–2 nowe surowce rzadkie (do ustalenia, np. kryształy dla tarcz i pancerników, egzotyczna materia dla wysokich technologii). Wysokie poziomy budynków i najcięższe jednostki wymagają surowców specjalnych → trzeba podbijać.
+
 ### 5a. 🔴 Czym gracz startuje
 Skoro magazyn jest pusty: czy zostają startowe 200 paliwa, 100 stopów, 2 sondy i 1 transportowiec? Czy rdzeń ma na starcie zapas (np. po 150 w rdzeniu), żeby pierwsza budowa nie czekała kilku godzin?
 **Propozycja:** start: pusty magazyn, pełny rdzeń (po 150 surowców, 100 energii, 100 żywności), 2 sondy, bez transportowca i paliwa. Pierwszy budynek da się postawić od razu z rdzenia, kolejne po ok. 1–2 h wydobycia.
 
+**Odpowiedź (3.11.2026):** magazyn pusty. Rdzeń planety powoli zbiera surowce („coś kropi”), aż uzbiera się na pierwszy budynek. Czy coś daje się na start (sondy), ustalimy w balansie (krok 1.2b).
+
 ### 6a. 🔴 Co stoi na planecie startowej na początku
 Czy gracz zaczyna z pustymi 16 polami (wtedy działa tylko zbiór awaryjny rdzenia, 5/h) czy z zestawem startowym, który może potem przebudować?
 **Propozycja:** gracz zaczyna z małym zestawem zajmującym 7 z 16 pól: kopalnia wiodącego surowca, kopalnia lodu, farma, mieszkanie, reaktor, panel słoneczny, magazyn (wszystko poziom 1). Pozostałe 9 pól (huta, rafineria, stocznia, kosmoport, hangar, akumulator, silos...) gracz wybiera sam. Budynki można burzyć, żeby zwolnić pole.
+
+**Odpowiedź (3.11.2026):** na starcie 16 pustych pól. Gracz od początku sam decyduje, co zbudować pierwsze: kopalnię, magazyn, farmę biomasy... Rdzeń zbiera minimalne ilości także bez budynków.
+Uwaga do balansu (krok 1.2b): przy obecnym zbiorze rdzenia (5/h) i najtańszym budynku 150 pierwsza budowa zajęłaby 30 h gry. Dobiorę tempo zbioru rdzenia stolicy i koszt pierwszych budynków tak, żeby pierwszy budynek był po kilkudziesięciu minutach, a kolejne coraz szybciej dzięki kopalniom.

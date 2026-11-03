@@ -8,6 +8,14 @@ Ten dokument zastępuje wszystkie poprzednie pliki (specyfikacje v1–v6, wytycz
 
 ## 0. Zmiany
 
+### Wersja 2.8 (w przygotowaniu, decyzje właściciela z 3.11.2026)
+Zapisane w `docs/PYTANIA.md`; liczby zostaną wpisane do sekcji 2–9 po kroku 1.2b (balans ekonomii).
+- **Złoża:** każda planeta ma surowce podstawowe (do budowy podstawowej floty) i specjalizuje się w jednym dodatkowym surowcu albo jest bogata w jeden z podstawowych. Lepsze surowce zdobywa się podbojem. Złoża są skończone i widoczne (ile zostało, tempo wydobycia). Zastępuje „jedno złoże główne” z sekcji 2.3.
+- **Biomasa** wraca jako nazwa zasobu żywności: farma wytwarza biomasę, populacja ją zjada (sekcje 4.2, 6).
+- **Start:** pusty magazyn i 16 pustych pól na planecie startowej; rdzeń powoli zbiera surowce i gracz sam wybiera pierwsze budynki. Zastępuje gotową planetę startową i zasoby startowe z sekcji 7.
+- **Koszty, czasy i wydajności budynków** zostaną przeliczone i zbalansowane (krok 1.2b).
+- Pomysły na przyszłe rasy: roboty (bez biomasy, dużo energii), rasa statków organicznych (biomasa jako materiał, mało energii).
+
 ### Wersja 2.7
 - **Tryby gry:** jednoosobowy (w przeglądarce, bez serwera, z przyspieszeniem czasu i pauzą), kooperacja przeciw AI, wieloosobowy z opcjonalnym AI oraz obrona przed inwazją (sekcja 23).
 - **Przeciwnicy komputerowi:** AI w trzech warstwach (strategia, operacje, taktyka), grające według tych samych reguł co człowiek, z mgłą wojny, 5 osobowościami i 4 poziomami trudności.
