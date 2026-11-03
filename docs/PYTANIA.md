@@ -156,6 +156,8 @@ Zgodnie z Twoją prośbą: każdy krok trafia na nową gałąź (`v0.1.0-szkiele
 **Pytanie 1b (🟡, do kroku 1.2a):** które surowce są podstawowe? Podstawowa flota (przechwytywacz, myśliwiec) kosztuje stopy (metal + tytan) i komponenty (krzem + stop), a lot wymaga paliwa (lód).
 **Propozycja:** podstawowe na każdej planecie (ubogie złoża): metal, lód, tytan, krzem. Specjalizacja to jedno bogate złoże: albo któryś z podstawowych (skalista = metal, lodowa/gazowy gigant = lód, wulkaniczna = tytan, pustynna = krzem), albo surowiec specjalny dostępny tylko przez specjalizację: materiał rozpadowy (radioaktywna) i 1–2 nowe surowce rzadkie (do ustalenia, np. kryształy dla tarcz i pancerników, egzotyczna materia dla wysokich technologii). Wysokie poziomy budynków i najcięższe jednostki wymagają surowców specjalnych → trzeba podbijać.
 
+**Stan (3.11.2026):** właściciel poprosił o propozycję surowców specjalnych; jest w `docs/SUROWCE.md` (do akceptacji).
+
 ### 5a. 🔴 Czym gracz startuje
 Skoro magazyn jest pusty: czy zostają startowe 200 paliwa, 100 stopów, 2 sondy i 1 transportowiec? Czy rdzeń ma na starcie zapas (np. po 150 w rdzeniu), żeby pierwsza budowa nie czekała kilku godzin?
 **Propozycja:** start: pusty magazyn, pełny rdzeń (po 150 surowców, 100 energii, 100 żywności), 2 sondy, bez transportowca i paliwa. Pierwszy budynek da się postawić od razu z rdzenia, kolejne po ok. 1–2 h wydobycia.
