@@ -175,3 +175,18 @@ export const PLANET_FIELDS = { min: 8, max: 14, starter: 16 } as const;
 
 /** Distance between planets inside a system in LY (spec 12.1.5). */
 export const IN_SYSTEM_LY = { min: 1, max: 5 } as const;
+
+/**
+ * The starting planet (spec 7 conditions, decisions 2.8): fertile, with wind power, an average
+ * metal deposit and poor deposits of the other basic minerals; 16 empty fields.
+ */
+export const STARTER_PLANET = {
+  type: 'green' as PlanetTypeId,
+  fertility: 1.0,
+  renewable: 'wind' as RenewableKind,
+  deposits: { metal: 'average', deuterium: 'poor', titanium: 'poor', silicon: 'poor' } as Record<
+    (typeof BASIC_MINERALS)[number],
+    DepositClass
+  >,
+  fields: PLANET_FIELDS.starter,
+} as const;

@@ -78,8 +78,10 @@ export interface BuildingSpec {
   readonly unique: boolean;
   /** Limit per planet for non-unique buildings (renewables: 3, spec 5). */
   readonly maxCount?: number;
-  /** Cost of building level 1. Later levels: × BUILD.costGrowth per level. PROVISIONAL. */
+  /** Cost of level 1. Level L costs cost × BUILD.costGrowth^(L-1) (step 1.2b). */
   readonly cost: ResourceAmounts;
+  /** Build time of level 1 in game minutes; level L takes × BUILD.timeGrowth^(L-1). */
+  readonly buildMinutes: number;
   /** Energy per hour at level 1, × BUILD.energyGrowth per level (spec 5.1). */
   readonly energy: number;
   /** Workers needed (spec 6). */
@@ -92,9 +94,8 @@ export interface BuildingSpec {
   readonly gasGiantOk?: boolean;
 }
 
-/** Level formulas (spec 9). PROVISIONAL growth for time and special costs (step 1.2b). */
+/** Level formulas (spec 9, balanced in step 1.2b, docs/BALANS.md). */
 export const BUILD = {
-  firstLevelMinutes: 5,
   timeGrowth: 1.8,
   costGrowth: 1.6,
   energyGrowth: 1.15,
@@ -110,11 +111,23 @@ export const BUILD = {
 
 /** The planet core: built in, indestructible minimal storage (spec 8.1). */
 export const CORE = {
+  /**
+   * Stored in the core: each resource, energy, biomass. The core ADDS to the warehouses,
+   * silos and accumulators (owner's decision 3.11.2026): capacity = core + buildings.
+   * The core's contents cannot be plundered or destroyed (spec 8.1).
+   */
   capacity: 150,
   energy: 100,
   biomass: 100,
-  /** Emergency gathering per hour without any building (spec 8.1). PROVISIONAL (1.2b). */
-  tricklePerHour: 5,
+  /** People the core shelters without any housing (step 1.2b: the empty start needs hands). */
+  residents: 10,
+  /**
+   * Emergency gathering per hour (spec 8.1). Basic minerals only, and only while no mine
+   * works that mineral on the planet (it is an emergency trickle, not free income).
+   */
+  tricklePerHour: 20,
+  trickleBiomass: 5,
+  trickleEnergy: 5,
 } as const;
 
 const EXOTIC: SpecialGate = { fromLevel: BUILD.exoticFromLevel, resource: 'exotic' };
@@ -126,7 +139,8 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     category: 'production',
     maxLevel: 10,
     unique: false,
-    cost: { metal: 60, silicon: 40, titanium: 50 },
+    cost: { metal: 25, titanium: 20, silicon: 15 },
+    buildMinutes: 3,
     energy: 10,
     workers: 5,
     requires: [],
@@ -139,7 +153,8 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     category: 'production',
     maxLevel: 10,
     unique: false,
-    cost: { metal: 90, silicon: 60 },
+    cost: { metal: 35, titanium: 20, silicon: 25 },
+    buildMinutes: 6,
     energy: 15,
     workers: 5,
     requires: [],
@@ -152,7 +167,8 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     category: 'production',
     maxLevel: 10,
     unique: false,
-    cost: { metal: 80, titanium: 40, silicon: 30 },
+    cost: { metal: 35, titanium: 30, silicon: 25 },
+    buildMinutes: 6,
     energy: 20,
     workers: 5,
     requires: [],
@@ -164,7 +180,8 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     category: 'production',
     maxLevel: 10,
     unique: false,
-    cost: { metal: 60, silicon: 60, titanium: 30 },
+    cost: { metal: 35, titanium: 25, silicon: 40 },
+    buildMinutes: 8,
     energy: 20,
     workers: 5,
     requires: [],
@@ -176,7 +193,8 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     category: 'civil',
     maxLevel: 10,
     unique: false,
-    cost: { metal: 100, silicon: 50 },
+    cost: { metal: 25, titanium: 10, silicon: 15 },
+    buildMinutes: 3,
     energy: 5,
     workers: 5,
     requires: [],
@@ -188,7 +206,8 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     category: 'energy',
     maxLevel: 10,
     unique: false,
-    cost: { metal: 120, titanium: 60, fissile: 50 },
+    cost: { metal: 100, titanium: 80, fissile: 50 },
+    buildMinutes: 20,
     energy: 0,
     workers: 5,
     requires: [],
@@ -201,6 +220,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     maxLevel: 10,
     unique: false,
     cost: { alloy: 200, components: 40, helium3: 40 },
+    buildMinutes: 60,
     energy: 0,
     workers: 5,
     requires: [{ building: 'laboratory', level: 1 }],
@@ -214,19 +234,21 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     maxLevel: 10,
     unique: false,
     maxCount: 3,
-    cost: { metal: 80, silicon: 70 },
+    cost: { metal: 20, titanium: 10, silicon: 25 },
+    buildMinutes: 3,
     energy: 0,
     workers: 0,
     requires: [],
     special: gates(),
-    effect: { kind: 'renewable', perHour: 15, growth: 1.25 },
+    effect: { kind: 'renewable', perHour: 25, growth: 1.3 },
   },
   housing: {
     name: 'Mieszkanie',
     category: 'civil',
     maxLevel: 10,
     unique: false,
-    cost: { metal: 100, titanium: 50 },
+    cost: { metal: 25, titanium: 25, silicon: 10 },
+    buildMinutes: 4,
     energy: 2,
     workers: 0,
     requires: [],
@@ -238,7 +260,8 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     category: 'storage',
     maxLevel: 10,
     unique: false,
-    cost: { metal: 100, titanium: 50 },
+    cost: { metal: 30, titanium: 25, silicon: 5 },
+    buildMinutes: 4,
     energy: 2,
     workers: 0,
     requires: [],
@@ -251,7 +274,8 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     category: 'storage',
     maxLevel: 10,
     unique: false,
-    cost: { metal: 70, silicon: 80 },
+    cost: { metal: 15, titanium: 15, silicon: 30 },
+    buildMinutes: 4,
     energy: 1,
     workers: 0,
     requires: [],
@@ -264,7 +288,8 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     category: 'storage',
     maxLevel: 10,
     unique: false,
-    cost: { metal: 100, silicon: 50 },
+    cost: { metal: 25, titanium: 15, silicon: 20 },
+    buildMinutes: 4,
     energy: 1,
     workers: 0,
     requires: [],
@@ -276,7 +301,8 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     category: 'storage',
     maxLevel: 10,
     unique: false,
-    cost: { metal: 80, titanium: 70 },
+    cost: { metal: 30, titanium: 45, silicon: 5 },
+    buildMinutes: 6,
     energy: 2,
     workers: 0,
     requires: [],
@@ -289,7 +315,8 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     category: 'military',
     maxLevel: 10,
     unique: false,
-    cost: { metal: 100, titanium: 60 },
+    cost: { metal: 45, titanium: 40, silicon: 15 },
+    buildMinutes: 8,
     energy: 5,
     workers: 0,
     requires: [],
@@ -302,7 +329,8 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     category: 'military',
     maxLevel: 10,
     unique: true,
-    cost: { metal: 150, titanium: 80, silicon: 70 },
+    cost: { metal: 80, titanium: 70, silicon: 50 },
+    buildMinutes: 15,
     energy: 15,
     workers: 5,
     requires: [],
@@ -314,7 +342,8 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     category: 'military',
     maxLevel: 10,
     unique: true,
-    cost: { metal: 120, titanium: 60, silicon: 40 },
+    cost: { metal: 60, titanium: 50, silicon: 40 },
+    buildMinutes: 12,
     energy: 10,
     workers: 5,
     requires: [],
@@ -328,7 +357,8 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     category: 'tech',
     maxLevel: 10,
     unique: true,
-    cost: { metal: 80, silicon: 100 },
+    cost: { metal: 40, titanium: 30, silicon: 80 },
+    buildMinutes: 12,
     energy: 15,
     workers: 5,
     requires: [],
@@ -342,6 +372,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     maxLevel: 10,
     unique: true,
     cost: { alloy: 150, components: 30, crystalite: 30 },
+    buildMinutes: 30,
     energy: 30,
     workers: 0,
     requires: [],
@@ -354,7 +385,8 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     category: 'tech',
     maxLevel: 10,
     unique: true,
-    cost: { alloy: 80, components: 20, silicon: 60 },
+    cost: { alloy: 60, components: 15, silicon: 60 },
+    buildMinutes: 20,
     energy: 20,
     workers: 5,
     requires: [{ building: 'shipyard', level: 2 }],
@@ -367,6 +399,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     maxLevel: 5,
     unique: true,
     cost: { alloy: 400, components: 100 },
+    buildMinutes: 40,
     energy: 15,
     workers: 5,
     requires: [{ building: 'spaceport', level: 3 }],
@@ -379,6 +412,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     maxLevel: 1,
     unique: true,
     cost: { alloy: 300, components: 80, exotic: 10 },
+    buildMinutes: 120,
     energy: 15,
     workers: 5,
     requires: [],
@@ -391,6 +425,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     maxLevel: 1,
     unique: true,
     cost: { alloy: 600, components: 120, crystalite: 40, exotic: 10 },
+    buildMinutes: 180,
     energy: 20,
     workers: 0,
     requires: [],
@@ -407,6 +442,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     maxLevel: 10,
     unique: false,
     cost: { alloy: 240, components: 35 },
+    buildMinutes: 100,
     energy: 10,
     workers: 0,
     requires: [{ building: 'shipyard', level: 2 }],
@@ -420,6 +456,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     maxLevel: 10,
     unique: false,
     cost: { alloy: 350, components: 56, fissile: 30 },
+    buildMinutes: 155,
     energy: 15,
     workers: 0,
     requires: [{ building: 'shipyard', level: 4 }],
@@ -433,6 +470,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     maxLevel: 10,
     unique: false,
     cost: { alloy: 450, components: 65 },
+    buildMinutes: 190,
     energy: 20,
     workers: 0,
     requires: [{ building: 'shipyard', level: 3 }],

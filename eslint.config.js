@@ -53,7 +53,13 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ['packages/client/**/*.ts', 'tests/**/*.ts', '**/vite.config.ts', 'eslint.config.js'],
+    files: [
+      'packages/client/**/*.ts',
+      'tests/**/*.ts',
+      'tools/**/*.ts',
+      '**/vite.config.ts',
+      'eslint.config.js',
+    ],
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
   },
   {

@@ -28,6 +28,7 @@ const buildingSchema = z.object({
   unique: z.boolean(),
   maxCount: z.number().int().positive().optional(),
   cost: amounts.refine((c) => Object.keys(c).length > 0, 'empty cost'),
+  buildMinutes: pos,
   energy: nonNeg,
   workers: z.number().int().nonnegative(),
   requires: z.array(z.object({ building: z.string(), level: z.number().int().positive() })),
@@ -105,13 +106,19 @@ export const CONFIG_SCHEMA = z.object({
   races: z.record(z.string(), raceSchema),
   planets: z.record(z.string(), planetSchema),
   numbers: z.object({
-    build: z
-      .object({ firstLevelMinutes: pos, timeGrowth: pos, costGrowth: pos, energyGrowth: pos })
-      .loose(),
+    build: z.object({ timeGrowth: pos, costGrowth: pos, energyGrowth: pos }).loose(),
     research: z
       .object({ maxLevel: z.number().int().positive(), costGrowth: pos, timeGrowth: pos })
       .loose(),
-    core: z.object({ capacity: pos, energy: pos, biomass: pos, tricklePerHour: pos }),
+    core: z.object({
+      capacity: pos,
+      energy: pos,
+      biomass: pos,
+      residents: pos,
+      tricklePerHour: pos,
+      trickleBiomass: pos,
+      trickleEnergy: pos,
+    }),
     fields: z.object({ min: pos, max: pos, starter: pos }),
     deposits: z.object({}).loose(),
     multipliers: z.array(pos).min(1),

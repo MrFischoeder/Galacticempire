@@ -15,7 +15,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.0 | 0.1.0a | `v0.1.0a-start-bat` | `start-gry.bat`: uruchamianie jednym kliknięciem | ✅ |
 | 1.1 | 0.1.1 | `v0.1.1-rdzen-symulacji` | zegar gry, RNG, kolejka zdarzeń, komendy | ✅ |
 | 1.2a | 0.1.2 | `v0.1.2-konfiguracja` | wszystkie liczby jako dane, modyfikatory | ✅ |
-| 1.2b | 0.1.3 | `v0.1.3-balans-ekonomii` | narzędzie liczące + tabela kosztów, czasów i wydajności budynków do akceptacji | ⬜ |
+| 1.2b | 0.1.3 | `v0.1.3-balans-ekonomii` | narzędzie liczące + tabela kosztów, czasów i wydajności budynków do akceptacji | ✅ czeka na akceptację |
 | 1.3 | 0.1.4 | `v0.1.4-galaktyka` | generator galaktyki i tras | ⬜ |
 | 1.4a | 0.1.5 | `v0.1.5-produkcja` | wydobycie, przetwórstwo, magazyn, rdzeń, energia | ⬜ |
 | 1.4b | 0.1.6 | `v0.1.6-populacja` | populacja, robotnicy, żywność, silos, głód | ⬜ |
@@ -36,6 +36,14 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.1.3: balans ekonomii (krok 1.2b, 3.11.2026)
+- Decyzja właściciela: pojemność rdzenia **dodaje się** do magazynów (też silosów i akumulatorów). Zapisane w `CORE` (`config/buildings.ts`), `docs/PYTANIA.md` i specyfikacji (sekcja 0, 2.8).
+- `tools/balance/`: `economy.ts` (model jednej planety minuta po minucie: kopalnie na złożach, zbiór awaryjny rdzenia, energia z akumulatorem i niedoborem, robotnicy z priorytetem, przetwórstwo, biomasa, wzrost i głód populacji, pojemność rdzeń + magazyn), `plan.ts` (bot „rozsądny gracz” z pilnowaniem energii, rąk do pracy i żywności), `report.ts` → `pnpm balance` generuje `docs/BALANS.md` (tabele kosztów, czasów, energii i maks. poziomu bez surowców specjalnych, zwrot ulepszeń kopalni, przebieg startu).
+- Nowe/zmienione liczby: koszt i czas poziomu 1 każdego budynku (`buildMinutes`), koszty rozłożone na metal, tytan i krzem (pierwsza wersja, tylko z metalem, robiła z metalu wąskie gardło); rdzeń: 10 mieszkańców, zbiór 20/h każdego minerału tylko bez jego kopalni, 5 biomasy, 5 energii; elektrownia odnawialna 25/h ×1,3 (15/h nie wystarczało bez reaktora); planeta startowa `STARTER_PLANET` (zielona, żyzność 1, wiatr, metal średni, reszta uboga).
+- Wynik symulacji: pierwsza budowa po 1,3 h, 5 budynków po 4,4 h, stocznia po 36 h, pierwszy myśliwiec po 39 h, 16 pól po 40 h, wszystko na maksimum bez surowców specjalnych po 9 dniach. Braki energii 4 h, rąk 10 h w ciągu 21 dni.
+- `tests/balance.test.ts` pilnuje tego tempa (zmiana konfiguracji, która je psuje, zatrzyma `pnpm check`).
+- Do sprawdzenia przez właściciela: `docs/BALANS.md` — czy tempo pasuje (szybciej/wolniej), czy koszty i czasy są rozsądne.
 
 ### 0.1.2: konfiguracja i dane gry (krok 1.2a, 3.11.2026)
 - `packages/shared/src/config/`: `resources.ts` (5 podstawowych, 4 specjalne, 3 przetworzone, wartości z 10.0), `recipes.ts` (4.2), `planets.ts` (10 typów planet z decyzjami 2.8: specjalizacje, żyzność, energia odnawialna, częstość, kolor; klasy i pule złóż; 8–14 pól, startowa 16), `buildings.ts` (25 budynków: koszt, energia, robotnicy, wymagania, progi surowców specjalnych, efekt i jego wzrost; wzory `BUILD`; rdzeń `CORE`), `units.ts` (16 jednostek i 4 obiekty obronne z tabel 10.1–10.3, 11.3, 12.3 + dodatki ze `SUROWCE.md`), `techs.ts` (13 technologii, `RESEARCH`), `races.ts` (4 rasy jako dane, mechaniki unikalne jako parametry), `population.ts`, `modifiers.ts` (wspólny opis „+x% do statystyki jednostek”), `schema.ts` (walidacja zod + sprawdzenia krzyżowe, `validateConfig()` wołane też przy starcie klienta).

@@ -39,7 +39,9 @@ Podano: kopalnia ×1,25, magazyn/akumulator/silos/schron/tarcza ×1,3, mieszkani
 (b) Zasoby startowe to 400 każdego surowca, czyli pełny magazyn poziomu 1: kopalnie od pierwszej minuty stoją.
 **Propozycja:** (a) pojemność = magazyn + rdzeń (rdzeń to pierwsze 150 każdego zasobu, chronione przed grabieżą); tabela 8 dotyczy samego magazynu. (b) start bez zmian: 400 surowców wystarcza akurat na akumulator, silos i magazyn (kolejność 7.1), więc magazyn szybko się zwalnia — to dobry samouczek. Daj znać, jeśli wolisz np. 250 na start.
 
-**Odpowiedź (3.11.2026):** gracze NIE startują z 400 surowców. Magazyn startowy jest pusty, kopalnie muszą najpierw nakopać surowce. (Część (a), czy rdzeń dodaje się do magazynu: bez odpowiedzi, zostaje propozycja.) Pytanie uzupełniające 5a niżej.
+**Odpowiedź (3.11.2026):** gracze NIE startują z 400 surowców. Magazyn startowy jest pusty, kopalnie muszą najpierw nakopać surowce. Pytanie uzupełniające 5a niżej.
+
+**Odpowiedź (a), 3.11.2026:** pojemność rdzenia **dodaje się** do magazynu (i do silosów i akumulatorów): pojemność = rdzeń + budynki. Zawartość rdzenia jest chroniona przed grabieżą.
 
 ### 6. 🔴 Ile budynków jednego typu na planecie i ile pól zajmują
 Czy na planecie może stać kilka kopalni tego samego złoża, kilka hut, kilka mieszkań (planeta startowa ma 3 mieszkania), kilka magazynów? Czy każdy budynek zajmuje 1 pole? Planeta startowa ma 16 budynków, a planeta ma 8–14 pól.

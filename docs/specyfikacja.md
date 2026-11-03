@@ -15,6 +15,8 @@ Zapisane w `docs/PYTANIA.md`; liczby zostaną wpisane do sekcji 2–9 po kroku 1
 - **Start:** pusty magazyn i 16 pustych pól na planecie startowej; rdzeń powoli zbiera surowce i gracz sam wybiera pierwsze budynki. Zastępuje gotową planetę startową i zasoby startowe z sekcji 7.
 - **Koszty, czasy i wydajności budynków** zostaną przeliczone i zbalansowane (krok 1.2b).
 - **Surowce specjalne (zaakceptowane 3.11.2026):** materiał rozpadowy (atak i energia), krystalit (obrona i przemysł), hel-3 (logistyka i fuzja), egzotyczna materia (szczyt rozwoju). Budynki do poz. 4, badania do poz. 4 i stocznia 1–3 wymagają tylko surowców podstawowych (metal, lód, tytan, krzem, biomasa). Pełny opis: `docs/SUROWCE.md`; liczby do przeliczenia w kroku 1.2b.
+- **Rdzeń planety dodaje się do magazynów** (decyzja 3.11.2026): pojemność = rdzeń (150 każdego zasobu, 100 energii, 100 biomasy) + magazyny, akumulatory, silosy.
+- **Balans ekonomii (krok 1.2b, `docs/BALANS.md`, do akceptacji):** koszt poziomu 1 ok. 60 wartości, koszt ×1,6 i czas ×1,8 na poziom, czas poziomu 1 osobno dla każdego budynku; rdzeń daje schronienie 10 osobom i zbiera awaryjnie 20/h każdego minerału podstawowego (tylko bez kopalni tego minerału), 5 biomasy/h, 5 energii/h; elektrownia odnawialna 25/h ×1,3 na poziom; przetwórstwo i farma ×1,25 na poziom. Zastępuje liczby z sekcji 7, 8.1 i 9 tam, gdzie się różnią.
 - Pomysły na przyszłe rasy: roboty (bez biomasy, dużo energii), rasa statków organicznych (biomasa jako materiał, mało energii).
 
 ### Wersja 2.7
