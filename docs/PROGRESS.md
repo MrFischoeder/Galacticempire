@@ -19,7 +19,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.2b | 0.1.3a | `v0.1.3a-balans-imperium` | analiza wielu planet: kolonie wspierane dowozem | ✅ zaakceptowane |
 | 1.3 | 0.1.4 | `v0.1.4-galaktyka` | generator galaktyki i tras | ✅ |
 | 1.4a | 0.1.5 | `v0.1.5-produkcja` | wydobycie, przetwórstwo, magazyn, rdzeń, energia | ✅ |
-| 1.4b | 0.1.6 | `v0.1.6-populacja` | populacja, robotnicy, żywność, silos, głód | ⬜ |
+| 1.4b | 0.1.6 | `v0.1.6-populacja` | populacja, robotnicy, żywność, silos, głód | ✅ |
 | 1.5 | 0.1.7 | `v0.1.7-budowa` | budowa i ulepszenia budynków | ⬜ |
 | 1.6 | 0.1.8 | `v0.1.8-badania` | laboratorium i 13 technologii | ⬜ |
 | 1.7 | 0.1.9 | `v0.1.9-mapa-galaktyki` | Web Worker, mapa 3D | ⬜ |
@@ -37,6 +37,15 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.1.6: populacja, robotnicy, biomasa (krok 1.4b, 3.11.2026)
+- `economy/planet.ts` rozszerzony: mieszkańcy (`population`, liczeni w całych osobach) i postęp do następnego (`growth`: +1 przybywa mieszkaniec, −1 ktoś umiera; każda taka chwila to punkt zmiany, więc wynik nie zależy od długości kroków), pojemność mieszkań (rdzeń 10 + 20 na poziom mieszkania; gazowy gigant bez mieszkań), silosy (rdzeń 100 + 300 × 1,3^(poz−1)), farmy (30/h × 1,25^(poz−1) × żyzność), zbiór awaryjny biomasy 5/h na żyznej planecie.
+- Robotnicy (`staffing`): budynki z obsadą dostają ludzi w kolejności `POPULATION.workerPriority` (farma, reaktory, kopalnie, przetwórstwo, kosmoport, stocznia, skaner, laboratorium, giełda, centrum), niepełna obsada pracuje proporcjonalnie i proporcjonalnie zużywa energię (propozycja z pytania 7).
+- Jedzenie: 0,5 biomasy/h na mieszkańca (Rój +25%); najpierw z zapasu, przy pustym zapasie i braku jedzenia głód: −5% mieszkańców na godzinę (najmniej 1 osoba); wzrost +10%/h (co najmniej 1/h), gdy produkcja biomasy przewyższa jedzenie, ale nie szybciej, niż nadwyżka wykarmi nowych, i nie ponad mieszkania; nadmiar ludzi ponad mieszkania odchodzi.
+- Testy (11 nowych w `test/population.test.ts`): stan równowagi pustej planety, wzrost do pojemności, wzrost ograniczony nadwyżką, kolejność i niepełna obsada, głód i jego koniec, zapas biomasy i silosy, planeta bez żyzności, gazowy gigant, odchodzenie nadmiaru, Rój, jeden długi krok = wiele krótkich.
+- `tests/engine-vs-balance.test.ts`: dziennik budowy modelu balansu odtworzony na silniku gry: populacja 21/22 po 12 h, potem identyczna (70, 70, 70, 130 w dniach 1, 2, 3, 7); wydobycie kopalni zgodne. Silnik i zaakceptowany balans są spójne.
+- Stan gry w wersji 4 (planeta ma `population` i `growth`).
+- Do sprawdzenia ręcznie: nic w grze (widok planety w kroku 1.8); `pnpm check`.
 
 ### 0.1.5: produkcja planety (krok 1.4a, 3.11.2026)
 - `packages/shared/src/economy/planet.ts`: stan posiadanej planety (`PlanetState`: właściciel, budynki z poziomami, kopalnia przypisana do złoża, zapasy, zgromadzona energia, czas ostatniego rozliczenia), pojemności (rdzeń + magazyny, rdzeń + akumulatory), `planetRates` (stałe tempo do następnej zmiany), `nextChangePoint`, `settlePlanet` (rozliczenie odcinkami od zmiany do zmiany: pełny lub pusty zapas, pełne lub puste akumulatory, wyczerpane złoże).
