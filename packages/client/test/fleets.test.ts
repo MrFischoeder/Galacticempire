@@ -29,7 +29,7 @@ describe('fleet panel (step 1.9)', () => {
     const { state, home, far, galaxy } = game();
     const snap = buildSnapshot(state)!;
     const view = snap.planets[0]!;
-    const html = planetFleetHTML(view);
+    const html = planetFleetHTML(view, snap.player);
     expect(html).toContain('3 Fighter');
     expect(html).toContain('dock:orbit');
     const draft = { from: home, to: far, mission: 'transfer' as const, units: { fighter: 3 } };
@@ -58,5 +58,22 @@ describe('fleet panel (step 1.9)', () => {
     const html = fleetListHTML(snap.fleets, galaxy, snap.time);
     expect(html).toContain('fleetRecall:f1');
     expect(html).toContain('There and back');
+  });
+});
+
+describe('shipyard panel (step 1.10a)', () => {
+  it('lists units with +1/+5 and the queue with cancel', async () => {
+    const { shipyardHTML } = await import('../src/ui/shipyardPanel');
+    const { state, home, cmd } = game();
+    cmd({ type: 'DebugSetBuilding', planetId: home, kind: 'shipyard', level: 1 });
+    cmd({ type: 'DebugAddResources', planetId: home, amounts: { alloy: 150, components: 50 } });
+    cmd({ type: 'OrderUnits', playerId: 'p1', planetId: home, unit: 'probe', count: 2 });
+    const snap = buildSnapshot(state)!;
+    const html = shipyardHTML(snap.planets[0]!, snap.player, snap.time);
+    expect(html).toContain('Probe 0/2');
+    expect(html).toContain('ordercancel:');
+    expect(html).toContain('order:fighter:1');
+    expect(html).toContain('Frigate'); // next level shown, disabled
+    expect(html).not.toContain('Cruiser');
   });
 });

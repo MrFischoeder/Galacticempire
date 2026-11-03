@@ -20,6 +20,7 @@ import {
   type SlotContent,
 } from '@ge/shared';
 import type { PlanetView } from '../sim/protocol';
+import { shipyardHTML } from './shipyardPanel';
 import { esc } from './html';
 import {
   formatAmount,
@@ -243,6 +244,7 @@ export function surfacePanelHTML(
     } else {
       parts.push(upgradeButton(view, b.uid, ctx));
     }
+    if (spec.effect.kind === 'shipyard') parts.push(shipyardHTML(view, player, now));
   }
   return parts.join('\n');
 }

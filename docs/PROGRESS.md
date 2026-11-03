@@ -30,7 +30,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.8a | 0.1.11 | `v0.1.11-powierzchnia-planety` | powierzchnia planety: heksy, budowa na polu, grafika wg typu planety | ✅ |
 | 1.9 | 0.1.12 | `v0.1.12-ruch-flot` | ruch flot, paliwo, kosmoport, hangary | ✅ |
 | 1.9 | 0.1.12a | `v0.1.12a-floty-zasady` | zasady flot właściciela: bez stacjonowania, bez kosmoportu, hangar/orbita | ✅ |
-| 1.10a | 0.1.13 | `v0.1.13-stocznia` | stocznia, utrzymanie | ⬜ |
+| 1.10a | 0.1.13 | `v0.1.13-stocznia` | stocznia, utrzymanie | ✅ |
 | 1.10b | 0.1.14 | `v0.1.14-transporty` | transporty, trasy cykliczne, kolonizacja | ⬜ |
 | 1.11 | 0.1.15 | `v0.1.15-mgla-wojny` | `getPlayerView`, sondy, skanery | ⬜ |
 | 1.12 | 0.1.16 | `v0.1.16-sojusze` | sojusze | ⬜ |
@@ -43,6 +43,14 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.1.13: stocznia i utrzymanie (krok 1.10a, 3.11.2026)
+- `shared/src/fleet/shipyard.ts`: kolejka stoczni na planecie (`PlanetState.shipyard`, do 5 zamówień, do 50 sztuk w zamówieniu, `config/fleets.ts` `SHIPYARD`). Zamówienie płacone w całości od razu; jednostki budowane po kolei, 1 min na 10 wartości (modyfikatory ras i badań przez `effectiveUnit`); gotowa jednostka ląduje w hangarze albo na orbicie. Odblokowanie według poziomu stoczni (tabela 9.2); budynki obronne nie są budowane w stoczni (zostają w kolejce budynków, faza 2). Anulowanie zwraca 75% kosztu niedokończonych jednostek (jak przy budynkach).
+- Komendy `OrderUnits`, `CancelUnitOrder`; zdarzenie `UnitBuilt`.
+- Utrzymanie (10.4): jednostki planety (hangary, orbita i floty w locie, `PlanetState.away`) jedzą biomasę z planety macierzystej; po wylądowaniu na innej planecie przechodzą na nią. Mieszkańcy jedzą pierwsi; przy braku biomasy jednostki dostają resztę (`PlanetRates.upkeepFed` < 1 = głód jednostek; −25% ataku i brak napraw zadziałają w fazie 2). Rój +25% utrzymania (z danych rasy). Wersja stanu 11.
+- Klient: po kliknięciu stoczni na powierzchni planety sekcja SHIPYARD (kolejka z czasem do następnej jednostki i anulowaniem, lista jednostek z kosztem, czasem i przyciskami +1/+5, z powodem blokady); w sekcji FLEET utrzymanie (biomasa/h, STARVING) i jednostki w locie.
+- Testy: `shared/test/shipyard.test.ts` (czasy budowy z 10.7, tabela 9.2, kolejka, płatność, biomasa kolonizatora, zwrot przy anulowaniu, utrzymanie 20 myśliwców ≈ 4/h, Rój +25%, utrzymanie w locie, pierwszeństwo mieszkańców), test panelu stoczni.
+- Na później: stocznia na razie buduje niezależnie od obsady i energii (jak laboratorium); zniszczenie stoczni nie przerywa kolejki; obrona planety i walka (faza 2).
 
 ### 0.1.12a: zasady flot właściciela (krok 1.9, 3.11.2026)
 - Misje: przelot (do własnej planety) i tam i z powrotem; stacjonowanie przy cudzej planecie usunięte. Flota, której cel przestał być Twój, leci do najbliższej Twojej planety.

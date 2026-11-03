@@ -20,7 +20,8 @@ import {
   STOCKED,
   STORED_RESOURCES,
 } from '../economy/planet';
-import { scheduleEvent, scheduleFleet } from './events';
+import { scheduleEvent, scheduleFleet, scheduleShipyard } from './events';
+import { canOrderUnits, cancelOrder, orderUnits } from '../fleet/shipyard';
 import type { FleetMission } from '../config/fleets';
 import { UNITS, type UnitId } from '../config/units';
 import {
@@ -56,7 +57,26 @@ export type Command =
   | SendFleetCommand
   | RecallFleetCommand
   | DebugAddUnitsCommand
-  | MoveUnitsCommand;
+  | MoveUnitsCommand
+  | OrderUnitsCommand
+  | CancelUnitOrderCommand;
+
+/** Order units in a planet's shipyard (spec 9.2, 10.7); paid in full at once. */
+export interface OrderUnitsCommand {
+  readonly type: 'OrderUnits';
+  readonly playerId: PlayerId;
+  readonly planetId: string;
+  readonly unit: UnitId;
+  readonly count: number;
+}
+
+/** Cancel a shipyard order; part of the unfinished units' cost comes back (CANCEL_REFUND). */
+export interface CancelUnitOrderCommand {
+  readonly type: 'CancelUnitOrder';
+  readonly playerId: PlayerId;
+  readonly planetId: string;
+  readonly orderId: number;
+}
 
 /** Move units between the hangars and orbit of their planet (free, owner 3.11.2026). */
 export interface MoveUnitsCommand {
@@ -446,6 +466,38 @@ export const COMMANDS: Specs = {
     apply(state, c) {
       recallFleet(state, c.fleetId);
       scheduleFleet(state, c.fleetId);
+    },
+  },
+  OrderUnits: {
+    validate(state, c) {
+      const own = ownedBy(state, c.playerId, c.planetId);
+      if (!own.ok) return own;
+      const s = settledCopy(state, c.planetId);
+      const p = s.planets[c.planetId] as PlanetState;
+      return canOrderUnits(p, c.unit, c.count, ownerContext(s, p));
+    },
+    apply(state, c) {
+      const p = settleOwned(state, c.planetId);
+      if (!p) return;
+      const idle = p.shipyard.length === 0;
+      orderUnits(p, c.unit, c.count, state.time, ownerContext(state, p), p.nextUid++);
+      if (idle) scheduleShipyard(state, c.planetId);
+    },
+  },
+  CancelUnitOrder: {
+    validate(state, c) {
+      const own = ownedBy(state, c.playerId, c.planetId);
+      if (!own.ok) return own;
+      if (!state.planets[c.planetId]?.shipyard.some((o) => o.id === c.orderId))
+        return fail('NO_ORDER', 'No such shipyard order.');
+      return OK;
+    },
+    apply(state, c) {
+      const p = settleOwned(state, c.planetId);
+      if (!p) return;
+      const first = p.shipyard[0]?.id === c.orderId;
+      cancelOrder(p, c.orderId, state.time);
+      if (first) scheduleShipyard(state, c.planetId);
     },
   },
   MoveUnits: {

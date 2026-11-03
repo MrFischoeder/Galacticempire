@@ -342,6 +342,7 @@ export function sendFleet(state: GameState, o: SendFleetOrder, ctx: ModifierCont
   const units: UnitCounts = {};
   addUnits(units, o.units);
   takeUnits(p, units);
+  addUnits(p.away, units); // the crews are still fed by the home planet (spec 10.4)
   p.stock[FLIGHT.fuel] = Math.max(0, (p.stock[FLIGHT.fuel] ?? 0) - plan.fuel);
   const fleet: Fleet = {
     id: `f${state.nextFleet++}`,
@@ -425,8 +426,20 @@ export function fleetPosition(f: Fleet, time: number): { x: number; y: number } 
 
 // --- arrival -------------------------------------------------------------------------------
 
+/** The fleet's units stop being fed by its home planet (they land, or are lost). */
+function releaseAway(state: GameState, f: Fleet): void {
+  const home = state.planets[f.origin];
+  if (!home || home.owner !== f.owner) return;
+  for (const [u, n] of Object.entries(f.units) as [UnitId, number][]) {
+    const left = (home.away[u] ?? 0) - n;
+    if (left > 0) home.away[u] = left;
+    else delete home.away[u];
+  }
+}
+
 /** Lands the fleet's units at an own planet and returns its unused fuel to the store. */
 function land(state: GameState, f: Fleet, p: PlanetState): void {
+  releaseAway(state, f);
   landUnits(p, f.units);
   if (f.reserve > 0) {
     const r = FLIGHT.fuel;
@@ -460,7 +473,7 @@ function flyOn(state: GameState, f: Fleet, from: PlanetId, to: PlanetId): void {
   f.leg = leg(galaxy, from, to, state.time, plan);
 }
 
-/** What happens when a fleet's leg ends (called with the destination planet settled). */
+/** What happens when a fleet's leg ends (called with the destination and home planets settled). */
 export function arriveFleet(state: GameState, id: string): string | null {
   const f = state.fleets[id];
   if (!f?.leg) return null;
@@ -481,6 +494,7 @@ export function arriveFleet(state: GameState, id: string): string | null {
   // The planet is not (or no longer) the owner's: the fleet heads for the nearest own planet.
   const home = nearestOwn(state, f.owner, where);
   if (!home) {
+    releaseAway(state, f);
     delete state.fleets[f.id];
     return `Fleet ${f.id} found no planet of yours to land at and was lost.`;
   }

@@ -31,3 +31,15 @@ export const MISSIONS: Record<FleetMission, { name: string; text: string; roundT
     roundTrip: true,
   },
 };
+
+/**
+ * The shipyard queue (spec 9.2, 10.7): units are built one after another, one minute per 10
+ * value (BUILD_MINUTES_PER_VALUE, modifiers in rules/modifiers.ts). An order is paid in full
+ * when placed; a cancelled order returns CANCEL_REFUND of the units not finished yet.
+ */
+export const SHIPYARD = {
+  /** Orders waiting at once on one planet. */
+  maxOrders: 5,
+  /** Units in one order. */
+  maxBatch: 50,
+} as const;

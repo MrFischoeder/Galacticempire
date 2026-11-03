@@ -2,6 +2,8 @@ import { BUILDINGS } from '../config/buildings';
 import { settleOwned } from '../economy/access';
 import { finishConstruction } from '../economy/construction';
 import { arriveFleet } from '../fleet/fleet';
+import { finishUnit, nextUnitAt } from '../fleet/shipyard';
+import { UNITS } from '../config/units';
 import { scheduleResearchCheck } from '../economy/schedule';
 import { enqueue } from './queue';
 import { Rng } from './rng';
@@ -12,7 +14,18 @@ import type { GameState } from './state';
  * buildings, battles and so on. `DebugMarker` exists for tests and the debug panel.
  */
 export type GameEvent =
-  DebugMarkerEvent | ConstructionDoneEvent | ResearchCheckEvent | FleetArrivalEvent;
+  | DebugMarkerEvent
+  | ConstructionDoneEvent
+  | ResearchCheckEvent
+  | FleetArrivalEvent
+  | UnitBuiltEvent;
+
+/** The shipyard finishes a unit (spec 10.7). */
+export interface UnitBuiltEvent {
+  readonly type: 'UnitBuilt';
+  readonly planetId: string;
+  readonly at: number;
+}
 
 /** A fleet reaches the end of its leg (spec 12.1). */
 export interface FleetArrivalEvent {
@@ -77,9 +90,19 @@ export const EVENT_HANDLERS: Handlers = {
     const f = state.fleets[event.fleetId];
     if (!f?.leg || f.leg.arriveAt !== event.arriveAt) return;
     settleOwned(state, f.leg.to);
+    settleOwned(state, f.origin); // its crews' upkeep stops there when they land
     const text = arriveFleet(state, f.id);
     if (text) state.log.push({ at: state.time, text });
     scheduleFleet(state, f.id);
+  },
+  UnitBuilt(state, event) {
+    const p = settleOwned(state, event.planetId);
+    if (!p) return;
+    const unit = finishUnit(p, event.at);
+    if (!unit) return; // cancelled or stale
+    const name = state.world.galaxy.planets[event.planetId]?.name ?? event.planetId;
+    state.log.push({ at: state.time, text: `${name}: ${UNITS[unit].name} built.` });
+    scheduleShipyard(state, event.planetId);
   },
   DebugMarker(state, event) {
     let text = `Marker: ${event.label}`;
@@ -111,4 +134,11 @@ export function scheduleFleet(state: GameState, fleetId: string): void {
   const leg = state.fleets[fleetId]?.leg;
   if (leg)
     scheduleEvent(state, leg.arriveAt, { type: 'FleetArrival', fleetId, arriveAt: leg.arriveAt });
+}
+
+/** Schedules the end of the unit the planet's shipyard is building (if any). */
+export function scheduleShipyard(state: GameState, planetId: string): void {
+  const p = state.planets[planetId];
+  const at = p ? nextUnitAt(p) : null;
+  if (at !== null) scheduleEvent(state, at, { type: 'UnitBuilt', planetId, at });
 }

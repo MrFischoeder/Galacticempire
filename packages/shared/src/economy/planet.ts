@@ -13,7 +13,7 @@ import { MS_PER_HOUR } from '../config/time';
 import type { PlayerId } from '../core/state';
 import { RESEARCH, type TechId } from '../config/techs';
 import type { UnitId } from '../config/units';
-import { economyBonus, type ModifierContext } from '../rules/modifiers';
+import { economyBonus, effectiveUnit, type ModifierContext } from '../rules/modifiers';
 import type { Planet, PlanetId } from '../galaxy/types';
 
 /**
@@ -74,6 +74,24 @@ export interface PlanetState {
    * hangar places. Hangars hide units from attacks from above; their role in battle: phase 2.
    */
   orbit: Partial<Record<UnitId, number>>;
+  /** Units of this planet in flight: their upkeep still comes from here (spec 10.4). */
+  away: Partial<Record<UnitId, number>>;
+  /** Shipyard orders, the first one being built (spec 9.2, 10.7). */
+  shipyard: ShipOrder[];
+}
+
+/** An order of `count` units of one kind, built one after another. */
+export interface ShipOrder {
+  readonly id: number;
+  readonly unit: UnitId;
+  readonly count: number;
+  built: number;
+  /** Build time of one unit, ms (modifiers fixed when ordered). */
+  readonly unitMs: number;
+  /** Paid per unit (for refunds). */
+  readonly cost: Partial<Record<ResourceId, number>>;
+  /** Game time the unit now being built was started; null while the order waits. */
+  startedAt: number | null;
 }
 
 /** One technology level being researched (spec 9.3.3). */
@@ -132,6 +150,8 @@ export function createPlanetState(
     research: [],
     units: {},
     orbit: {},
+    away: {},
+    shipyard: [],
   };
 }
 
@@ -218,6 +238,8 @@ interface Process {
   readonly deposit?: MinedResource;
   /** The residents eating (not a building). */
   readonly people?: boolean;
+  /** The crews of the planet's units (spec 10.4): fed after the residents. */
+  readonly upkeep?: boolean;
   /** A research job taking one resource towards its cost. */
   readonly research?: { readonly id: string; readonly resource: ResourceId };
 }
@@ -333,7 +355,29 @@ function processes(
     powered: false,
     people: true,
   });
+  // The crews of the planet's units, also those in flight (spec 10.4).
+  const upkeep = upkeepPerHour(p, ctx);
+  if (upkeep > 0)
+    list.push({
+      label: 'upkeep',
+      out: {},
+      inp: { biomass: upkeep },
+      energyOut: 0,
+      powered: false,
+      upkeep: true,
+    });
   return list;
+}
+
+/** Biomass per hour the planet's units eat: in the hangars, in orbit and in flight. */
+export function upkeepPerHour(p: PlanetState, ctx: ModifierContext = {}): number {
+  let total = 0;
+  for (const store of [p.units, p.orbit, p.away]) {
+    for (const [u, n] of Object.entries(store ?? {}) as [UnitId, number][]) {
+      if (n > 0) total += n * effectiveUnit(u, ctx).upkeep;
+    }
+  }
+  return total;
 }
 
 /** Energy that does not depend on fuel: renewables and the core's trickle. */
@@ -377,6 +421,8 @@ export interface PlanetRates {
   readonly growth: number;
   /** Biomass ran out and the residents do not get enough (spec 6). */
   readonly starving: boolean;
+  /** Share of the units' upkeep that is fed (1 = all); below 1 the units starve (spec 10.4). */
+  readonly upkeepFed: number;
   readonly housing: number;
   /** Research time progress per hour of every job (0 without a laboratory). */
   readonly research: Record<string, number>;
@@ -426,6 +472,15 @@ export function planetRates(
       const m = made[r] ?? 0;
       const u = used[r] ?? 0;
       if (stock <= EPS && u > m + EPS) {
+        // Empty biomass: the residents eat first, the crews get what is left (spec 10.4).
+        const crews = list.findIndex((proc) => proc.upkeep);
+        if (r === 'biomass' && crews >= 0 && (f[crews] as number) > EPS) {
+          const crewUse = ((list[crews] as Process).inp.biomass ?? 0) * (f[crews] as number);
+          const rest = u - crewUse;
+          f[crews] = rest < m ? ((f[crews] as number) * (m - rest)) / crewUse : 0;
+          changed = true;
+          continue;
+        }
         // Empty input: its consumers (and the residents' meals) shrink to what flows in.
         const ratio = m / u;
         list.forEach((proc, i) => {
@@ -452,6 +507,7 @@ export function planetRates(
   const extraction: Partial<Record<MinedResource, number>> = {};
   const speed: Record<string, number> = {};
   let fed = 1;
+  let upkeepFed = 1;
   const research: Record<string, number> = {};
   const researchPay: Record<string, Partial<Record<ResourceId, number>>> = {};
   const hasLab = p.buildings.some((b) => BUILDINGS[b.kind].effect.kind === 'laboratory');
@@ -464,6 +520,7 @@ export function planetRates(
       pay[proc.research.resource] = (proc.inp[proc.research.resource] ?? 0) * (f[i] as number);
     }
     if (proc.people) fed = f[i] as number;
+    if (proc.upkeep) upkeepFed = f[i] as number;
     if (proc.deposit) {
       const k = (f[i] as number) * efficiency;
       extraction[proc.deposit] =
@@ -507,6 +564,7 @@ export function planetRates(
     staffing: staff,
     growth,
     starving,
+    upkeepFed,
     housing,
     research,
     researchPay,

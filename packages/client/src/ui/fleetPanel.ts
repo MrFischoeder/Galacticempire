@@ -12,6 +12,7 @@ import {
   UNIT_IDS,
   UNITS,
   unitsAt,
+  upkeepPerHour,
   type Fleet,
   type FleetMission,
   type Galaxy,
@@ -47,16 +48,19 @@ export function unitsText(units: UnitCounts): string {
 }
 
 /** The fleet section of an owned planet's side panel. */
-export function planetFleetHTML(view: PlanetView): string {
+export function planetFleetHTML(view: PlanetView, player: Player): string {
   const p = view.planet;
   const here = unitsAt(p);
   const canDock = countUnits(dockable(p)) > 0;
   const canLaunch = countUnits(p.units) > 0;
+  const upkeep = upkeepPerHour(p, contextOf(player));
   return `<div class="section">FLEET</div>
 <table>
 <tr><td>In hangars</td><td class="num">${esc(unitsText(p.units))}</td></tr>
 <tr><td>In orbit</td><td class="num">${esc(unitsText(p.orbit))}</td></tr>
 <tr><td>Hangar places</td><td class="num">${placesOf(p.units)} / ${hangarPlaces(p)}</td></tr>
+<tr><td>Upkeep</td><td class="num ${view.rates.upkeepFed < 1 ? 'bad' : ''}">${upkeep.toFixed(1)} biomass/h${view.rates.upkeepFed < 1 ? ' · STARVING' : ''}</td></tr>
+${countUnits(p.away) > 0 ? `<tr><td>In flight</td><td class="num">${esc(unitsText(p.away))}</td></tr>` : ''}
 <tr><td>Fuel</td><td class="num">${formatAmount(p.stock[FLIGHT.fuel] ?? 0)}</td></tr>
 </table>
 <div class="dim small">Hangars hide units from attacks from above; moving between hangars and orbit is free.</div>
