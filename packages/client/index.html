@@ -8,9 +8,25 @@
   </head>
   <body>
     <canvas id="scene"></canvas>
+    <div id="labels"></div>
     <div id="hud" class="panel">
       <span class="title">GALACTIC EMPIRE</span> <span id="version"></span>
     </div>
+    <div id="debug" class="panel">
+      <div class="panel-title">DEBUG</div>
+      <label>Ziarno <input id="seed" type="text" spellcheck="false" /></label>
+      <label
+        >Układy <input id="systems" type="number" min="20" max="200" step="1" value="60"
+      /></label>
+      <div class="row">
+        <button id="generate">Generuj</button>
+        <button id="random">Nowa galaktyka</button>
+      </div>
+      <div id="stats" class="dim"></div>
+      <div class="dim help">Lewy przycisk: obrót · prawy: przesuw · kółko: zoom · klik: układ</div>
+    </div>
+    <div id="system" class="panel" hidden></div>
+    <div id="error" class="panel" hidden></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

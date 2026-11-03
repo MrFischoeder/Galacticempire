@@ -1,7 +1,9 @@
 :root {
   --bg: #050a1f;
   --cyan: #2ef2ff;
+  --cyan-dim: #1b8a99;
   --green: #39ff7a;
+  --magenta: #ff2bd6;
   --font: 'Courier New', ui-monospace, monospace;
 }
 html,
@@ -12,24 +14,108 @@ body {
   background: var(--bg);
   color: var(--cyan);
   font-family: var(--font);
+  font-size: 13px;
 }
 #scene {
   display: block;
   width: 100vw;
   height: 100vh;
 }
+.labels {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+.label {
+  font-family: var(--font);
+  white-space: nowrap;
+  text-shadow:
+    0 0 4px var(--bg),
+    0 0 2px var(--bg);
+}
+.label.name {
+  color: var(--cyan);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+.label.route {
+  color: var(--cyan-dim);
+  font-size: 10px;
+}
 .panel {
   position: fixed;
-  top: 16px;
-  left: 16px;
   padding: 8px 12px;
   border: 1px solid var(--cyan);
-  background: rgba(5, 10, 31, 0.8);
-  letter-spacing: 0.1em;
+  background: rgba(5, 10, 31, 0.85);
+  letter-spacing: 0.05em;
+}
+.panel-title {
+  font-weight: bold;
+  margin-bottom: 6px;
+  letter-spacing: 0.15em;
+}
+#hud {
+  top: 16px;
+  left: 16px;
 }
 .title {
   font-weight: bold;
+  letter-spacing: 0.1em;
 }
 #version {
   color: var(--green);
+}
+#debug {
+  top: 64px;
+  left: 16px;
+  width: 260px;
+  display: grid;
+  gap: 6px;
+}
+#debug label {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+#debug input {
+  width: 140px;
+  background: transparent;
+  color: var(--cyan);
+  border: 1px solid var(--cyan-dim);
+  font-family: var(--font);
+  padding: 2px 4px;
+}
+.row {
+  display: flex;
+  gap: 6px;
+}
+button {
+  flex: 1;
+  background: transparent;
+  color: var(--cyan);
+  border: 1px solid var(--cyan);
+  font-family: var(--font);
+  padding: 4px 6px;
+  cursor: pointer;
+}
+button:hover {
+  background: rgba(46, 242, 255, 0.12);
+}
+.dim {
+  color: var(--cyan-dim);
+}
+.help {
+  font-size: 11px;
+}
+#system {
+  top: 16px;
+  right: 16px;
+  width: 300px;
+  line-height: 1.5;
+}
+#error {
+  bottom: 16px;
+  left: 16px;
+  border-color: var(--magenta);
+  color: var(--magenta);
 }

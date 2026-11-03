@@ -1,48 +1,77 @@
-import { validateConfig } from '@ge/shared';
-import * as THREE from 'three';
+import { validateConfig, type Galaxy } from '@ge/shared';
+import { GalaxyMap } from './map/galaxyMap';
+import { SimClient } from './sim/client';
+import { renderStats, renderSystemPanel } from './ui/panels';
 import { versionLabel } from './version';
 
 // The game data is checked once at start-up (step 1.2); problems show in the console.
 const configProblems = validateConfig();
 if (configProblems.length > 0) console.error('Game config problems:', configProblems);
 
-const COLOR_BG = 0x050a1f;
-const COLOR_CYAN = 0x2ef2ff;
+const $ = <T extends HTMLElement>(sel: string) => {
+  const el = document.querySelector<T>(sel);
+  if (!el) throw new Error(`Missing ${sel}`);
+  return el;
+};
 
-const canvas = document.querySelector<HTMLCanvasElement>('#scene');
-if (!canvas) throw new Error('Missing #scene canvas');
-const versionEl = document.querySelector('#version');
-if (versionEl) versionEl.textContent = versionLabel(__GAME_VERSION__);
+$('#version').textContent = versionLabel(__GAME_VERSION__);
 document.title = `Galactic Empire ${versionLabel(__GAME_VERSION__)}`;
 
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+const map = new GalaxyMap($<HTMLCanvasElement>('#scene'), $('#labels'));
+const sim = new SimClient();
+const seedInput = $<HTMLInputElement>('#seed');
+const systemsInput = $<HTMLInputElement>('#systems');
+const systemPanel = $('#system');
+const errorPanel = $('#error');
+let galaxy: Galaxy | null = null;
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(COLOR_BG);
+sim.onError = (message) => {
+  errorPanel.hidden = false;
+  errorPanel.textContent = `Błąd: ${message}`;
+};
 
-const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
-camera.position.set(0, 0, 4);
+map.onSelect = (id) => renderSystemPanel(systemPanel, galaxy, id);
 
-const cube = new THREE.LineSegments(
-  new THREE.EdgesGeometry(new THREE.BoxGeometry(1.4, 1.4, 1.4)),
-  new THREE.LineBasicMaterial({ color: COLOR_CYAN }),
-);
-scene.add(cube);
-
-function resize(): void {
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  renderer.setSize(w, h, false);
-  camera.aspect = w / h;
-  camera.updateProjectionMatrix();
+async function load(seed: string): Promise<void> {
+  const systems = Math.max(20, Math.min(200, Math.round(Number(systemsInput.value) || 60)));
+  systemsInput.value = String(systems);
+  seedInput.value = seed;
+  errorPanel.hidden = true;
+  const world = await sim.newGame(seed, systems);
+  galaxy = world.galaxy;
+  map.setGalaxy(galaxy);
+  const params = new URLSearchParams({ seed, systems: String(systems) });
+  history.replaceState(null, '', `?${params.toString()}`);
 }
-window.addEventListener('resize', resize);
-resize();
 
-renderer.setAnimationLoop((ms: number) => {
-  const t = ms / 1000;
-  cube.rotation.x = t * 0.4;
-  cube.rotation.y = t * 0.6;
-  renderer.render(scene, camera);
+const randomSeed = () => Math.random().toString(36).slice(2, 10);
+$('#generate').addEventListener('click', () => void load(seedInput.value.trim() || randomSeed()));
+$('#random').addEventListener('click', () => void load(randomSeed()));
+seedInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') void load(seedInput.value.trim() || randomSeed());
+});
+
+const params = new URLSearchParams(location.search);
+if (params.get('systems')) systemsInput.value = params.get('systems') as string;
+void load(params.get('seed') ?? 'galaktyka-1');
+
+window.addEventListener('resize', () => map.resize());
+
+// Debugging handle in development builds only.
+if (import.meta.env.DEV) (window as unknown as { __map: GalaxyMap }).__map = map;
+
+const statsEl = $('#stats');
+let frames = 0;
+let fps = 60;
+let last = performance.now();
+map.renderer.setAnimationLoop((ms: number) => {
+  map.render(ms / 1000);
+  frames++;
+  const now = performance.now();
+  if (now - last >= 500) {
+    fps = (frames * 1000) / (now - last);
+    frames = 0;
+    last = now;
+    renderStats(statsEl, galaxy, fps);
+  }
 });

@@ -23,7 +23,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.5 | 0.1.7 | `v0.1.7-budowa` | budowa i ulepszenia budynków | ✅ |
 | 1.6 | 0.1.8 | `v0.1.8-badania` | laboratorium i 13 technologii | ✅ |
 | 1.6 | 0.1.8a | `v0.1.8a-badania-zasady` | zasady badań właściciela: zabiera zasoby od razu, bez anulowania | ✅ |
-| 1.7 | 0.1.9 | `v0.1.9-mapa-galaktyki` | Web Worker, mapa 3D | ⬜ |
+| 1.7 | 0.1.9 | `v0.1.9-mapa-galaktyki` | Web Worker, mapa 3D | ✅ |
 | 1.8 | 0.1.10 | `v0.1.10-widok-planety` | widok układu, panele, pasek czasu | ⬜ |
 | 1.9 | 0.1.11 | `v0.1.11-ruch-flot` | ruch flot, paliwo, kosmoport, hangary | ⬜ |
 | 1.10a | 0.1.12 | `v0.1.12-stocznia` | stocznia, utrzymanie | ⬜ |
@@ -38,6 +38,17 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.1.9: mapa galaktyki 3D (krok 1.7, 3.11.2026)
+- Symulacja w Web Workerze (`packages/client/src/sim/`: `protocol.ts`, `handler.ts` = logika workera bez globali, testowalna, `worker.ts`, `client.ts` = `SimClient` z `newGame` i `command`). Stan gry żyje tylko w workerze; strona dostaje kopię galaktyki do rysowania i nigdy nie zmienia stanu.
+- Mapa (`src/map/galaxyMap.ts`, Three.js): układy jako świecące punkty (poświata z gradientu rysowanego kodem, bez plików tekstur), węzły (5 połączeń, ok. 1/5 układów) większe, z pulsującym pierścieniem; trasy jako linie o trzech grubościach (zwykła, do węzła, między węzłami); siatka perspektywiczna pod dyskiem, mgła w kolorze tła; nazwy układów po przybliżeniu, długości tras w LY po najechaniu lub kliknięciu układu i przy dużym przybliżeniu (etykiety HTML, CSS2DRenderer).
+- Kamera (OrbitControls): lewy przycisk obrót, prawy przesuw, kółko zoom, klik w układ zaznacza go (biały pulsujący pierścień) i pokazuje panel z planetami (typ, pola, specjalność, start), liczbą połączeń, węzłem, układem bogatym i pozycją startową.
+- Panel debug: ziarno, liczba układów (20–200), „Generuj”, „Nowa galaktyka” (losowe ziarno), statystyki i FPS; ziarno i liczba układów w adresie strony (`?seed=...&systems=...`), więc galaktykę da się odtworzyć i podesłać.
+- Paleta ze specyfikacji 18 (granat, cyjan, biel dla zaznaczenia), interfejs po polsku, monospace.
+- Wydajność: 60 FPS przy 60 układach nawet w programowym renderowaniu bez karty graficznej (Chromium + SwiftShader).
+- Testy (4 nowe w kliencie): położenie układów, węzły, opisy po polsku, logika workera (nowa gra, komendy, błędy).
+- Mgła wojny jeszcze nie działa (krok 1.11): mapa pokazuje wszystko.
+- Do sprawdzenia przez właściciela: czy styl pasuje do wizji lat 80. (to dobry moment na poprawki wyglądu, zanim powstaną kolejne widoki).
 
 ### 0.1.8a: zasady badań właściciela (3.11.2026)
 - Odpowiedzi na pytanie 31 (`docs/PYTANIA.md`, specyfikacja sekcja 0).
