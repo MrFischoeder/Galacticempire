@@ -24,6 +24,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.6 | 0.1.8 | `v0.1.8-badania` | laboratorium i 13 technologii | ✅ |
 | 1.6 | 0.1.8a | `v0.1.8a-badania-zasady` | zasady badań właściciela: zabiera zasoby od razu, bez anulowania | ✅ |
 | 1.7 | 0.1.9 | `v0.1.9-mapa-galaktyki` | Web Worker, mapa 3D | ✅ |
+| 1.7 | 0.1.9a | `v0.1.9a-loty-bezposrednie` | bez tras: loty prosto między dowolnymi układami | ✅ |
 | 1.8 | 0.1.10 | `v0.1.10-widok-planety` | widok układu, panele, pasek czasu | ⬜ |
 | 1.9 | 0.1.11 | `v0.1.11-ruch-flot` | ruch flot, paliwo, kosmoport, hangary | ⬜ |
 | 1.10a | 0.1.12 | `v0.1.12-stocznia` | stocznia, utrzymanie | ⬜ |
@@ -38,6 +39,14 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.1.9a: loty bezpośrednie, bez tras (3.11.2026)
+- Decyzja właściciela: gracz leci prosto do wybranego układu (czas i paliwo za odległość), bez tras i przeskakiwania przez układy. Zapisane w specyfikacji (sekcja 0) i w pytaniach 29 i 32.
+- Generator (`galaxy/generate.ts`): bez grafu Gabriela i tras (`Galaxy.routes` usunięte); pozycje startowe ≥ 60 LY w linii prostej; surowce specjalne w promieniu 45 LY od każdego startu (`GALAXY.startSpecialLy`, zamiast 3 skoków); anomalie i bogate układy najdalej od startów w linii prostej. `galaxy/graph.ts`: `systemDistance`, `systemsWithin`, `nearestSystem` (Dijkstra i trasy usunięte).
+- Wielkość galaktyki: 60 układów mieści co najmniej 8 graczy (50 ziaren), `systemsFor` = max(60, 8 × gracze), np. 96 dla 12.
+- Mapa: bez linii tras i węzłów; bogate układy świecą mocniej; po zaznaczeniu układu najechanie na inny rysuje przerywaną linię lotu z odległością (np. „Teneyx → Peruvex: 109 LY”); panel układu pokazuje najbliższy układ i liczbę układów w promieniu 30 LY.
+- Średnia odległość między układami w linii prostej ok. 90–94 LY (było 104 po trasach), najdłuższa ok. 195 LY.
+- Do rozstrzygnięcia przed krokami 1.9 i 5.1: pytanie 32 (dopłata czasowa za lot, nowe blokady).
 
 ### 0.1.9: mapa galaktyki 3D (krok 1.7, 3.11.2026)
 - Symulacja w Web Workerze (`packages/client/src/sim/`: `protocol.ts`, `handler.ts` = logika workera bez globali, testowalna, `worker.ts`, `client.ts` = `SimClient` z `newGame` i `command`). Stan gry żyje tylko w workerze; strona dostaje kopię galaktyki do rysowania i nigdy nie zmienia stanu.

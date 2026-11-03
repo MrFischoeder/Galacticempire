@@ -1,35 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import {
-  adjacency,
   createGameState,
-  dijkstra,
   GALAXY,
   generateGalaxy,
-  hopCounts,
-  isConnected,
+  nearestSystem,
   PLANET_TYPES,
-  shortestPath,
   SPECIAL_RESOURCES,
+  systemDistance,
   systemsFor,
+  systemsWithin,
   type Galaxy,
 } from '../src/index';
 
 const SEEDS = Array.from({ length: 50 }, (_, i) => `seed-${i + 1}`);
 const galaxies = SEEDS.map((s) => generateGalaxy(s));
-const big = SEEDS.map((s) => generateGalaxy(s, { systems: systemsFor(12) }));
+const big = SEEDS.map((s) => generateGalaxy(s, { systems: systemsFor(12), startSlots: 12 }));
 
-const degrees = (g: Galaxy) => {
-  const d = new Array<number>(g.systems.length).fill(0);
-  for (const r of g.routes) {
-    d[r.a]! += 1;
-    d[r.b]! += 1;
-  }
-  return d;
-};
-const allDistances = (g: Galaxy) => {
-  const adj = adjacency(g.systems.length, g.routes);
-  return g.systems.map((s) => dijkstra(adj, s.id).dist);
-};
+const allDistances = (g: Galaxy) =>
+  g.systems.map((a) => g.systems.map((b) => systemDistance(g, a.id, b.id)));
 const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
 
 describe('galaxy generator (spec 2.1-2.3)', () => {
@@ -52,28 +40,23 @@ describe('galaxy generator (spec 2.1-2.3)', () => {
     }
   });
 
-  it('routes form a connected graph with 2-5 links per system', () => {
-    for (const g of [...galaxies, ...big]) {
-      expect(isConnected(g.systems.length, g.routes)).toBe(true);
-      const d = degrees(g);
-      expect(Math.min(...d)).toBeGreaterThanOrEqual(GALAXY.minLinks);
-      expect(Math.max(...d)).toBeLessThanOrEqual(GALAXY.maxLinks);
-    }
-  });
-
-  it('route lengths and distances match the scale in spec 2.1', () => {
-    const lengths = galaxies.flatMap((g) => g.routes.map((r) => r.ly));
-    expect(Math.min(...lengths)).toBeGreaterThan(GALAXY.minSpacing - 0.02);
-    expect(Math.max(...lengths)).toBeLessThan(80);
-    expect(mean(lengths)).toBeGreaterThan(22 * 0.8);
-    expect(mean(lengths)).toBeLessThan(22 * 1.2);
+  it('has no routes: distances are straight lines across the disk (owner 3.11.2026)', () => {
+    expect(galaxies[0]).not.toHaveProperty('routes');
     const pairs = galaxies.map((g) => {
       const d = allDistances(g);
       return mean(d.flatMap((row, i) => row.slice(i + 1)));
     });
+    // Mean distance between two random points of a 100 LY disk is about 90 LY.
     expect(mean(pairs)).toBeGreaterThan(80);
-    expect(mean(pairs)).toBeLessThan(120);
-    for (const p of pairs) expect(p).toBeGreaterThan(70);
+    expect(mean(pairs)).toBeLessThan(100);
+    for (const g of galaxies) {
+      for (const s of g.systems)
+        expect(nearestSystem(g, s.id)!.ly).toBeGreaterThan(GALAXY.minSpacing - 0.02);
+    }
+    const g = galaxies[0]!;
+    expect(systemDistance(g, 3, 7)).toBeCloseTo(systemDistance(g, 7, 3), 9);
+    const within = systemsWithin(g, 0, 40);
+    expect(within.every((x, i) => x.ly <= 40 && (i === 0 || within[i - 1]!.ly <= x.ly))).toBe(true);
   });
 
   it('systems have 3-7 planets with at least 3 different specialities; rich ones 5-7 with a rare type', () => {
@@ -114,7 +97,7 @@ describe('galaxy generator (spec 2.1-2.3)', () => {
     }
   });
 
-  it('a 12-player galaxy has 12 start slots at least 60 LY apart by route (spec 15)', () => {
+  it('a 12-player galaxy has 12 start slots at least 60 LY apart (spec 15)', () => {
     for (const g of big) {
       expect(g.startSlots).toHaveLength(12);
       const d = allDistances(g);
@@ -123,8 +106,8 @@ describe('galaxy generator (spec 2.1-2.3)', () => {
           if (a !== b) expect(d[a]![b]!).toBeGreaterThanOrEqual(GALAXY.startSpacingLy);
       }
     }
-    // The 60-system default fits about 10 players.
-    expect(mean(galaxies.map((g) => g.startSlots.length))).toBeGreaterThanOrEqual(9.5);
+    // The 60-system default fits at least 8 players.
+    for (const g of galaxies) expect(g.startSlots.length).toBeGreaterThanOrEqual(8);
   });
 
   it('start systems hold a starting planet and an ice world or gas giant (spec 7)', () => {
@@ -140,13 +123,11 @@ describe('galaxy generator (spec 2.1-2.3)', () => {
     }
   });
 
-  it('within 3 jumps of every start: a radioactive planet and crystalite or helium-3', () => {
+  it(`within ${GALAXY.startSpecialLy} LY of every start: a radioactive planet and crystalite or helium-3`, () => {
     for (const g of [...galaxies, ...big]) {
-      const adj = adjacency(g.systems.length, g.routes);
       for (const slot of g.startSlots) {
-        const hops = hopCounts(adj, slot);
         const near = Object.values(g.planets).filter(
-          (p) => hops[p.system]! <= GALAXY.startSpecialHops,
+          (p) => systemDistance(g, slot, p.system) <= GALAXY.startSpecialLy,
         );
         expect(near.some((p) => p.speciality === 'fissile')).toBe(true);
         expect(near.some((p) => p.speciality === 'crystalite' || p.speciality === 'helium3')).toBe(
@@ -168,24 +149,6 @@ describe('galaxy generator (spec 2.1-2.3)', () => {
       const median = sorted[Math.floor(sorted.length / 2)]!;
       for (const a of anomalies) expect(toStart[a.system]!).toBeGreaterThanOrEqual(median);
     }
-  });
-
-  it('shortest paths go by LY along routes', () => {
-    const g = galaxies[0]!;
-    const p = shortestPath(g, 0, g.systems.length - 1)!;
-    expect(p.path[0]).toBe(0);
-    expect(p.path.at(-1)).toBe(g.systems.length - 1);
-    expect(p.hops).toBe(p.path.length - 1);
-    let ly = 0;
-    for (let i = 1; i < p.path.length; i++) {
-      const [a, b] = [p.path[i - 1]!, p.path[i]!];
-      const route = g.routes.find((r) => (r.a === a && r.b === b) || (r.a === b && r.b === a));
-      expect(route).toBeDefined();
-      ly += route!.ly;
-    }
-    expect(p.ly).toBeCloseTo(ly, 6);
-    expect(shortestPath(g, g.systems.length - 1, 0)!.ly).toBeCloseTo(p.ly, 6);
-    expect(shortestPath(g, 3, 3)).toEqual({ path: [3], ly: 0, hops: 0 });
   });
 
   it('a new game state carries its galaxy', () => {

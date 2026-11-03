@@ -1,22 +1,17 @@
-import { PLANET_TYPES, RESOURCES, type Galaxy, type Route, type SystemId } from '@ge/shared';
+import {
+  nearestSystem,
+  PLANET_TYPES,
+  RESOURCES,
+  systemDistance,
+  systemsWithin,
+  type Galaxy,
+  type SystemId,
+} from '@ge/shared';
 
 /** Pure helpers for the galaxy map (tested without WebGL). */
 
-/** Systems with the most routes (5, about a fifth of them) are hubs (spec 2.1), drawn highlighted. */
-export const HUB_LINKS = 5;
-
-export function degrees(galaxy: Galaxy): number[] {
-  const d = new Array<number>(galaxy.systems.length).fill(0);
-  for (const r of galaxy.routes) {
-    d[r.a] = (d[r.a] ?? 0) + 1;
-    d[r.b] = (d[r.b] ?? 0) + 1;
-  }
-  return d;
-}
-
-export function isHub(galaxy: Galaxy, id: SystemId, deg = degrees(galaxy)): boolean {
-  return (deg[id] ?? 0) >= HUB_LINKS;
-}
+/** "Neighbours" shown in the system panel: systems within this distance. */
+export const NEAR_LY = 30;
 
 /**
  * Scene position of a system: the galaxy disk lies on the x-z plane; a small, stable height
@@ -31,10 +26,6 @@ export function scenePosition(galaxy: Galaxy, id: SystemId): [number, number, nu
 
 export const formatLy = (ly: number) => `${ly.toFixed(ly < 10 ? 1 : 0)} LY`;
 
-export function routesOf(galaxy: Galaxy, id: SystemId): Route[] {
-  return galaxy.routes.filter((r) => r.a === id || r.b === id);
-}
-
 /** Text for the system panel: planets with type, fields and speciality. */
 export function systemSummary(galaxy: Galaxy, id: SystemId): { title: string; lines: string[] } {
   const s = galaxy.systems[id];
@@ -47,10 +38,19 @@ export function systemSummary(galaxy: Galaxy, id: SystemId): { title: string; li
     if (p.starter) tags.push('start');
     return `${p.name}: ${tags.join(', ')}`;
   });
+  const nearest = nearestSystem(galaxy, id);
   const extra = [
-    `Połączenia: ${routesOf(galaxy, id).length}${isHub(galaxy, id) ? ' (węzeł)' : ''}`,
+    ...(nearest
+      ? [`Najbliższy układ: ${galaxy.systems[nearest.id]?.name} (${formatLy(nearest.ly)})`]
+      : []),
+    `Układy w promieniu ${NEAR_LY} LY: ${systemsWithin(galaxy, id, NEAR_LY).length}`,
     ...(s.rich ? ['Układ bogaty'] : []),
     ...(galaxy.startSlots.includes(id) ? ['Pozycja startowa'] : []),
   ];
   return { title: s.name, lines: [...extra, ...lines] };
+}
+
+/** Text of the flight preview between two systems (time and fuel come with fleets, step 1.9). */
+export function flightText(galaxy: Galaxy, from: SystemId, to: SystemId): string {
+  return `${galaxy.systems[from]?.name} → ${galaxy.systems[to]?.name}: ${formatLy(systemDistance(galaxy, from, to))}`;
 }

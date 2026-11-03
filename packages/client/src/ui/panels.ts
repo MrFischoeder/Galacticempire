@@ -27,5 +27,5 @@ export function renderSystemPanel(
 
 export function renderStats(el: HTMLElement, galaxy: Galaxy | null, fps: number): void {
   if (!galaxy) return;
-  el.textContent = `Układy: ${galaxy.systems.length} · Trasy: ${galaxy.routes.length} · Planety: ${Object.keys(galaxy.planets).length} · ${Math.round(fps)} FPS`;
+  el.textContent = `Układy: ${galaxy.systems.length} · Planety: ${Object.keys(galaxy.planets).length} · ${Math.round(fps)} FPS`;
 }

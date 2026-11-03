@@ -1,14 +1,6 @@
 import { generateGalaxy } from '@ge/shared';
 import { describe, expect, it } from 'vitest';
-import {
-  degrees,
-  formatLy,
-  HUB_LINKS,
-  isHub,
-  routesOf,
-  scenePosition,
-  systemSummary,
-} from '../src/map/layout';
+import { flightText, formatLy, scenePosition, systemSummary } from '../src/map/layout';
 import { handleMessage } from '../src/sim/handler';
 import type { WorkerState } from '../src/sim/protocol';
 
@@ -24,13 +16,9 @@ describe('galaxy map layout (step 1.7)', () => {
     }
   });
 
-  it('finds hubs by their number of routes', () => {
-    const d = degrees(galaxy);
-    for (const s of galaxy.systems) {
-      expect(isHub(galaxy, s.id)).toBe((d[s.id] ?? 0) >= HUB_LINKS);
-      expect(routesOf(galaxy, s.id)).toHaveLength(d[s.id] ?? 0);
-    }
-    expect(galaxy.systems.some((s) => isHub(galaxy, s.id))).toBe(true);
+  it('describes a straight flight between any two systems', () => {
+    const text = flightText(galaxy, 0, 5);
+    expect(text).toMatch(/→ .+: \d+(\.\d)? LY$/);
   });
 
   it('formats route lengths and describes a system in Polish', () => {
@@ -40,7 +28,7 @@ describe('galaxy map layout (step 1.7)', () => {
     const summary = systemSummary(galaxy, start);
     expect(summary.title).toBe(galaxy.systems[start]!.name);
     expect(summary.lines).toContain('Pozycja startowa');
-    expect(summary.lines.some((l) => l.startsWith('Połączenia: '))).toBe(true);
+    expect(summary.lines.some((l) => l.startsWith('Najbliższy układ: '))).toBe(true);
     expect(summary.lines.some((l) => l.includes('16 pól') && l.endsWith('start'))).toBe(true);
   });
 });

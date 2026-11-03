@@ -11,15 +11,14 @@ import {
 } from '../config/planets';
 import type { MinedResource } from '../config/resources';
 import { rngStream, type Rng } from '../core/rng';
-import { adjacency, dijkstra, hopCounts, isConnected } from './graph';
 import { ROMAN, starName } from './names';
-import type { Deposit, Galaxy, Planet, Route, StarSystem, SystemId } from './types';
+import type { Deposit, Galaxy, Planet, StarSystem, SystemId } from './types';
 
 /**
  * Deterministic galaxy generator (spec 2.1-2.3, 15). Same seed and options = same galaxy.
- * Steps: positions in a disk, Gabriel-graph routes limited to 2-5 links, start slots far
- * apart by route, then planets (rich systems and anomalies away from the starts, special
- * deposits guaranteed near every start).
+ * Steps: positions in a disk, start slots far apart, then planets (rich systems and
+ * anomalies away from the starts, special deposits guaranteed near every start). There are
+ * no routes: fleets fly straight between any two systems (owner's decision 3.11.2026).
  */
 export interface GalaxyOptions {
   readonly systems?: number;
@@ -58,58 +57,9 @@ function placeSystems(rng: Rng, count: number, radius: number): Point[] {
   return points;
 }
 
-const key = (a: number, b: number) => (a < b ? `${a}:${b}` : `${b}:${a}`);
-
-function buildRoutes(points: Point[]): Route[] {
-  const n = points.length;
-  const edges = new Map<string, Route>();
-  // Gabriel graph: a and b are linked when no other system lies inside the circle on a-b.
-  for (let a = 0; a < n; a++) {
-    for (let b = a + 1; b < n; b++) {
-      const pa = points[a] as Point;
-      const pb = points[b] as Point;
-      const mid = { x: (pa.x + pb.x) / 2, y: (pa.y + pb.y) / 2 };
-      const r = dist(pa, pb) / 2;
-      let empty = true;
-      for (let k = 0; k < n && empty; k++) {
-        if (k !== a && k !== b && dist(points[k] as Point, mid) < r - 1e-9) empty = false;
-      }
-      if (empty) edges.set(key(a, b), { a, b, ly: dist(pa, pb) });
-    }
-  }
-  const degree = (s: number) => [...edges.values()].filter((e) => e.a === s || e.b === s).length;
-
-  // Trim to at most maxLinks, dropping the longest links that keep the graph connected.
-  for (let s = 0; s < n; s++) {
-    const mine = [...edges.values()]
-      .filter((e) => e.a === s || e.b === s)
-      .sort((x, y) => y.ly - x.ly || key(x.a, x.b).localeCompare(key(y.a, y.b)));
-    for (const e of mine) {
-      if (degree(s) <= GALAXY.maxLinks) break;
-      const other = e.a === s ? e.b : e.a;
-      if (degree(other) <= GALAXY.minLinks) continue;
-      edges.delete(key(e.a, e.b));
-      if (!isConnected(n, [...edges.values()])) edges.set(key(e.a, e.b), e);
-    }
-  }
-  // Fill up to minLinks with the nearest systems that still have room.
-  for (let s = 0; s < n; s++) {
-    const candidates = points
-      .map((p, i) => ({ i, d: dist(points[s] as Point, p) }))
-      .filter((c) => c.i !== s)
-      .sort((x, y) => x.d - y.d || x.i - y.i);
-    for (const c of candidates) {
-      if (degree(s) >= GALAXY.minLinks) break;
-      if (edges.has(key(s, c.i)) || degree(c.i) >= GALAXY.maxLinks) continue;
-      edges.set(key(s, c.i), { a: Math.min(s, c.i), b: Math.max(s, c.i), ly: c.d });
-    }
-  }
-  return [...edges.values()].sort((x, y) => x.a - y.a || x.b - y.b);
-}
-
 /**
- * Start slots: as many systems as possible that are pairwise at least startSpacingLy apart by
- * route (spec 15). A maximum independent set in the "too close" graph, found by the
+ * Start slots: as many systems as possible that are pairwise at least startSpacingLy apart
+ * (spec 15). A maximum independent set in the "too close" graph, found by the
  * fewest-conflicts-first heuristic with seeded tie-breaks over several tries; among the
  * largest sets the most spread out wins. Returns at most `wanted` slots.
  */
@@ -267,17 +217,15 @@ export function generateGalaxy(seed: string, opts: GalaxyOptions = {}): Galaxy {
   const count = opts.systems ?? GALAXY.systems;
   const rng = rngStream(seed, 'galaxy');
   const points = placeSystems(rng, count, opts.radius ?? radiusFor(count));
-  const routes = buildRoutes(points);
-  const adj = adjacency(count, routes);
-  const all = points.map((_, i) => dijkstra(adj, i).dist);
+  const all = points.map((p) => points.map((q) => dist(p, q)));
   const startSlots = chooseStarts(all, opts.startSlots ?? GALAXY.startSlots, rng);
   const isStart = new Set(startSlots);
   const minToStart = points.map((_, i) =>
     Math.min(...startSlots.map((s) => (all[s] as number[])[i] as number)),
   );
-  const hopsFromStarts = startSlots.map((s) => hopCounts(adj, s));
+  const fromStarts = startSlots.map((s) => all[s] as number[]);
   const nearStart = (i: number) =>
-    hopsFromStarts.some((h) => (h[i] as number) <= GALAXY.startSpecialHops);
+    fromStarts.some((d) => (d[i] as number) <= GALAXY.startSpecialLy);
 
   // Far systems first (for rich systems and anomalies); ties by id.
   const far = points
@@ -341,14 +289,13 @@ export function generateGalaxy(seed: string, opts: GalaxyOptions = {}): Galaxy {
   // --- special deposits near every start (docs/SUROWCE.md) ---
   const holds = (i: number, res: MinedResource[]) =>
     (drafts[i] as PlanetDraft[]).some((d) => d.special !== null && res.includes(d.special));
-  for (const hops of hopsFromStarts) {
+  for (const d of fromStarts) {
     const around = points
       .map((_, i) => i)
       .filter(
-        (i) =>
-          !isStart.has(i) && !anomalySet.has(i) && (hops[i] as number) <= GALAXY.startSpecialHops,
+        (i) => !isStart.has(i) && !anomalySet.has(i) && (d[i] as number) <= GALAXY.startSpecialLy,
       )
-      .sort((a, b) => (hops[a] as number) - (hops[b] as number) || a - b);
+      .sort((a, b) => (d[a] as number) - (d[b] as number) || a - b);
     const needs: [MinedResource[], PlanetTypeId, MinedResource][] = [
       [['fissile'], 'radioactive', 'fissile'],
       [['crystalite', 'helium3'], 'crystalline', 'crystalite'],
@@ -434,11 +381,5 @@ export function generateGalaxy(seed: string, opts: GalaxyOptions = {}): Galaxy {
     });
   });
 
-  // Route lengths from the rounded coordinates, so the map and the rules agree.
-  const finalRoutes = routes.map((r) => {
-    const a = systems[r.a] as StarSystem;
-    const b = systems[r.b] as StarSystem;
-    return { a: r.a, b: r.b, ly: Math.round(Math.hypot(a.x - b.x, a.y - b.y) * 100) / 100 };
-  });
-  return { seed, systems, planets, routes: finalRoutes, startSlots };
+  return { seed, systems, planets, startSlots };
 }

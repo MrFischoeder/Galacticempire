@@ -38,9 +38,9 @@ body {
   font-size: 11px;
   letter-spacing: 0.05em;
 }
-.label.route {
-  color: var(--cyan-dim);
-  font-size: 10px;
+.label.flight {
+  color: #ffffff;
+  font-size: 12px;
 }
 .panel {
   position: fixed;

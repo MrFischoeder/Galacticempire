@@ -179,6 +179,8 @@ Plan budowy (krok 1.3) wymaga 12 pozycji startowych co najmniej 60 LY od siebie 
 
 **Odpowiedź (3.11.2026):** zaakceptowane: 60 układów domyślnie, większa galaktyka o tej samej gęstości dla większej liczby graczy.
 
+**Zmiana po decyzji o lotach bezpośrednich (pytanie 32):** odległości w linii prostej są krótsze niż po trasach, więc 60 układów mieści co najmniej 8 graczy; przelicznik to teraz 8 układów na gracza (96 dla 12).
+
 ### 30. 🟢 Zwrot przy anulowaniu budowy (krok 1.5)
 Plan budowy każe ustalić zwrot części kosztu przy anulowaniu.
 **Decyzja przyjęta w kroku 1.5 (do potwierdzenia):** anulowanie zwraca 75% zapłaconego kosztu, niezależnie od tego, jak długo trwała budowa (to, co nie zmieści się w magazynie, przepada). Liczba w `CANCEL_REFUND` (`config/buildings.ts`).
@@ -196,3 +198,11 @@ Plan budowy każe ustalić zwrot części kosztu przy anulowaniu.
 - Brak zasobów: badanie się nie zatrzymuje. Uruchomione badanie od razu zabiera wszystkie dostępne zasoby potrzebne na swój koszt (i dobiera resztę, gdy tylko pojawi się w magazynie); zabranych zasobów nie da się już odzyskać, badanie trwa. Kończy się, gdy minie jego czas i cały koszt jest zapłacony.
 - Nie ma anulowania badania przez gracza. Badanie przerywa tylko zniszczenie laboratorium (np. w ataku): wtedy zapłacone zasoby przepadają.
 - Doganianie liczy wszystkich graczy, w grze jednoosobowej także komputerowych: potwierdzone.
+
+### 32. 🟡 Loty bezpośrednie: co z blokadami i „skokami” (decyzja 3.11.2026)
+**Decyzja właściciela:** nie ma tras; gracz leci prosto do wybranej planety, poświęcając czas i paliwo zależne od odległości. Trasy i węzły usunięte z gry (wersja 0.1.9a).
+Skutki, które trzeba rozstrzygnąć (nic z tego jeszcze nie jest zbudowane, dotyczy kroków 1.9 i 5.1):
+1. **Czas lotu:** specyfikacja dodawała 3 min za każdy skok. **Propozycja:** 3 min raz na lot (wejście w nadprzestrzeń); lot wewnątrz układu bez tej dopłaty.
+2. **Blokady (12.3):** wcześniej flota zatrzymywała wrogów przelatujących przez zablokowany układ. Bez tras nikt „nie przelatuje przez układ”. **Propozycja:** flota w trybie blokady pilnuje strefy wokół układu (np. promień 10 LY + czujniki); każda wroga flota, której prosta linia lotu przecina tę strefę, zostaje zatrzymana i walczy. Stacja orbitalna daje taką strefę na stałe. Dzięki temu blokady nadal mają sens: osłaniają skupiska układów, a omijanie ich kosztuje dłuższy lot i więcej paliwa.
+3. **Strategiczne miejsca:** węzły znikają; ich rolę przejmują bogate układy, anomalie i gęste skupiska układów (krótkie loty).
+4. **Ostrzeżenia (13):** skaner wykrywa flotę, gdy ta wleci w jego zasięg w linii prostej — bez zmian.

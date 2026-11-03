@@ -5,7 +5,7 @@ import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
 import { CSS2DObject, CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
-import { degrees, formatLy, HUB_LINKS, routesOf, scenePosition } from './layout';
+import { flightText, scenePosition } from './layout';
 
 /** Palette (spec 18): navy background, cyan primary, white for the selection. */
 export const COLORS = {
@@ -16,8 +16,6 @@ export const COLORS = {
   selection: 0xffffff,
 } as const;
 
-/** Zoomed in closer than this, every name and route length is shown. */
-const LABELS_ALL = 95;
 /** Closer than this, system names are shown. */
 const NAMES_FROM = 230;
 
@@ -70,11 +68,12 @@ export class GalaxyMap {
   private galaxy: Galaxy | null = null;
   private stars: THREE.Points | null = null;
   private lineMaterials: LineMaterial[] = [];
-  private hubRings: THREE.LineLoop[] = [];
   private readonly selectionRing = ring(3.2, COLORS.selection, 0.9);
   private readonly hoverRing = ring(2.6, COLORS.cyan, 0.8);
   private nameLabels: CSS2DObject[] = [];
-  private routeLabels: { obj: CSS2DObject; a: SystemId; b: SystemId }[] = [];
+  /** Straight flight line from the selected system to the hovered one (no routes, owner 3.11.2026). */
+  private flightLine: LineSegments2 | null = null;
+  private flightLabel: CSS2DObject | null = null;
   private readonly raycaster = new THREE.Raycaster();
   private readonly pointer = new THREE.Vector2();
   private pointerDown: { x: number; y: number } | null = null;
@@ -129,21 +128,16 @@ export class GalaxyMap {
     this.scene.add(this.world);
     this.galaxy = galaxy;
     this.lineMaterials = [];
-    this.hubRings = [];
     this.nameLabels = [];
-    this.routeLabels = [];
     this.select(null);
 
-    const deg = degrees(galaxy);
-    const hub = (id: number) => (deg[id] ?? 0) >= HUB_LINKS;
-
-    // Stars: one glowing point per system, hubs larger.
+    // Stars: one glowing point per system.
     const positions: number[] = [];
-    const sizes = { normal: [] as number[], hub: [] as number[] };
+    const rich: number[] = [];
     for (const s of galaxy.systems) {
       const p = scenePosition(galaxy, s.id);
       positions.push(...p);
-      (hub(s.id) ? sizes.hub : sizes.normal).push(...p);
+      if (s.rich) rich.push(...p);
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
@@ -159,13 +153,14 @@ export class GalaxyMap {
       }),
     );
     this.world.add(this.stars);
-    const hubGeo = new THREE.BufferGeometry();
-    hubGeo.setAttribute('position', new THREE.Float32BufferAttribute(sizes.hub, 3));
+    // Rich systems glow larger (spec 2.2).
+    const richGeo = new THREE.BufferGeometry();
+    richGeo.setAttribute('position', new THREE.Float32BufferAttribute(rich, 3));
     this.world.add(
       new THREE.Points(
-        hubGeo,
+        richGeo,
         new THREE.PointsMaterial({
-          size: 9,
+          size: 8,
           map: this.glow,
           color: COLORS.cyan,
           transparent: true,
@@ -175,52 +170,33 @@ export class GalaxyMap {
       ),
     );
 
-    // Routes: thin lines; thicker towards a hub, thickest between two hubs (spec 18).
-    const tiers: number[][] = [[], [], []];
-    for (const r of galaxy.routes) {
-      const seg = [...scenePosition(galaxy, r.a), ...scenePosition(galaxy, r.b)];
-      (tiers[(hub(r.a) ? 1 : 0) + (hub(r.b) ? 1 : 0)] as number[]).push(...seg);
-    }
-    for (const [pts, width, opacity] of [
-      [tiers[0] as number[], 1.1, 0.4],
-      [tiers[1] as number[], 1.8, 0.6],
-      [tiers[2] as number[], 3, 0.9],
-    ] as const) {
-      if (pts.length === 0) continue;
-      const g = new LineSegmentsGeometry();
-      g.setPositions(pts);
-      const m = new LineMaterial({
-        color: COLORS.cyan,
-        linewidth: width,
-        transparent: true,
-        opacity,
-        depthWrite: false,
-      });
-      this.lineMaterials.push(m);
-      this.world.add(new LineSegments2(g, m));
-    }
+    // Flight preview: a straight line and its length (filled in render()).
+    const fg = new LineSegmentsGeometry();
+    fg.setPositions([0, 0, 0, 0, 0, 0]);
+    const fm = new LineMaterial({
+      color: COLORS.selection,
+      linewidth: 1.6,
+      dashed: true,
+      dashSize: 2,
+      gapSize: 1.5,
+      transparent: true,
+      opacity: 0.9,
+    });
+    this.lineMaterials.push(fm);
+    this.flightLine = new LineSegments2(fg, fm);
+    this.flightLine.visible = false;
+    this.world.add(this.flightLine);
+    this.flightLabel = label('', 'label flight');
+    this.flightLabel.visible = false;
+    this.world.add(this.flightLabel);
 
-    // Rings round the hubs and names of every system.
+    // Names of every system.
     for (const s of galaxy.systems) {
       const [x, y, z] = scenePosition(galaxy, s.id);
-      if (hub(s.id)) {
-        const r = ring(2.2, COLORS.cyan, 0.7);
-        r.position.set(x, y, z);
-        this.hubRings.push(r);
-        this.world.add(r);
-      }
       const name = label(s.name, 'label name');
       name.position.set(x, y + 3.2, z);
       this.nameLabels.push(name);
       this.world.add(name);
-    }
-    for (const r of galaxy.routes) {
-      const a = scenePosition(galaxy, r.a);
-      const b = scenePosition(galaxy, r.b);
-      const obj = label(formatLy(r.ly), 'label route');
-      obj.position.set((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2);
-      this.routeLabels.push({ obj, a: r.a, b: r.b });
-      this.world.add(obj);
     }
     this.resize();
   }
@@ -280,8 +256,6 @@ export class GalaxyMap {
   render(t: number): void {
     this.controls.update();
     const distance = this.camera.position.distanceTo(this.controls.target);
-    const pulse = 1 + 0.12 * Math.sin(t * 2.2);
-    for (const r of this.hubRings) r.scale.setScalar(pulse);
     this.selectionRing.scale.setScalar(1 + 0.15 * Math.sin(t * 4));
 
     const g = this.galaxy;
@@ -291,12 +265,25 @@ export class GalaxyMap {
     const focus = new Set<SystemId>();
     if (this.hovered !== null) focus.add(this.hovered);
     if (this.selected !== null) focus.add(this.selected);
-    const near = distance < LABELS_ALL;
     this.nameLabels.forEach((l, i) => (l.visible = distance < NAMES_FROM || focus.has(i)));
-    if (g) {
-      const shown = new Set<string>();
-      for (const id of focus) for (const r of routesOf(g, id)) shown.add(`${r.a}:${r.b}`);
-      for (const r of this.routeLabels) r.obj.visible = near || shown.has(`${r.a}:${r.b}`);
+
+    // Flight preview from the selected system to the hovered one.
+    const show =
+      g !== null &&
+      this.selected !== null &&
+      this.hovered !== null &&
+      this.hovered !== this.selected;
+    if (this.flightLine && this.flightLabel) {
+      this.flightLine.visible = this.flightLabel.visible = show;
+      if (show && g && this.selected !== null && this.hovered !== null) {
+        const a = scenePosition(g, this.selected);
+        const b = scenePosition(g, this.hovered);
+        const geo = this.flightLine.geometry as LineSegmentsGeometry;
+        geo.setPositions([...a, ...b]);
+        this.flightLine.computeLineDistances();
+        this.flightLabel.position.set((a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + 2, (a[2] + b[2]) / 2);
+        this.flightLabel.element.textContent = flightText(g, this.selected, this.hovered);
+      }
     }
     this.renderer.render(this.scene, this.camera);
     this.labels.render(this.scene, this.camera);

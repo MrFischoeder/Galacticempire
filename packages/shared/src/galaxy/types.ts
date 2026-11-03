@@ -39,18 +39,10 @@ export interface StarSystem {
   readonly planets: PlanetId[];
 }
 
-export interface Route {
-  readonly a: SystemId;
-  readonly b: SystemId;
-  /** Length in LY. */
-  readonly ly: number;
-}
-
 export interface Galaxy {
   readonly seed: string;
   readonly systems: StarSystem[];
   readonly planets: Record<PlanetId, Planet>;
-  readonly routes: Route[];
   /** Systems prepared as start positions, best first (spec 15). */
   readonly startSlots: SystemId[];
 }
