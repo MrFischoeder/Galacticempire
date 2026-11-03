@@ -1,6 +1,7 @@
 import type {
   Command,
   Deposit,
+  Fleet,
   Galaxy,
   GameClock,
   GameState,
@@ -46,6 +47,8 @@ export interface Snapshot {
   readonly player: Player;
   readonly planets: PlanetView[];
   readonly log: LogEntry[];
+  /** The player's fleets away from their planets. */
+  readonly fleets: Fleet[];
 }
 
 export type FromWorker =

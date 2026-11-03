@@ -1,6 +1,7 @@
 import { BUILDINGS } from '../config/buildings';
 import { settleOwned } from '../economy/access';
 import { finishConstruction } from '../economy/construction';
+import { arriveFleet, settleHangar } from '../fleet/fleet';
 import { scheduleResearchCheck } from '../economy/schedule';
 import { enqueue } from './queue';
 import { Rng } from './rng';
@@ -10,7 +11,16 @@ import type { GameState } from './state';
  * Events processed by advanceTo at their game time. Later steps add arrivals, finished
  * buildings, battles and so on. `DebugMarker` exists for tests and the debug panel.
  */
-export type GameEvent = DebugMarkerEvent | ConstructionDoneEvent | ResearchCheckEvent;
+export type GameEvent =
+  DebugMarkerEvent | ConstructionDoneEvent | ResearchCheckEvent | FleetArrivalEvent;
+
+/** A fleet reaches the end of its leg (spec 12.1). */
+export interface FleetArrivalEvent {
+  readonly type: 'FleetArrival';
+  readonly fleetId: string;
+  /** Identifies the leg: a recalled fleet leaves a stale event that does nothing. */
+  readonly arriveAt: number;
+}
 
 /** Look at a research job: finish it, or check again at its new expected end (spec 9.3). */
 export interface ResearchCheckEvent {
@@ -55,6 +65,7 @@ export const EVENT_HANDLERS: Handlers = {
     const c = p?.construction;
     if (!p || !c || c.startedAt !== event.startedAt) return;
     const b = finishConstruction(p);
+    settleHangar(p); // a new hangar takes in the units circling in orbit
     if (b) {
       const name = state.world.galaxy.planets[event.planetId]?.name ?? event.planetId;
       state.log.push({
@@ -62,6 +73,14 @@ export const EVENT_HANDLERS: Handlers = {
         text: `${name}: ${BUILDINGS[b.kind].name} level ${b.level} completed.`,
       });
     }
+  },
+  FleetArrival(state, event) {
+    const f = state.fleets[event.fleetId];
+    if (!f?.leg || f.leg.arriveAt !== event.arriveAt) return;
+    settleOwned(state, f.leg.to);
+    const text = arriveFleet(state, f.id);
+    if (text) state.log.push({ at: state.time, text });
+    scheduleFleet(state, f.id);
   },
   DebugMarker(state, event) {
     let text = `Marker: ${event.label}`;
@@ -86,4 +105,11 @@ export function scheduleEvent(state: GameState, at: number, event: GameEvent): v
     throw new RangeError(`Event ${event.type} scheduled in the past (${at} < ${state.time})`);
   }
   enqueue(state.events, at, event);
+}
+
+/** Schedules the arrival of a fleet's current leg (if it is flying). */
+export function scheduleFleet(state: GameState, fleetId: string): void {
+  const leg = state.fleets[fleetId]?.leg;
+  if (leg)
+    scheduleEvent(state, leg.arriveAt, { type: 'FleetArrival', fleetId, arriveAt: leg.arriveAt });
 }

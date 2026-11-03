@@ -259,3 +259,34 @@ button:disabled {
   color: #ffd23f;
   font-size: 11px;
 }
+
+/* --- step 1.9: fleets --- */
+.label.fleet {
+  color: var(--cyan);
+  font-size: 11px;
+}
+#fleets {
+  top: 110px;
+  left: 16px;
+  width: 440px;
+  max-height: calc(100vh - 380px);
+  overflow-y: auto;
+}
+#fleets select {
+  background: var(--bg);
+  color: var(--cyan);
+  border: 1px solid var(--cyan-dim);
+  font-family: var(--font);
+}
+#fleetPreview {
+  white-space: pre-line;
+  margin: 6px 0;
+  color: var(--green);
+}
+#fleetPreview.bad {
+  color: var(--cyan-dim);
+}
+.pick {
+  color: #ffd23f;
+  margin: 4px 0;
+}

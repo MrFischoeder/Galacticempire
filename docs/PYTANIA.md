@@ -227,3 +227,20 @@ Stan specyfikacji: tak, planety jednego układu mogą należeć do różnych gra
 4. **Kolonizacja wolnych planet przy sąsiedzie:** zostaje zasada 10.5 (nie da się kolonizować w układzie kontrolowanym przez innego gracza bez wygranej bitwy), chyba że gracze mają pakt o nieagresji albo sojusz: wtedy kolonizacja jest dozwolona bez walki.
 
 **Odpowiedź (3.11.2026):** propozycja przyjęta w całości (pokój do pierwszego ataku, pakt o nieagresji z 12 h opóźnieniem zerwania, stacja dla kontrolującego ≥ 50% broniąca tylko swoich i sojuszników, kolonizacja przy sąsiedzie bez walki tylko przy pakcie lub sojuszu). Do zbudowania w fazach 1.12 (pakt obok sojuszy) i 2 (walka).
+
+### 35. 🟡 Kosmoport, hangary i odwołanie floty: zasady przyjęte w kroku 1.9 (do potwierdzenia)
+Specyfikacja mówi tylko „kosmoport ogranicza liczbę flot startujących naraz (1 na poziom)”. Przyjąłem (wartości tymczasowe, łatwe do zmiany w `config/fleets.ts`):
+1. **Okno startu:** każdy start zajmuje jedno miejsce startowe kosmoportu przez **3 min**; potem miejsce jest wolne. Kosmoport poz. 3 = 3 floty w ciągu 3 min.
+2. **Bez kosmoportu flota nie wystartuje** z planety (planeta startowa musi go zbudować). Na razie liczy się sam poziom, nie obsada (5 robotników).
+3. **Hangary:** jednostki trafiają do hangaru według klasy (mała 1, średnia 2, duża 4, ogromna 10 miejsc); reszta krąży na orbicie. Nowy hangar od razu przyjmuje jednostki z orbity.
+4. **Odwołanie:** tylko flota w drodze „tam”. Wraca w tym samym czasie, w jakim leciała; zużywa paliwo na drogę przebytą tam i z powrotem, reszta wraca do magazynu przy lądowaniu. Flota w locie jednokierunkowym po przebyciu ponad połowy drogi nie ma paliwa na powrót, więc nie da się jej odwołać.
+5. **Misje:** przelot (do własnej planety), stacjonowanie (przy cudzej lub wolnej planecie, jednokierunkowo), tam i z powrotem (paliwo na obie strony; na miejscu na razie nic się nie dzieje, atak i transport przyjdą w kolejnych krokach). Flota stacjonująca przy cudzej planecie nie ma paliwa na powrót: do czasu transportów (krok 1.10) zostaje tam.
+6. **Tabela 12.1.3 przeliczona** dla jednego wejścia w nadprzestrzeń na lot (paliwo bez zmian):
+
+| Jednostka | 20 LY | 100 LY | 200 LY |
+|---|---|---|---|
+| Sonda | 13 min, 1,5 | 53 min, 5,5 | 1 h 43 min, 10,5 |
+| Myśliwiec | 18 min, 3 | 1 h 18 min, 11 | 2 h 33 min, 21 |
+| Bombowiec | 27 min, 8 | 2 h 3 min, 32 | 4 h 3 min, 62 |
+| Transportowiec | 33 min, 12 | 2 h 33 min, 52 | 5 h 3 min, 102 |
+| Krążownik | 43 min, 25 | 3 h 23 min, 105 | 6 h 43 min, 205 |

@@ -28,7 +28,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.8 | 0.1.10 | `v0.1.10-widok-planety` | widok układu, panele, pasek czasu | ✅ |
 | 1.8 | 0.1.10a | `v0.1.10a-english` | cała gra po angielsku | ✅ |
 | 1.8a | 0.1.11 | `v0.1.11-powierzchnia-planety` | powierzchnia planety: heksy, budowa na polu, grafika wg typu planety | ✅ |
-| 1.9 | 0.1.12 | `v0.1.12-ruch-flot` | ruch flot, paliwo, kosmoport, hangary | ⬜ |
+| 1.9 | 0.1.12 | `v0.1.12-ruch-flot` | ruch flot, paliwo, kosmoport, hangary | ✅ |
 | 1.10a | 0.1.13 | `v0.1.13-stocznia` | stocznia, utrzymanie | ⬜ |
 | 1.10b | 0.1.14 | `v0.1.14-transporty` | transporty, trasy cykliczne, kolonizacja | ⬜ |
 | 1.11 | 0.1.15 | `v0.1.15-mgla-wojny` | `getPlayerView`, sondy, skanery | ⬜ |
@@ -42,6 +42,16 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.1.12: ruch flot i paliwo (krok 1.9, 3.11.2026)
+- `shared/src/fleet/`: flota jako stan (`GameState.fleets`): jednostki, misja, odcinek lotu (`FleetLeg`: skąd, dokąd, start, koniec wejścia w nadprzestrzeń, przylot), paliwo zapłacone i zapas. Jednostki gracza przy własnej planecie są w `PlanetState.units` (hangary) i `orbit` (bez miejsca w hangarze), `launches` pilnuje kosmoportu. Wersja stanu 9.
+- Czas = odległość w linii prostej / prędkość najwolniejszej jednostki + 3 min wejścia w nadprzestrzeń (raz na lot międzygwiezdny; wewnątrz układu bez dopłaty). Paliwo = start + na LY × odległość, w obie strony dla misji „tam i z powrotem”; przy pełnej kontroli układu loty w nim są darmowe. Modyfikatory ras i badań (prędkość, paliwo) przez `effectiveUnit`.
+- Komendy `SendFleet` (misje: przelot, stacjonowanie, tam i z powrotem), `RecallFleet` (powrót w czasie dotychczasowego lotu, zwrot niewykorzystanego paliwa), `DebugAddUnits`; zdarzenie `FleetArrival`. Kosmoport: 1 start na poziom w oknie 3 min; bez kosmoportu brak startu. Hangary: miejsca według klasy, reszta krąży na orbicie.
+- Klient: sekcja FLEET na panelu planety, przycisk „Fleets” z formularzem wysyłki (jednostki, misja, wybór celu klikiem w planetę w widoku układu, podgląd odległości, czasu, paliwa i błędu przed wysłaniem) i listą flot z odwołaniem; floty na mapie galaktyki ze smugą i linią do celu. Debug: „+ test fleet”.
+- Poprawka: przycisk Build na polu planety stawia budynek na wybranym polu (wcześniej na pierwszym wolnym).
+- Zasady do potwierdzenia i przeliczona tabela 12.1.3: `docs/PYTANIA.md`, pytanie 35.
+- Testy: `shared/test/fleet.test.ts` (tabela 12.1.3, najwolniejsza jednostka, brak paliwa, zwrot przy odwołaniu, limit kosmoportu, hangary, loty w układzie), `client/test/fleets.test.ts`.
+- Na później: utrzymanie, stocznia, transporty (1.10); powrót flot stacjonujących u obcych; obsada kosmoportu; floty w widoku układu.
 
 ### 0.1.11: powierzchnia planety (krok 1.8a, prośba właściciela, 3.11.2026)
 - Kliknięcie planety (w widoku układu albo „Home”) otwiera jej powierzchnię w rzucie izometrycznym: pola budowy to heksy ułożone spiralą (tyle, ile planeta ma pól), w tle sceneria typu planety: wulkany i lawa (wulkaniczna), lodowce (lodowa), pływające platformy i pasy chmur (gazowy gigant), wydmy i płaskowyże (pustynna), toksyczne jeziora (radioaktywna), woda i fale (oceaniczna), drzewa i wzgórza (zielona), góry i kratery (skalista), iglice kryształów (krystaliczna), monolity i łuki ruin (anomalia).

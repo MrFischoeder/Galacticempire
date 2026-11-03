@@ -12,7 +12,10 @@ import {
   type RaceId,
   type SystemId,
   type TechId,
+  type FleetMission,
   type TimeMultiplier,
+  type UnitId,
+  unitsAt,
 } from '@ge/shared';
 import { GalaxyMap } from './map/galaxyMap';
 import { SimClient, type World } from './sim/client';
@@ -24,6 +27,13 @@ import { esc } from './ui/html';
 import { renderStats, renderSystemPanel } from './ui/panels';
 import { foreignPlanetHTML, surfacePanelHTML } from './ui/planetPanel';
 import { researchHTML } from './ui/researchPanel';
+import {
+  draftHTML,
+  fleetListHTML,
+  planetFleetHTML,
+  previewOf,
+  type FleetDraft,
+} from './ui/fleetPanel';
 import { versionLabel } from './version';
 
 // The game data is checked once at start-up (step 1.2); problems show in the console.
@@ -50,6 +60,7 @@ map.onResize = (w, h) => {
 const sim = new SimClient();
 const side = $('#side');
 const researchPanel = $('#research');
+const fleetsPanel = $('#fleets');
 const errorPanel = $('#error');
 
 let world: World | null = null;
@@ -58,6 +69,11 @@ let snapshot: Snapshot | null = null;
 let mode: 'galaxy' | 'system' | 'planet' = 'galaxy';
 let openSystem: SystemId | null = null;
 let selectedPlanet: PlanetId | null = null;
+/** The fleet being prepared, and whether the next planet click picks its target. */
+let draft: FleetDraft | null = null;
+let picking = false;
+/** Real time of the last snapshot, to move fleets smoothly between snapshots. */
+let snapshotAt = 0;
 
 function showError(message: string): void {
   errorPanel.hidden = false;
@@ -119,9 +135,20 @@ function openSystemView(id: SystemId): void {
 map.onSelect = () => renderSide();
 map.onOpen = (id) => openSystemView(id);
 system.onSelect = (id) => {
+  if (id && picking && draft) {
+    // Picking a fleet target: the planet becomes the target, the view stays.
+    draft.to = id;
+    picking = false;
+    renderFleets();
+    return;
+  }
   // Clicking a planet in the system opens its surface.
   if (id) openPlanet(id);
 };
+map.gameTime = () =>
+  snapshot
+    ? snapshot.time + (snapshot.paused ? 0 : (performance.now() - snapshotAt) * snapshot.multiplier)
+    : 0;
 surface.onSelect = () => renderSide();
 
 let lastSide = '';
@@ -150,6 +177,7 @@ function renderSide(): void {
       slotsOf(view.planet, view.info.fields),
       surface.selected,
     );
+    if (surface.selected === null) html += planetFleetHTML(view, snapshot.time);
   } else if (mode === 'planet' && selectedPlanet && galaxy.planets[selectedPlanet]) {
     html = foreignPlanetHTML(
       galaxy.planets[selectedPlanet] as NonNullable<Galaxy['planets'][string]>,
@@ -175,7 +203,7 @@ function renderResearch(): void {
 function onAction(e: PointerEvent): void {
   const target = (e.target as HTMLElement).closest<HTMLElement>('[data-action]');
   if (!target || (target as HTMLButtonElement).disabled || !world) return;
-  const [kind, a, b] = (target.dataset.action ?? '').split(':');
+  const [kind, a, b, c] = (target.dataset.action ?? '').split(':');
   const playerId = world.playerId;
   if (kind === 'open') openSystemView(Number(a));
   else if (kind === 'cancel' && selectedPlanet)
@@ -189,12 +217,84 @@ function onAction(e: PointerEvent): void {
       planetId: selectedPlanet,
       kind: a as BuildingId,
       ...(b ? { deposit: b as MinedResource } : {}),
+      ...(c ? { slot: Number(c) } : {}),
     });
   } else if (kind === 'research' && b)
     void send({ type: 'StartResearch', playerId, planetId: b, tech: a as TechId });
+  else if (kind === 'fleetDraft' && selectedPlanet) {
+    draft = { from: selectedPlanet, to: null, mission: 'transfer', units: {} };
+    picking = false;
+    fleetsPanel.hidden = false;
+    renderFleets(true);
+  } else if (kind === 'fleetAll' && draft) {
+    const from = draft.from;
+    const view = snapshot?.planets.find((v) => v.planet.id === from);
+    draft.units[a as UnitId] = view ? (unitsAt(view.planet)[a as UnitId] ?? 0) : 0;
+    renderFleets(true);
+  } else if (kind === 'fleetPick' && draft) {
+    picking = true;
+    renderFleets();
+    if (mode === 'planet' && openSystem !== null) openSystemView(openSystem);
+  } else if (kind === 'fleetClose') {
+    draft = null;
+    picking = false;
+    renderFleets();
+  } else if (kind === 'fleetSend' && draft?.to) {
+    const d = draft;
+    void sim
+      .command({
+        type: 'SendFleet',
+        playerId,
+        from: d.from,
+        to: d.to as string,
+        units: d.units,
+        mission: d.mission,
+      })
+      .then((r) => {
+        if (!r.ok) return showError(r.error.message);
+        draft = null;
+        renderFleets();
+      });
+  } else if (kind === 'fleetRecall') void send({ type: 'RecallFleet', playerId, fleetId: a ?? '' });
 }
 side.addEventListener('pointerdown', onAction);
 researchPanel.addEventListener('pointerdown', onAction);
+fleetsPanel.addEventListener('pointerdown', onAction);
+fleetsPanel.addEventListener('input', (e) => {
+  const el = e.target as HTMLInputElement | HTMLSelectElement;
+  if (!draft) return;
+  if (el.dataset.unit) {
+    draft.units[el.dataset.unit as UnitId] = Math.max(0, Math.floor(Number(el.value) || 0));
+  } else if (el.id === 'fleetMission') draft.mission = el.value as FleetMission;
+  renderFleets();
+});
+
+let lastDraft = '';
+/** The fleets panel: the send form (kept while typing), the preview and the fleet list. */
+function renderFleets(force = false): void {
+  if (fleetsPanel.hidden || !snapshot || !galaxy) return;
+  const draftEl = $('#fleetDraft');
+  const html = draft ? draftHTML(draft, galaxy, snapshot.planets, picking) : '';
+  if (force || html !== lastDraft) {
+    draftEl.innerHTML = html;
+    lastDraft = html;
+  }
+  const preview = $('#fleetPreview');
+  const sendEl = $('#fleetSend');
+  if (draft) {
+    const p = previewOf(draft, galaxy, snapshot.planets, snapshot.player, snapshot.time);
+    preview.textContent = p.text;
+    preview.classList.toggle('bad', !p.ok);
+    const button = `<div class="row"><button data-action="fleetSend" ${p.ok ? '' : 'disabled'}>Send fleet</button></div>`;
+    if (sendEl.innerHTML !== button) sendEl.innerHTML = button;
+  } else {
+    preview.textContent = '';
+    sendEl.innerHTML = '';
+  }
+  const list = fleetListHTML(snapshot.fleets, galaxy, snapshot.time);
+  const listEl = $('#fleetList');
+  if (listEl.innerHTML !== list) listEl.innerHTML = list;
+}
 
 // --- top bar ---------------------------------------------------------------------------
 
@@ -207,6 +307,10 @@ $('#toSystem').addEventListener('click', () => {
   if (openSystem !== null) openSystemView(openSystem);
 });
 $('#toHome').addEventListener('click', goHome);
+$('#toFleets').addEventListener('click', () => {
+  fleetsPanel.hidden = !fleetsPanel.hidden;
+  renderFleets(true);
+});
 $('#toResearch').addEventListener('click', () => {
   researchPanel.hidden = !researchPanel.hidden;
   renderResearch();
@@ -252,12 +356,15 @@ function renderLog(): void {
 sim.onSnapshot = (s) => {
   const ownedBefore = ownedIds();
   snapshot = s;
+  snapshotAt = performance.now();
+  map.setFleets(s.fleets);
   if (mode === 'system' && galaxy && openSystem !== null && ownedIds().size !== ownedBefore.size) {
     system.show(galaxy, openSystem, ownedIds());
   }
   if (mode === 'planet') refreshSurface();
   renderSide();
   renderResearch();
+  renderFleets();
   renderTimebar();
   renderLog();
 };
@@ -278,6 +385,8 @@ async function load(seed: string): Promise<void> {
   seedInput.value = seed;
   errorPanel.hidden = true;
   snapshot = null;
+  draft = null;
+  picking = false;
   world = await sim.newGame(seed, systems, raceSelect.value as RaceId);
   galaxy = world.galaxy;
   map.setGalaxy(galaxy);
@@ -312,6 +421,15 @@ $('#setBuilding').addEventListener('click', () => {
     planetId: selectedPlanet,
     kind: setKind.value as BuildingId,
     level,
+  });
+});
+
+$('#addUnits').addEventListener('click', () => {
+  if (!selectedPlanet) return showError('Select one of your planets.');
+  void send({
+    type: 'DebugAddUnits',
+    planetId: selectedPlanet,
+    units: { probe: 2, fighter: 6, bomber: 2, transport: 2, cruiser: 1 },
   });
 });
 

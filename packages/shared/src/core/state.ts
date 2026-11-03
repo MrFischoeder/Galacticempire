@@ -6,9 +6,10 @@ import type { TechId } from '../config/techs';
 import { generateGalaxy, type GalaxyOptions } from '../galaxy/generate';
 import type { Galaxy, PlanetId } from '../galaxy/types';
 import type { PlanetState } from '../economy/planet';
+import type { Fleet } from '../fleet/fleet';
 
 /** Bump when the shape of GameState changes (saves are migrated by version). */
-export const STATE_VERSION = 8;
+export const STATE_VERSION = 9;
 
 export type PlayerId = string;
 
@@ -45,6 +46,10 @@ export interface GameState {
   players: Record<PlayerId, Player>;
   /** Owned planets and their economy (settled lazily, see economy/planet.ts). */
   planets: Record<PlanetId, PlanetState>;
+  /** Fleets away from their owner's planets: flying, or stationed somewhere (spec 12.1). */
+  fleets: Record<string, Fleet>;
+  /** Next fleet number. */
+  nextFleet: number;
   /** State of the general-purpose generator for events (separate streams use rngStream). */
   rng: RngState;
   events: EventQueue<GameEvent>;
@@ -58,6 +63,8 @@ export function createGameState(seed: string, galaxy: GalaxyOptions = {}): GameS
     world: { seed, galaxy: generateGalaxy(seed, galaxy) },
     players: {},
     planets: {},
+    fleets: {},
+    nextFleet: 1,
     rng: hashString(`${seed}\u0000events`),
     events: createQueue<GameEvent>(),
     log: [],

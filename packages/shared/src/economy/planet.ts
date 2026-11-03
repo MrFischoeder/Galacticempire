@@ -12,6 +12,7 @@ import {
 import { MS_PER_HOUR } from '../config/time';
 import type { PlayerId } from '../core/state';
 import { RESEARCH, type TechId } from '../config/techs';
+import type { UnitId } from '../config/units';
 import { economyBonus, type ModifierContext } from '../rules/modifiers';
 import type { Planet, PlanetId } from '../galaxy/types';
 
@@ -66,6 +67,12 @@ export interface PlanetState {
   nextUid: number;
   /** Research run in this planet's laboratory, paid from its stores (spec 9.3, owner 3.11.2026). */
   research: ResearchJob[];
+  /** The owner's units in the hangars (spec 10.7). */
+  units: Partial<Record<UnitId, number>>;
+  /** The owner's units circling in orbit for want of hangar places (they do not defend). */
+  orbit: Partial<Record<UnitId, number>>;
+  /** Departure times still holding a spaceport launch slot (spec 9.1). */
+  launches: number[];
 }
 
 /** One technology level being researched (spec 9.3.3). */
@@ -122,6 +129,9 @@ export function createPlanetState(
     construction: null,
     nextUid: 1,
     research: [],
+    units: {},
+    orbit: {},
+    launches: [],
   };
 }
 

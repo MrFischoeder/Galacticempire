@@ -19,7 +19,18 @@ import {
   STOCKED,
   STORED_RESOURCES,
 } from '../economy/planet';
-import { scheduleEvent } from './events';
+import { scheduleEvent, scheduleFleet } from './events';
+import type { FleetMission } from '../config/fleets';
+import { UNITS, type UnitId } from '../config/units';
+import {
+  addUnits,
+  canRecallFleet,
+  canSendFleet,
+  recallFleet,
+  sendFleet,
+  settleHangar,
+  type UnitCounts,
+} from '../fleet/fleet';
 import { fail, OK, type Result } from './result';
 import type { GameState, PlayerId } from './state';
 
@@ -37,7 +48,34 @@ export type Command =
   | DebugScheduleMarkerCommand
   | DebugGivePlanetCommand
   | DebugSetBuildingCommand
-  | DebugAddResourcesCommand;
+  | DebugAddResourcesCommand
+  | SendFleetCommand
+  | RecallFleetCommand
+  | DebugAddUnitsCommand;
+
+/** Send units from an owned planet to another planet (spec 12.1). */
+export interface SendFleetCommand {
+  readonly type: 'SendFleet';
+  readonly playerId: PlayerId;
+  readonly from: string;
+  readonly to: string;
+  readonly units: UnitCounts;
+  readonly mission: FleetMission;
+}
+
+/** Turn a fleet on its way out back home (spec 12.1.2: unused fuel returns to the store). */
+export interface RecallFleetCommand {
+  readonly type: 'RecallFleet';
+  readonly playerId: PlayerId;
+  readonly fleetId: string;
+}
+
+/** Debug only: puts units at an owned planet (the shipyard comes in step 1.10). */
+export interface DebugAddUnitsCommand {
+  readonly type: 'DebugAddUnits';
+  readonly planetId: string;
+  readonly units: UnitCounts;
+}
 
 /** Research the next level of a technology in a planet's laboratory (spec 9.3). */
 export interface StartResearchCommand {
@@ -343,6 +381,7 @@ export const COMMANDS: Specs = {
           ...(c.deposit ? { deposit: c.deposit } : {}),
         });
       }
+      settleHangar(p); // a hangar lowered or removed sends units into orbit
       // Lowering a warehouse can shrink the capacity below the stock.
       const cap = resourceCapacity(p);
       for (const r of STORED_RESOURCES) if ((p.stock[r] ?? 0) > cap) p.stock[r] = cap;
@@ -368,6 +407,50 @@ export const COMMANDS: Specs = {
       for (const [r, n] of Object.entries(c.amounts) as [ResourceId, number][]) {
         p.stock[r] = Math.min(capacityOf(p, r), (p.stock[r] ?? 0) + n);
       }
+    },
+  },
+  SendFleet: {
+    validate(state, c) {
+      if (!state.players[c.playerId]) return fail('NO_PLAYER', 'No such player.');
+      const own = ownedBy(state, c.playerId, c.from);
+      if (!own.ok) return own;
+      const s = settledCopy(state, c.from);
+      const p = s.planets[c.from] as NonNullable<GameState['planets'][string]>;
+      return canSendFleet(s, c, ownerContext(s, p));
+    },
+    apply(state, c) {
+      const p = settleOwned(state, c.from);
+      if (!p) return;
+      const f = sendFleet(state, c, ownerContext(state, p));
+      scheduleFleet(state, f.id);
+    },
+  },
+  RecallFleet: {
+    validate(state, c) {
+      return canRecallFleet(state, c.playerId, c.fleetId);
+    },
+    apply(state, c) {
+      recallFleet(state, c.fleetId);
+      scheduleFleet(state, c.fleetId);
+    },
+  },
+  DebugAddUnits: {
+    validate(state, c) {
+      if (!state.planets[c.planetId]) return fail('NOT_OWNED', 'This planet has no owner.');
+      for (const [u, n] of Object.entries(c.units) as [UnitId, number][]) {
+        if (!(u in UNITS)) return fail('NO_UNIT', 'No such unit.');
+        if (UNITS[u].category === 'defense')
+          return fail('NOT_MOVABLE', 'Defences are not kept in hangars.');
+        if (!Number.isInteger(n) || n < 0)
+          return fail('BAD_AMOUNT', 'Unit counts must be whole non-negative numbers.');
+      }
+      return OK;
+    },
+    apply(state, c) {
+      const p = settleOwned(state, c.planetId);
+      if (!p) return;
+      addUnits(p.orbit, c.units);
+      settleHangar(p);
     },
   },
 };

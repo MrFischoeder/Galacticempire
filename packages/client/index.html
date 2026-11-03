@@ -16,6 +16,7 @@
         <button id="toSystem">System</button>
         <button id="toHome">Home planet</button>
         <button id="toResearch">Research</button>
+        <button id="toFleets">Fleets</button>
       </div>
     </div>
     <div id="debug" class="panel">
@@ -48,11 +49,20 @@
           <input id="setLevel" type="number" min="0" max="10" value="1" class="small-input" />
           <button id="setBuilding">Set</button>
         </div>
+        <div class="row">
+          <button id="addUnits">+ test fleet</button>
+        </div>
         <div id="stats" class="dim"></div>
       </div>
     </div>
     <div id="side" class="panel" hidden></div>
     <div id="research" class="panel" hidden></div>
+    <div id="fleets" class="panel" hidden>
+      <div id="fleetDraft"></div>
+      <div id="fleetPreview"></div>
+      <div id="fleetSend"></div>
+      <div id="fleetList"></div>
+    </div>
     <div id="timebar" class="panel">
       <button data-speed="pause">Pause</button>
       <button data-speed="1">×1</button>

@@ -1,4 +1,4 @@
-import type { Galaxy, SystemId } from '@ge/shared';
+import { fleetPosition, type Fleet, type Galaxy, type SystemId } from '@ge/shared';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
@@ -83,6 +83,18 @@ export class GalaxyMap {
   hovered: SystemId | null = null;
   selected: SystemId | null = null;
   onSelect: (id: SystemId | null) => void = () => {};
+  /** Fleets drawn on the map (step 1.9) and the game time to place them at. */
+  private fleets: Fleet[] = [];
+  private fleetKey = '';
+  private fleetGroup = new THREE.Group();
+  private fleetParts: {
+    f: Fleet;
+    trail: LineSegments2;
+    ahead: LineSegments2;
+    mark: THREE.Mesh;
+    name: CSS2DObject;
+  }[] = [];
+  gameTime: () => number = () => 0;
   /** Double click on a system. */
   onOpen: (id: SystemId) => void = () => {};
 
@@ -138,6 +150,10 @@ export class GalaxyMap {
     });
     this.world = new THREE.Group();
     this.scene.add(this.world);
+    this.fleetKey = '';
+    this.fleetGroup = new THREE.Group();
+    this.fleetParts = [];
+    this.world.add(this.fleetGroup);
     this.galaxy = galaxy;
     this.lineMaterials = [];
     this.nameLabels = [];
@@ -211,6 +227,80 @@ export class GalaxyMap {
       this.world.add(name);
     }
     this.resize();
+  }
+
+  /** The fleets to draw; rebuilt only when their legs change. */
+  setFleets(fleets: Fleet[]): void {
+    this.fleets = fleets;
+    const key = JSON.stringify(fleets.map((f) => [f.id, f.leg?.arriveAt, f.leg?.x0, f.phase]));
+    if (key === this.fleetKey || !this.galaxy) return;
+    this.fleetKey = key;
+    for (const part of this.fleetParts) {
+      part.trail.geometry.dispose();
+      part.ahead.geometry.dispose();
+      part.name.element.remove();
+    }
+    this.fleetGroup.clear();
+    this.fleetParts = [];
+    for (const f of fleets) {
+      if (!f.leg) continue;
+      const line = (opacity: number, dashed: boolean) => {
+        const geo = new LineSegmentsGeometry();
+        geo.setPositions([0, 0, 0, 0, 0, 0]);
+        const mat = new LineMaterial({
+          color: COLORS.cyan,
+          linewidth: dashed ? 1.2 : 2.4,
+          dashed,
+          dashSize: 1.5,
+          gapSize: 1.5,
+          transparent: true,
+          opacity,
+        });
+        this.lineMaterials.push(mat);
+        mat.resolution.set(window.innerWidth, window.innerHeight);
+        return new LineSegments2(geo, mat);
+      };
+      const trail = line(0.9, false);
+      const ahead = line(0.35, true);
+      const mark = new THREE.Mesh(
+        new THREE.OctahedronGeometry(1.1),
+        new THREE.MeshBasicMaterial({ color: COLORS.cyan, wireframe: true }),
+      );
+      const name = label(f.id, 'label fleet');
+      this.fleetGroup.add(trail, ahead, mark, name);
+      this.fleetParts.push({ f, trail, ahead, mark, name });
+    }
+  }
+
+  private height(systemOf: string): number {
+    const g = this.galaxy;
+    const p = g?.planets[systemOf];
+    return g && p ? scenePosition(g, p.system)[1] : 0;
+  }
+
+  private placeFleets(t: number): void {
+    const time = this.gameTime();
+    // Markers keep a readable size when the map is zoomed out.
+    const scale = Math.max(1, this.camera.position.distanceTo(this.controls.target) / 110);
+    for (const { f, trail, ahead, mark, name } of this.fleetParts) {
+      const l = f.leg;
+      const pos = fleetPosition(f, time);
+      if (!l || !pos) continue;
+      const total = l.arriveAt - l.moveAt;
+      const share = total > 0 ? Math.max(0, Math.min(1, (time - l.moveAt) / total)) : 1;
+      const h0 = f.recalled && f.phase === 'back' ? this.height(f.target) : this.height(l.from);
+      const h1 = this.height(l.to);
+      const a: [number, number, number] = [l.x0, h0, l.y0];
+      const b: [number, number, number] = [l.x1, h1, l.y1];
+      const p: [number, number, number] = [pos.x, h0 + (h1 - h0) * share, pos.y];
+      (trail.geometry as LineSegmentsGeometry).setPositions([...a, ...p]);
+      (ahead.geometry as LineSegmentsGeometry).setPositions([...p, ...b]);
+      ahead.computeLineDistances();
+      mark.position.set(...p);
+      mark.rotation.y = t * 2;
+      mark.scale.setScalar(scale);
+      name.position.set(p[0], p[1] + 2.4, p[2]);
+    }
   }
 
   select(id: SystemId | null): void {
@@ -298,6 +388,7 @@ export class GalaxyMap {
         this.flightLabel.element.textContent = flightText(g, this.selected, this.hovered);
       }
     }
+    this.placeFleets(t);
     this.renderer.render(this.scene, this.camera);
     this.labels.render(this.scene, this.camera);
   }

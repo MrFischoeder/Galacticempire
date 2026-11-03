@@ -1,4 +1,5 @@
 export * from './buildings';
+export * from './fleets';
 export * from './modifiers';
 export * from './planets';
 export * from './population';
