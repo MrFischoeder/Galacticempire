@@ -14,7 +14,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.0 | 0.1.0 | `v0.1.0-szkielet` | monorepo, narzędzia, pusta scena 3D | ✅ |
 | 1.0 | 0.1.0a | `v0.1.0a-start-bat` | `start-gry.bat`: uruchamianie jednym kliknięciem | ✅ |
 | 1.1 | 0.1.1 | `v0.1.1-rdzen-symulacji` | zegar gry, RNG, kolejka zdarzeń, komendy | ✅ |
-| 1.2a | 0.1.2 | `v0.1.2-konfiguracja` | wszystkie liczby jako dane, modyfikatory | ⬜ |
+| 1.2a | 0.1.2 | `v0.1.2-konfiguracja` | wszystkie liczby jako dane, modyfikatory | ✅ |
 | 1.2b | 0.1.3 | `v0.1.3-balans-ekonomii` | narzędzie liczące + tabela kosztów, czasów i wydajności budynków do akceptacji | ⬜ |
 | 1.3 | 0.1.4 | `v0.1.4-galaktyka` | generator galaktyki i tras | ⬜ |
 | 1.4a | 0.1.5 | `v0.1.5-produkcja` | wydobycie, przetwórstwo, magazyn, rdzeń, energia | ⬜ |
@@ -36,6 +36,14 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.1.2: konfiguracja i dane gry (krok 1.2a, 3.11.2026)
+- `packages/shared/src/config/`: `resources.ts` (5 podstawowych, 4 specjalne, 3 przetworzone, wartości z 10.0), `recipes.ts` (4.2), `planets.ts` (10 typów planet z decyzjami 2.8: specjalizacje, żyzność, energia odnawialna, częstość, kolor; klasy i pule złóż; 8–14 pól, startowa 16), `buildings.ts` (25 budynków: koszt, energia, robotnicy, wymagania, progi surowców specjalnych, efekt i jego wzrost; wzory `BUILD`; rdzeń `CORE`), `units.ts` (16 jednostek i 4 obiekty obronne z tabel 10.1–10.3, 11.3, 12.3 + dodatki ze `SUROWCE.md`), `techs.ts` (13 technologii, `RESEARCH`), `races.ts` (4 rasy jako dane, mechaniki unikalne jako parametry), `population.ts`, `modifiers.ts` (wspólny opis „+x% do statystyki jednostek”), `schema.ts` (walidacja zod + sprawdzenia krzyżowe, `validateConfig()` wołane też przy starcie klienta).
+- `packages/shared/src/rules/modifiers.ts`: jedyny moduł efektywnych statystyk: `effectiveUnit` (atak, pancerz, struktura, cele, prędkość, paliwo, ładowność, koszt ze specjalnymi, czas budowy, utrzymanie), `economyBonus` (wydobycie, tarcza, skanery, żywność), `researchCostMultiplier` (rabaty ras). Zasada łączenia: w obrębie jednego źródła (poziomy jednej technologii, jedna rasa) bonusy się dodają, różne źródła mnożą.
+- Testy (21 nowych): walidacja; kopalnia poz. N = zakład poz. N; czasy zapełnienia magazynu z tabeli 8; energia z 5.1; progi surowców specjalnych; wartości jednostek z kolumną „Wartość” (±1%); poziomy stoczni z 9.2; utrzymanie ≈ 2% wartości dziennie; koszty badań z 9.3.3; modyfikatory (Kolosy +30% struktury, Rój −30% kosztu, broń ciężka 5 = +15% ataku, Kupcy transportowiec 625, Forteca, głód, artyleria +1 cel na poz. 5 i 10, napędy, czujniki, rabaty ras).
+- **Wartości tymczasowe (do kroku 1.2b „balans ekonomii”):** koszty postawienia wszystkich budynków (poza giełdą), wzrost wydajności rafinerii, huty, warsztatu, farmy i elektrowni odnawialnej (×1,25 jak kopalnia), reaktor fuzyjny (250 energii, 5 helu-3 na poziom), czas załadunku kosmoportu, ilości surowców specjalnych w budynkach i badaniach (20 × 1,6 lub 1,7 na poziom, egzotyczna 5), koszt centrum administracyjnego i stacji orbitalnej, wartości surowców specjalnych (2/4/4/20), pule złóż podstawowych i specjalnych, częstości typów planet, zbiór awaryjny rdzenia 5/h.
+- Otwarte pytania, które dane już uwzględniają jako parametr: Kolosy „+25% tytanu” (`titaniumShare`, pytanie 12), rdzeń a magazyn (pytanie 5a; przyjęte, że się dodają, użyjemy w kroku 1.4).
+- Do sprawdzenia ręcznie: nic nowego w grze; `pnpm check`. Liczby można przejrzeć w plikach `config/*.ts` (nazwy po polsku przy każdym elemencie).
 
 ### 0.1.1: rdzeń symulacji (krok 1.1, 3.11.2026)
 - `packages/shared/src/core/`:

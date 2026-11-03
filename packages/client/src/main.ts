@@ -1,5 +1,10 @@
+import { validateConfig } from '@ge/shared';
 import * as THREE from 'three';
 import { versionLabel } from './version';
+
+// The game data is checked once at start-up (step 1.2); problems show in the console.
+const configProblems = validateConfig();
+if (configProblems.length > 0) console.error('Game config problems:', configProblems);
 
 const COLOR_BG = 0x050a1f;
 const COLOR_CYAN = 0x2ef2ff;

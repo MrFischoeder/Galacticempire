@@ -1,6 +1,6 @@
 {
   "name": "@ge/shared",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "main": "src/index.ts",
@@ -8,5 +8,8 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
   }
 }

@@ -44,6 +44,8 @@ Przeglądarkowa strategia kosmiczna w czasie rzeczywistym. Właściciel: Łukasz
 - AI korzysta wyłącznie z `getPlayerView(stan, graczId)` i komend (sekcja 23.3). Klient od kroku 1.11 też.
 - Stan gry serializowalny (JSON), żeby działał zapis, Web Worker i serwer.
 - Rdzeń (`packages/shared/src/core/`): `clock.ts` (zegar gry), `rng.ts` (`Rng`, `rngStream`), `queue.ts` (kolejka zdarzeń), `state.ts` (`GameState`), `commands.ts` (komendy: każda ma `validate` i `apply` w `COMMANDS`), `events.ts` (zdarzenia: `EVENT_HANDLERS`, `scheduleEvent`), `engine.ts` (`advanceTo`, `applyCommand`, `replay`). Nowa komenda = typ w unii `Command` + wpis w `COMMANDS`; nowe zdarzenie = typ w unii `GameEvent` + wpis w `EVENT_HANDLERS`. Losowość w zdarzeniach z `state.rng` albo z `rngStream(seed, ...)`.
+- Dane (`packages/shared/src/config/`): `resources`, `recipes`, `planets`, `buildings` (+ `BUILD`, `CORE`), `units`, `techs` (+ `RESEARCH`), `races`, `population`, `modifiers` (typy modyfikatorów), `schema` (`validateConfig`). Nowy element gry = wpis w danych + przejście walidacji. Wartości oznaczone `PROVISIONAL` czekają na krok 1.2b.
+- Efektywne statystyki: wyłącznie `packages/shared/src/rules/modifiers.ts` (`effectiveUnit`, `economyBonus`, `researchCostMultiplier`). W obrębie jednego źródła bonusy się dodają, różne źródła mnożą.
 
 ## Polecenia
 
