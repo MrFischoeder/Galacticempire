@@ -32,6 +32,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.11 | 0.1.14 | `v0.1.14-mgla-wojny` | `getPlayerView`, sondy, skanery | ⬜ |
 | 1.12 | 0.1.15 | `v0.1.15-sojusze` | sojusze | ⬜ |
 | 1.13 | 0.1.16 | `v0.1.16-bot-symulacja` | bot ekonomiczny, `pnpm sim` | ⬜ |
+| 5.1 | — | — | blokady: usunięte (decyzja 3.11.2026) | ✖ |
 | 2.1–2.4 | 0.2.x | `v0.2.x-...` | walka | ⬜ |
 | 3.1–3.5 | 0.3.x → 1.0.0 | `v0.3.x-...`, `v1.0.0-gra-jednoosobowa` | AI i pierwsza grywalna wersja | ⬜ |
 | 4.x–6.x | 1.x | | serwer, mechaniki zaawansowane, balans | ⬜ |
@@ -46,7 +47,7 @@ Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział 
 - Wielkość galaktyki: 60 układów mieści co najmniej 8 graczy (50 ziaren), `systemsFor` = max(60, 8 × gracze), np. 96 dla 12.
 - Mapa: bez linii tras i węzłów; bogate układy świecą mocniej; po zaznaczeniu układu najechanie na inny rysuje przerywaną linię lotu z odległością (np. „Teneyx → Peruvex: 109 LY”); panel układu pokazuje najbliższy układ i liczbę układów w promieniu 30 LY.
 - Średnia odległość między układami w linii prostej ok. 90–94 LY (było 104 po trasach), najdłuższa ok. 195 LY.
-- Do rozstrzygnięcia przed krokami 1.9 i 5.1: pytanie 32 (dopłata czasowa za lot, nowe blokady).
+- Rozstrzygnięte (pytanie 32): 3 min na wejście w nadprzestrzeń raz na lot; **blokad nie ma** (krok 5.1 usunięty z planu, przechwytywanie i eskorty odpadają). Otwarte: rola stacji orbitalnej (pytanie 33, przed fazą 2).
 
 ### 0.1.9: mapa galaktyki 3D (krok 1.7, 3.11.2026)
 - Symulacja w Web Workerze (`packages/client/src/sim/`: `protocol.ts`, `handler.ts` = logika workera bez globali, testowalna, `worker.ts`, `client.ts` = `SimClient` z `newGame` i `command`). Stan gry żyje tylko w workerze; strona dostaje kopię galaktyki do rysowania i nigdy nie zmienia stanu.

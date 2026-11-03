@@ -302,8 +302,8 @@ Wykonaj blok ZAKOŃCZENIE KROKU.
 Zrealizuj krok 1.9 z `docs/plan-budowy.md`.
 
 Zakres (sekcja 12.1):
-- Flota jako obiekt stanu: jednostki, pozycja, trasa, czasy przelotu przez każdy układ pośredni (zapisane, potrzebne później do blokad).
-- Czas = odległość / prędkość najwolniejszej + 3 min na skok. Loty wewnątrz układu bez dopłaty za skok.
+- Flota jako obiekt stanu: jednostki, pozycja, cel, czas startu i przylotu (lot w linii prostej, bez tras; decyzja 3.11.2026).
+- Czas = odległość w linii prostej / prędkość najwolniejszej + 3 min (wejście w nadprzestrzeń, raz na lot). Loty wewnątrz układu bez tej dopłaty.
 - Paliwo = start + na LY × odległość, w obie strony przy misji z powrotem, zwrot niewykorzystanego paliwa przy odwołaniu.
 - Kosmoport ogranicza liczbę flot startujących naraz. Hangary: miejsca według klasy, krążenie na orbicie przy braku miejsca.
 - Komendy: `SendFleet` (z typem misji: przelot, powrót, stacjonowanie), `RecallFleet`.
@@ -602,7 +602,9 @@ Wykonaj blok ZAKOŃCZENIE KROKU.
 
 # FAZA 5: Mechaniki zaawansowane
 
-## Krok 5.1: Blokady i przechwytywanie
+## Krok 5.1: Blokady i przechwytywanie — USUNIĘTY (decyzja właściciela 3.11.2026)
+
+Nie ma tras ani blokad (pytanie 32 w `docs/PYTANIA.md`). Krok pozostaje tylko jako zapis historii; nie realizujemy go.
 
 ```
 Zrealizuj krok 5.1 z `docs/plan-budowy.md`.

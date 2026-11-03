@@ -206,3 +206,11 @@ Skutki, które trzeba rozstrzygnąć (nic z tego jeszcze nie jest zbudowane, dot
 2. **Blokady (12.3):** wcześniej flota zatrzymywała wrogów przelatujących przez zablokowany układ. Bez tras nikt „nie przelatuje przez układ”. **Propozycja:** flota w trybie blokady pilnuje strefy wokół układu (np. promień 10 LY + czujniki); każda wroga flota, której prosta linia lotu przecina tę strefę, zostaje zatrzymana i walczy. Stacja orbitalna daje taką strefę na stałe. Dzięki temu blokady nadal mają sens: osłaniają skupiska układów, a omijanie ich kosztuje dłuższy lot i więcej paliwa.
 3. **Strategiczne miejsca:** węzły znikają; ich rolę przejmują bogate układy, anomalie i gęste skupiska układów (krótkie loty).
 4. **Ostrzeżenia (13):** skaner wykrywa flotę, gdy ta wleci w jego zasięg w linii prostej — bez zmian.
+
+**Odpowiedź (3.11.2026):**
+- Czas lotu: przyjęta propozycja: 3 min raz na lot międzygwiezdny (wejście w nadprzestrzeń), lot wewnątrz układu bez dopłaty.
+- Blokady: **bez trybu blokady**. Floty nie zatrzymują przelatujących wrogów; walka toczy się tylko w miejscu przylotu (atak, obrona planety). Skutki zapisane w specyfikacji (sekcja 0) i w planie budowy (krok 5.1 usunięty).
+
+### 33. 🟡 Stacja orbitalna bez blokad
+Stacja orbitalna służyła tylko do blokady stałej przy pełnej kontroli układu (spec 2.4, 12.3). Po usunięciu blokad nie ma zadania.
+**Propozycja:** stacja orbitalna staje się najsilniejszą obroną planety (dostępną tylko przy pełnej kontroli układu), która broni każdej Twojej planety w tym układzie (nie tylko tej, przy której stoi). Alternatywa: usunąć ją z gry. Do decyzji przed fazą 2 (walka).
