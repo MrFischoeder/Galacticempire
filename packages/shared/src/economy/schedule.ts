@@ -14,7 +14,7 @@ export function scheduleResearchCheck(state: GameState, planetId: string, jobId:
   const job = p?.research.find((j) => j.id === jobId);
   if (!p || !job) return;
   const rates = planetRates(p, galaxyPlanet(state, planetId), ownerContext(state, p));
-  const eta = etaHours(job, rates.research[jobId] ?? 0);
+  const eta = etaHours(job, rates.research[jobId] ?? 0, rates.researchPay[jobId] ?? {});
   const at =
     state.time +
     (Number.isFinite(eta) ? Math.max(1, Math.ceil(eta * MS_PER_HOUR)) : STALLED_RECHECK);

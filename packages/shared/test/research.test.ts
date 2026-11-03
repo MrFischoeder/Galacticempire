@@ -76,8 +76,8 @@ describe('research costs and times (spec 9.3.3)', () => {
   });
 });
 
-describe('research jobs (step 1.6)', () => {
-  it('pays as it goes and finishes at the expected time; the tech then counts', () => {
+describe('research jobs (step 1.6, owner rules 3.11.2026)', () => {
+  it('takes the whole cost as soon as the planet has it and finishes when the time runs out', () => {
     const st = setup();
     const id = st.id;
     let s = st.s;
@@ -86,27 +86,23 @@ describe('research jobs (step 1.6)', () => {
       { type: 'DebugAddResources', planetId: id, amounts: { alloy: 300, components: 100 } },
       0,
     ).s;
-    const before =
-      planetRates(s.planets[id]!, s.world.galaxy.planets[id]!, { techs: {} }).made.metal ?? 0;
     const r = run(s, { type: 'StartResearch', playerId: 'p1', planetId: id, tech: 'mining' }, 0);
     expect(r.code).toBe('OK');
     s = r.s;
-    const job = s.planets[id]!.research[0]!;
-    expect(job.cost).toEqual({ alloy: 128, components: 29 }); // Merchants: 20% off
+    expect(s.planets[id]!.research[0]!.cost).toEqual({ alloy: 128, components: 29 }); // Merchants: 20% off
     s = advanceTo(s, 0.25 * H);
     // Planets are settled lazily: read through planetAt.
     const mid = planetAt(s, id, s.time)!.planet;
     expect(mid.research[0]!.progress).toBeCloseTo(0.5, 3);
-    expect(mid.stock.alloy).toBeCloseTo(300 - 64, 1);
+    expect(mid.research[0]!.paid).toEqual({ alloy: 128, components: 29 });
+    expect(mid.stock.alloy).toBeCloseTo(300 - 128, 1);
     s = advanceTo(s, 0.5 * H + 1);
     expect(s.planets[id]!.research).toHaveLength(0);
     expect(s.players.p1!.techs.mining).toBe(1);
     expect(s.log.at(-1)?.text).toBe('Ukończono badanie: Technologie wydobycia poziom 1.');
-    expect(s.planets[id]!.stock.alloy).toBeCloseTo(300 - 128, 1);
-    void before;
   });
 
-  it('pauses without resources and resumes after a delivery', () => {
+  it('without enough resources the time still runs; it ends once the rest is delivered', () => {
     const st = setup();
     const id = st.id;
     let s = st.s;
@@ -117,13 +113,15 @@ describe('research jobs (step 1.6)', () => {
     ).s;
     s = run(s, { type: 'StartResearch', playerId: 'p1', planetId: id, tech: 'mining' }, 0).s;
     s = advanceTo(s, 3 * H);
-    const stalled = s.planets[id]!.research[0]!;
-    expect(stalled.progress).toBeGreaterThan(0.4);
-    expect(stalled.progress).toBeLessThan(0.5);
+    const waiting = planetAt(s, id, s.time)!.planet.research[0]!;
+    expect(waiting.progress).toBe(1);
+    expect(waiting.paid.alloy).toBeCloseTo(60, 3);
+    expect(planetAt(s, id, s.time)!.planet.stock.alloy ?? 0).toBe(0);
     expect(s.players.p1!.techs.mining ?? 0).toBe(0);
     s = run(s, { type: 'DebugAddResources', planetId: id, amounts: { alloy: 100 } }, 3 * H).s;
-    s = advanceTo(s, 6 * H);
+    s = advanceTo(s, 4 * H);
     expect(s.players.p1!.techs.mining).toBe(1);
+    expect(planetAt(s, id, s.time)!.planet.stock.alloy).toBeCloseTo(160 - 128, 1);
   });
 
   it('a researched technology changes production (mining +3%)', () => {
@@ -152,9 +150,6 @@ describe('research jobs (step 1.6)', () => {
       { type: 'DebugAddResources', planetId: id, amounts: { alloy: 600, components: 200 } },
       0,
     ).s;
-    expect(
-      run(s, { type: 'StartResearch', playerId: 'p1', planetId: id, tech: 'drives' }, 0).code,
-    ).toBe('OK');
     s = run(s, { type: 'StartResearch', playerId: 'p1', planetId: id, tech: 'drives' }, 0).s;
     expect(
       run(s, { type: 'StartResearch', playerId: 'p1', planetId: id, tech: 'drives' }, 0).code,
@@ -162,23 +157,20 @@ describe('research jobs (step 1.6)', () => {
     expect(
       run(s, { type: 'StartResearch', playerId: 'p1', planetId: id, tech: 'sensors' }, 0).code,
     ).toBe('NO_SLOT');
+    s = advanceTo(s, H);
+    expect(s.players.p1!.techs.drives).toBe(1);
     s.players.p1!.techs.mining = 2;
-    s = run(s, { type: 'CancelResearch', playerId: 'p1', planetId: id, jobId: 'drives:1' }, 0).s;
     expect(
-      run(s, { type: 'StartResearch', playerId: 'p1', planetId: id, tech: 'mining' }, 0).code,
+      run(s, { type: 'StartResearch', playerId: 'p1', planetId: id, tech: 'mining' }, H).code,
     ).toBe('LAB_TOO_LOW');
-    s = run(s, { type: 'DebugSetBuilding', planetId: id, kind: 'laboratory', level: 5 }, 0).s;
-    s = run(s, { type: 'StartResearch', playerId: 'p1', planetId: id, tech: 'drives' }, 0).s;
+    s = run(s, { type: 'DebugSetBuilding', planetId: id, kind: 'laboratory', level: 5 }, H).s;
+    s = run(s, { type: 'StartResearch', playerId: 'p1', planetId: id, tech: 'drives' }, H).s;
     expect(
-      run(s, { type: 'StartResearch', playerId: 'p1', planetId: id, tech: 'sensors' }, 0).code,
+      run(s, { type: 'StartResearch', playerId: 'p1', planetId: id, tech: 'sensors' }, H).code,
     ).toBe('OK');
-    s = run(s, { type: 'DebugSetBuilding', planetId: id, kind: 'laboratory', level: 0 }, 0).s;
-    expect(
-      run(s, { type: 'StartResearch', playerId: 'p1', planetId: id, tech: 'cargoHolds' }, 0).code,
-    ).toBe('NO_LAB');
   });
 
-  it('cancelling stops the job without a refund', () => {
+  it('a destroyed laboratory aborts the research and its payment is lost', () => {
     const st = setup();
     const id = st.id;
     let s = st.s;
@@ -190,12 +182,17 @@ describe('research jobs (step 1.6)', () => {
     s = run(s, { type: 'StartResearch', playerId: 'p1', planetId: id, tech: 'mining' }, 0).s;
     s = run(
       s,
-      { type: 'CancelResearch', playerId: 'p1', planetId: id, jobId: 'mining:1' },
+      { type: 'DebugSetBuilding', planetId: id, kind: 'laboratory', level: 0 },
       0.25 * H,
     ).s;
     expect(s.planets[id]!.research).toHaveLength(0);
-    expect(s.planets[id]!.stock.alloy).toBeCloseTo(300 - 64, 1);
+    expect(s.planets[id]!.stock.alloy).toBeCloseTo(300 - 128, 1);
+    expect(s.log.at(-1)?.text).toContain('Badanie przerwane');
     s = advanceTo(s, 2 * H);
     expect(s.players.p1!.techs.mining ?? 0).toBe(0);
+    expect(
+      run(s, { type: 'StartResearch', playerId: 'p1', planetId: id, tech: 'cargoHolds' }, 2 * H)
+        .code,
+    ).toBe('NO_LAB');
   });
 });

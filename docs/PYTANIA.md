@@ -110,11 +110,11 @@ Planety jednego układu dzielą 1–5 LY, a minimalny odstęp układów to 8 LY.
 
 ## Badania
 
-### 21. 🟡 Z której planety płacimy za badania i który poziom laboratorium się liczy
+### 21. 🟡 Z której planety płacimy za badania i który poziom laboratorium się liczy (rozstrzygnięte w 31)
 Gracz może mieć laboratoria na kilku planetach.
 **Propozycja:** badanie uruchamia się na wybranej planecie z laboratorium; płaci jej magazyn, a limit i skrócenie czasu wynikają z jej laboratorium. Drugi slot (laboratorium 5) też liczy się na tej planecie.
 
-### 22. 🟡 Doganianie: średnia „aktywnych graczy” w grze jednoosobowej
+### 22. 🟡 Doganianie: średnia „aktywnych graczy” w grze jednoosobowej (rozstrzygnięte w 31)
 **Propozycja:** w grze jednoosobowej średnia liczy się ze wszystkich frakcji (gracz + AI).
 
 ## Gracze, sojusze, tryby
@@ -189,3 +189,10 @@ Plan budowy każe ustalić zwrot części kosztu przy anulowaniu.
 - Brak zasobów: badanie zwalnia do tempa, w jakim dopływają zasoby (przy zupełnym braku stoi), i samo rusza po dostawie.
 - Anulowanie: zapłacona część przepada, postęp znika.
 - Doganianie: średnia ze wszystkich graczy w świecie (w grze jednoosobowej także AI, pytanie 22); rabat obejmuje koszt (także surowce specjalne) i czas.
+
+**Odpowiedź (3.11.2026):**
+- Badania płacą z magazynu planety z laboratorium: potwierdzone. Dlatego zasoby trzeba wozić między planetami, a planety mogą się specjalizować (np. jedna buduje statki obronne, inna atakujące).
+- Skracanie czasu od poziomu laboratorium: potwierdzone. Lepsze rzeczy i tak kosztują więcej i trwają dłużej.
+- Brak zasobów: badanie się nie zatrzymuje. Uruchomione badanie od razu zabiera wszystkie dostępne zasoby potrzebne na swój koszt (i dobiera resztę, gdy tylko pojawi się w magazynie); zabranych zasobów nie da się już odzyskać, badanie trwa. Kończy się, gdy minie jego czas i cały koszt jest zapłacony.
+- Nie ma anulowania badania przez gracza. Badanie przerywa tylko zniszczenie laboratorium (np. w ataku): wtedy zapłacone zasoby przepadają.
+- Doganianie liczy wszystkich graczy, w grze jednoosobowej także komputerowych: potwierdzone.

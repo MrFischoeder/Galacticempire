@@ -159,18 +159,32 @@ export function startResearch(
     hours: researchHours(tech, level, laboratoryLevel(p), discount),
     startedAt: now,
     progress: 0,
+    paid: {},
   };
   p.research.push(job);
   return job;
 }
 
-/** Moves finished jobs into the owner's technologies. Returns the finished jobs. */
+/**
+ * Moves finished jobs into the owner's technologies. A job whose laboratory is gone (destroyed)
+ * is aborted and what it paid is lost (owner 3.11.2026). Returns the finished jobs.
+ */
 export function finalizeResearch(state: GameState, planetId: string): ResearchJob[] {
   const p = state.planets[planetId];
   if (!p) return [];
-  const done = p.research.filter((j) => j.progress >= 1);
+  if (p.research.length > 0 && laboratoryLevel(p) === 0) {
+    for (const job of p.research) {
+      state.log.push({
+        at: state.time,
+        text: `Badanie przerwane (brak laboratorium): ${TECHS[job.tech].name} poziom ${job.level}. Zapłacone zasoby przepadły.`,
+      });
+    }
+    p.research = [];
+    return [];
+  }
+  const done = p.research.filter((j) => j.doneAt !== undefined);
   if (done.length === 0) return done;
-  p.research = p.research.filter((j) => j.progress < 1);
+  p.research = p.research.filter((j) => j.doneAt === undefined);
   const player = state.players[p.owner];
   for (const job of done) {
     if (player) player.techs[job.tech] = Math.max(player.techs[job.tech] ?? 0, job.level);
@@ -182,9 +196,23 @@ export function finalizeResearch(state: GameState, planetId: string): ResearchJo
   return done;
 }
 
-/** Hours until a job finishes at its current speed (Infinity when stalled). */
-export function etaHours(job: ResearchJob, perHour: number): number {
-  return perHour > 0 ? (1 - job.progress) / perHour : Infinity;
+/**
+ * Hours until a job is done at the current rates: its time runs out and its cost is paid
+ * (Infinity while it waits for resources that do not come in).
+ */
+export function etaHours(
+  job: ResearchJob,
+  perHour: number,
+  pay: Partial<Record<ResourceId, number>> = {},
+): number {
+  let eta = job.progress >= 1 ? 0 : perHour > 0 ? (1 - job.progress) / perHour : Infinity;
+  for (const [r, n] of Object.entries(job.cost) as [ResourceId, number][]) {
+    const left = n - (job.paid[r] ?? 0);
+    if (left <= 1e-6) continue;
+    const rate = pay[r] ?? 0;
+    eta = Math.max(eta, rate > 0 ? left / rate : Infinity);
+  }
+  return eta;
 }
 
 /** While a job is stalled the game looks at it again after this long. */

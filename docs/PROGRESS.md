@@ -22,6 +22,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.4b | 0.1.6 | `v0.1.6-populacja` | populacja, robotnicy, żywność, silos, głód | ✅ |
 | 1.5 | 0.1.7 | `v0.1.7-budowa` | budowa i ulepszenia budynków | ✅ |
 | 1.6 | 0.1.8 | `v0.1.8-badania` | laboratorium i 13 technologii | ✅ |
+| 1.6 | 0.1.8a | `v0.1.8a-badania-zasady` | zasady badań właściciela: zabiera zasoby od razu, bez anulowania | ✅ |
 | 1.7 | 0.1.9 | `v0.1.9-mapa-galaktyki` | Web Worker, mapa 3D | ⬜ |
 | 1.8 | 0.1.10 | `v0.1.10-widok-planety` | widok układu, panele, pasek czasu | ⬜ |
 | 1.9 | 0.1.11 | `v0.1.11-ruch-flot` | ruch flot, paliwo, kosmoport, hangary | ⬜ |
@@ -37,6 +38,12 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.1.8a: zasady badań właściciela (3.11.2026)
+- Odpowiedzi na pytanie 31 (`docs/PYTANIA.md`, specyfikacja sekcja 0).
+- Badanie zabiera każdy potrzebny zasób, gdy tylko planeta go ma (osobny proces na każdy zasób, `RESEARCH.absorbPerHour` = 60 × koszt na godzinę, czyli magazyn opróżnia się w kilka minut); zapłacone zasoby (`ResearchJob.paid`) są nie do odzyskania. Czas badania biegnie niezależnie od zasobów, dopóki stoi laboratorium; badanie kończy się, gdy minie czas i koszt jest zapłacony.
+- Usunięta komenda `CancelResearch`. Zniszczenie laboratorium (na razie przez debug, później w ataku) przerywa badania na planecie, zapłacone zasoby przepadają, wpis w dzienniku.
+- Stan gry w wersji 7. Testy badań przepisane pod nowe zasady (zabranie kosztu od razu, czas mija bez zasobów i koniec po dostawie, przerwanie po zniszczeniu laboratorium).
 
 ### 0.1.8: badania (krok 1.6, 3.11.2026)
 - Gracz ma rasę (opcjonalnie w `AddPlayer`) i poziomy technologii (`techs`); `ownerContext` podaje je modułowi modyfikatorów, więc badania od razu działają na produkcję (np. technologie wydobycia +3% za poziom) i na statystyki jednostek.

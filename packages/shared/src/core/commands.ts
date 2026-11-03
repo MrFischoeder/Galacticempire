@@ -1,7 +1,7 @@
 import { BUILDINGS, type BuildingId } from '../config/buildings';
 import { RACES, type RaceId } from '../config/races';
 import type { TechId } from '../config/techs';
-import { canStartResearch, startResearch } from '../economy/research';
+import { canStartResearch, finalizeResearch, startResearch } from '../economy/research';
 import { scheduleResearchCheck } from '../economy/schedule';
 import type { MinedResource, ResourceAmounts, ResourceId } from '../config/resources';
 import { galaxyPlanet, ownerContext, settleOwned } from '../economy/access';
@@ -22,7 +22,6 @@ import type { GameState, PlayerId } from './state';
  */
 export type Command =
   | StartResearchCommand
-  | CancelResearchCommand
   | StartBuildingCommand
   | StartUpgradeCommand
   | CancelConstructionCommand
@@ -39,14 +38,6 @@ export interface StartResearchCommand {
   readonly playerId: PlayerId;
   readonly planetId: string;
   readonly tech: TechId;
-}
-
-/** Stop a research job. What was paid so far is lost (step 1.6 decision). */
-export interface CancelResearchCommand {
-  readonly type: 'CancelResearch';
-  readonly playerId: PlayerId;
-  readonly planetId: string;
-  readonly jobId: string;
 }
 
 /** Put up a new building (level 1) on an owned planet (spec 9). */
@@ -182,20 +173,6 @@ export const COMMANDS: Specs = {
         ownerContext(state, p),
       );
       scheduleResearchCheck(state, c.planetId, job.id);
-    },
-  },
-  CancelResearch: {
-    validate(state, c) {
-      const own = ownedBy(state, c.playerId, c.planetId);
-      if (!own.ok) return own;
-      if (!state.planets[c.planetId]?.research.some((j) => j.id === c.jobId)) {
-        return fail('NO_SUCH_RESEARCH', 'Takie badanie nie trwa na tej planecie.');
-      }
-      return OK;
-    },
-    apply(state, c) {
-      const p = settleOwned(state, c.planetId);
-      if (p) p.research = p.research.filter((j) => j.id !== c.jobId);
     },
   },
   StartBuilding: {
@@ -351,6 +328,8 @@ export const COMMANDS: Specs = {
       // Lowering a warehouse can shrink the capacity below the stock.
       const cap = resourceCapacity(p);
       for (const r of STORED_RESOURCES) if ((p.stock[r] ?? 0) > cap) p.stock[r] = cap;
+      // Removing the laboratory aborts its research.
+      finalizeResearch(state, c.planetId);
     },
   },
   DebugAddResources: {

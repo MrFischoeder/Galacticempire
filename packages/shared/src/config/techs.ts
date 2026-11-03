@@ -46,6 +46,12 @@ export const RESEARCH = {
   exoticBase: 5,
   /** Race discount on its favoured technologies (spec 9.3.6). */
   raceDiscount: 0.2,
+  /**
+   * Payment (owner 3.11.2026): a job takes everything it still needs as soon as the planet has
+   * it, this many times its cost per hour (drains any store within minutes). Paid resources are
+   * committed; the job ends when its time has run and its cost is paid in full.
+   */
+  absorbPerHour: 60,
   /** Catch-up below the server average (spec 9.3.5). */
   catchUp: { discount: 0.3, bigGapLevels: 3, bigGapDiscount: 0.5 },
 } as const;
