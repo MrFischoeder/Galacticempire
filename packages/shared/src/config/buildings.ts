@@ -51,7 +51,7 @@ export type BuildingEffect =
     }
   | { kind: 'hangar'; slotsPerLevel: number }
   | { kind: 'shipyard' }
-  | { kind: 'spaceport'; launchesPerLevel: number; loadMinutes: number; loadGrowth: number }
+  | { kind: 'spaceport'; loadMinutes: number; loadGrowth: number }
   | { kind: 'scanner'; baseLy: number; perLevelLy: number }
   | { kind: 'shield'; capacity: number; growth: number; regenPerHour: number }
   | {
@@ -349,7 +349,8 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     requires: [],
     special: gates({ fromLevel: 5, resource: 'helium3' }),
     // Load time PROVISIONAL (docs/PYTANIA.md, question 17).
-    effect: { kind: 'spaceport', launchesPerLevel: 1, loadMinutes: 10, loadGrowth: 0.9 },
+    // Fleets need no spaceport to take off (owner 3.11.2026); it loads transports (step 1.10).
+    effect: { kind: 'spaceport', loadMinutes: 10, loadGrowth: 0.9 },
     gasGiantOk: true,
   },
   scanner: {

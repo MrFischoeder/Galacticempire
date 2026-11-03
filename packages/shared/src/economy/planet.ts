@@ -69,10 +69,11 @@ export interface PlanetState {
   research: ResearchJob[];
   /** The owner's units in the hangars (spec 10.7). */
   units: Partial<Record<UnitId, number>>;
-  /** The owner's units circling in orbit for want of hangar places (they do not defend). */
+  /**
+   * The owner's units in orbit: put there by the player (free, owner 3.11.2026) or for want of
+   * hangar places. Hangars hide units from attacks from above; their role in battle: phase 2.
+   */
   orbit: Partial<Record<UnitId, number>>;
-  /** Departure times still holding a spaceport launch slot (spec 9.1). */
-  launches: number[];
 }
 
 /** One technology level being researched (spec 9.3.3). */
@@ -131,7 +132,6 @@ export function createPlanetState(
     research: [],
     units: {},
     orbit: {},
-    launches: [],
   };
 }
 

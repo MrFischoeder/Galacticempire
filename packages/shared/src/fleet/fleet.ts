@@ -10,8 +10,9 @@ import { effectiveUnit, type ModifierContext } from '../rules/modifiers';
 
 /**
  * Fleets (spec 12.1, step 1.9). A player's units at their own planets live in the planet's
- * hangars (`units`) or orbit (`orbit`); a Fleet exists only while units are away: flying, or
- * stationed at someone else's planet. Flights go in a straight line (owner 3.11.2026).
+ * hangars (`units`) or orbit (`orbit`); a Fleet exists only while units are in flight. Owner
+ * 3.11.2026: flights go in a straight line; no stationing at other players' planets; the fuel of
+ * the whole mission is worked out and paid at the start, so a fleet never runs dry on the way.
  */
 export type UnitCounts = Partial<Record<UnitId, number>>;
 
@@ -36,11 +37,9 @@ export interface Fleet {
   readonly mission: FleetMission;
   readonly origin: PlanetId;
   readonly target: PlanetId;
-  /** out: flying to the target; back: flying home; stationed: waiting at `at`. */
-  phase: 'out' | 'back' | 'stationed';
+  /** out: flying to the target; back: flying home. */
+  phase: 'out' | 'back';
   leg: FleetLeg | null;
-  /** Where a stationed fleet waits. */
-  at: PlanetId | null;
   /** Distance of the whole flight (one way), LY. */
   readonly ly: number;
   /** Fleet speed (slowest unit), LY per hour, fixed at launch. */
@@ -92,24 +91,82 @@ export function hangarPlaces(p: PlanetState): number {
   return places;
 }
 
-/**
- * Puts the planet's units into the hangars as far as the places go, the rest into orbit.
- * Deterministic: unit kinds in the order of the unit list, as many of each as fit.
- */
-export function settleHangar(p: PlanetState): void {
-  const all = unitsAt(p);
-  let free = hangarPlaces(p);
-  p.units = {};
-  p.orbit = {};
+/** Lands units at a planet: into the hangars as far as the places go, the rest into orbit. */
+export function landUnits(p: PlanetState, units: UnitCounts): void {
+  let free = hangarPlaces(p) - placesOf(p.units);
   for (const u of UNIT_IDS) {
-    const n = all[u] ?? 0;
+    const n = units[u] ?? 0;
     if (n <= 0) continue;
     const size = HANGAR_SLOTS[UNITS[u].size];
-    const inside = Math.min(n, Math.floor(free / size));
-    if (inside > 0) p.units[u] = inside;
-    if (n - inside > 0) p.orbit[u] = n - inside;
+    const inside = Math.max(0, Math.min(n, Math.floor(free / size)));
+    if (inside > 0) p.units[u] = (p.units[u] ?? 0) + inside;
+    if (n - inside > 0) p.orbit[u] = (p.orbit[u] ?? 0) + n - inside;
     free -= inside * size;
   }
+}
+
+/** Hangars that lost places push units out into orbit (the biggest kinds last in, first out). */
+export function fitHangar(p: PlanetState): void {
+  let over = placesOf(p.units) - hangarPlaces(p);
+  for (const u of [...UNIT_IDS].reverse()) {
+    if (over <= 0) break;
+    const n = p.units[u] ?? 0;
+    if (n <= 0) continue;
+    const size = HANGAR_SLOTS[UNITS[u].size];
+    const out = Math.min(n, Math.ceil(over / size));
+    p.units[u] = n - out;
+    if (p.units[u] === 0) delete p.units[u];
+    p.orbit[u] = (p.orbit[u] ?? 0) + out;
+    over -= out * size;
+  }
+}
+
+/** Where units go inside their planet: into the hangars or out into orbit (free). */
+export type UnitPlace = 'hangar' | 'orbit';
+
+export function canMoveUnits(p: PlanetState, units: UnitCounts, to: UnitPlace): Result {
+  const from = to === 'hangar' ? p.orbit : p.units;
+  let any = false;
+  for (const [u, n] of Object.entries(units) as [UnitId, number][]) {
+    if (!(u in UNITS)) return fail('NO_UNIT', 'No such unit.');
+    if (n === 0) continue;
+    if (!Number.isInteger(n) || n < 0)
+      return fail('BAD_AMOUNT', 'Unit counts must be whole non-negative numbers.');
+    if ((from[u] ?? 0) < n)
+      return fail(
+        'NOT_ENOUGH_UNITS',
+        `There are not enough ${UNITS[u].name} units ${to === 'hangar' ? 'in orbit' : 'in the hangars'}.`,
+      );
+    any = true;
+  }
+  if (!any) return fail('NO_UNITS', 'Choose the units to move.');
+  if (to === 'hangar' && placesOf(p.units) + placesOf(units) > hangarPlaces(p))
+    return fail('HANGAR_FULL', 'Not enough hangar places.');
+  return OK;
+}
+
+export function moveUnits(p: PlanetState, units: UnitCounts, to: UnitPlace): void {
+  const [from, into] = to === 'hangar' ? [p.orbit, p.units] : [p.units, p.orbit];
+  for (const [u, n] of Object.entries(units) as [UnitId, number][]) {
+    if (!(n > 0)) continue;
+    from[u] = (from[u] ?? 0) - n;
+    if (from[u] === 0) delete from[u];
+    into[u] = (into[u] ?? 0) + n;
+  }
+}
+
+/** As many units as fit into the hangars from orbit (the "Dock all" button). */
+export function dockable(p: PlanetState): UnitCounts {
+  const out: UnitCounts = {};
+  let free = hangarPlaces(p) - placesOf(p.units);
+  for (const u of UNIT_IDS) {
+    const n = p.orbit[u] ?? 0;
+    const size = HANGAR_SLOTS[UNITS[u].size];
+    const k = Math.max(0, Math.min(n, Math.floor(free / size)));
+    if (k > 0) out[u] = k;
+    free -= k * size;
+  }
+  return out;
 }
 
 function takeUnits(p: PlanetState, units: UnitCounts): void {
@@ -124,37 +181,6 @@ function takeUnits(p: PlanetState, units: UnitCounts): void {
       }
     }
   }
-  settleHangar(p);
-}
-
-// --- spaceport -----------------------------------------------------------------------------
-
-/** Fleets that can launch at once from the planet (spec 9.1: 1 per spaceport level). */
-export function launchSlots(p: PlanetState): number {
-  let slots = 0;
-  for (const b of p.buildings) {
-    const e = BUILDINGS[b.kind].effect;
-    if (e.kind === 'spaceport') slots += e.launchesPerLevel * b.level;
-  }
-  return slots;
-}
-
-/** Launch slots still busy at `time`. */
-export function launchesBusy(p: PlanetState, time: number): number {
-  const window = FLIGHT.launchMinutes * MS_PER_MINUTE;
-  return p.launches.filter((t) => t <= time && time < t + window).length;
-}
-
-/** When the next launch slot frees up (or `time` if one is free). */
-export function nextLaunchAt(p: PlanetState, time: number): number {
-  const slots = launchSlots(p);
-  if (slots === 0) return Infinity;
-  const window = FLIGHT.launchMinutes * MS_PER_MINUTE;
-  const busy = p.launches
-    .filter((t) => t <= time && time < t + window)
-    .map((t) => t + window)
-    .sort((a, b) => a - b);
-  return busy.length < slots ? time : (busy[busy.length - slots] ?? time);
 }
 
 // --- flight plan ---------------------------------------------------------------------------
@@ -175,12 +201,6 @@ export function flightDistance(galaxy: Galaxy, from: PlanetId, to: PlanetId): Fl
   const t = galaxy.systems[b.system];
   if (!s || !t) throw new RangeError(`Unknown system`);
   return { ly: Math.hypot(s.x - t.x, s.y - t.y), interstellar: true };
-}
-
-/** The player owns every planet of the system: flights inside it burn no fuel (spec 12.1.5). */
-export function fullControl(state: Readonly<GameState>, player: PlayerId, system: number): boolean {
-  const planets = state.world.galaxy.systems[system]?.planets ?? [];
-  return planets.length > 0 && planets.every((id) => state.planets[id]?.owner === player);
 }
 
 /** One-way flight time in ms (spec 12.1.1): distance / speed + hyperspace entry between systems. */
@@ -232,7 +252,8 @@ export function flightPlan(
     fuelStart += e.fuelStart * n;
     fuelPerLy += e.fuelPerLy * n;
   }
-  const free = !interstellar && fullControl(state, player, galaxy.planets[from]?.system ?? -1);
+  // Flights inside one system burn no fuel (owner 3.11.2026).
+  const free = !interstellar;
   if (free) {
     fuelStart = 0;
     fuelPerLy = 0;
@@ -293,11 +314,8 @@ export function canSendFleet(
   if (!state.world.galaxy.planets[o.to]) return fail('NO_PLANET', 'No such target planet.');
   if (o.to === o.from) return fail('SAME_PLANET', 'The fleet is already at this planet.');
   if (!(o.mission in MISSIONS)) return fail('BAD_MISSION', 'No such mission.');
-  const targetOwner = state.planets[o.to]?.owner;
-  if (o.mission === 'transfer' && targetOwner !== o.playerId)
+  if (o.mission === 'transfer' && state.planets[o.to]?.owner !== o.playerId)
     return fail('NOT_YOUR_TARGET', 'A transfer must go to one of your planets.');
-  if (o.mission === 'station' && targetOwner === o.playerId)
-    return fail('OWN_TARGET', 'To move units to your own planet, use a transfer.');
   const here = unitsAt(p);
   let any = false;
   for (const [u, n] of Object.entries(o.units) as [UnitId, number][]) {
@@ -311,10 +329,6 @@ export function canSendFleet(
     any = true;
   }
   if (!any) return fail('NO_UNITS', 'Choose the units to send.');
-  const slots = launchSlots(p);
-  if (slots === 0) return fail('NO_SPACEPORT', 'Fleets need a spaceport to launch.');
-  if (launchesBusy(p, state.time) >= slots)
-    return fail('SPACEPORT_BUSY', 'Every launch slot of the spaceport is busy. Wait a moment.');
   const plan = flightPlan(state, o.playerId, o.from, o.to, o.units, o.mission, ctx);
   if ((p.stock[FLIGHT.fuel] ?? 0) < plan.fuel - 1e-9)
     return fail('NO_FUEL', `Not enough fuel: the flight needs ${Math.ceil(plan.fuel)}.`);
@@ -329,9 +343,6 @@ export function sendFleet(state: GameState, o: SendFleetOrder, ctx: ModifierCont
   addUnits(units, o.units);
   takeUnits(p, units);
   p.stock[FLIGHT.fuel] = Math.max(0, (p.stock[FLIGHT.fuel] ?? 0) - plan.fuel);
-  const window = FLIGHT.launchMinutes * MS_PER_MINUTE;
-  p.launches = p.launches.filter((t) => t + window > state.time);
-  p.launches.push(state.time);
   const fleet: Fleet = {
     id: `f${state.nextFleet++}`,
     owner: o.playerId,
@@ -341,7 +352,6 @@ export function sendFleet(state: GameState, o: SendFleetOrder, ctx: ModifierCont
     target: o.to,
     phase: 'out',
     leg: leg(state.world.galaxy, o.from, o.to, state.time, plan),
-    at: null,
     ly: plan.ly,
     speed: plan.speed,
     fuelStart: plan.fuelStart,
@@ -354,7 +364,10 @@ export function sendFleet(state: GameState, o: SendFleetOrder, ctx: ModifierCont
   return fleet;
 }
 
-/** Fuel the fleet would have left after coming back from here (negative = cannot). */
+/**
+ * Fuel the fleet has left after coming back from here; returned to the store on landing. A
+ * fleet never runs dry (owner 3.11.2026): a one-way flight past half way just returns nothing.
+ */
 export function recallLeftover(f: Fleet, time: number): number {
   const flown =
     f.leg && f.leg.arriveAt > f.leg.moveAt
@@ -370,8 +383,6 @@ export function canRecallFleet(state: Readonly<GameState>, playerId: PlayerId, i
   if (f.owner !== playerId) return fail('NOT_YOUR_FLEET', 'This is not your fleet.');
   if (f.phase !== 'out' || !f.leg)
     return fail('NOT_OUTBOUND', 'Only a fleet on its way out can be recalled.');
-  if (recallLeftover(f, state.time) < -1e-9)
-    return fail('NO_FUEL_BACK', 'The fleet has not enough fuel to turn back; it must fly on.');
   return OK;
 }
 
@@ -416,13 +427,37 @@ export function fleetPosition(f: Fleet, time: number): { x: number; y: number } 
 
 /** Lands the fleet's units at an own planet and returns its unused fuel to the store. */
 function land(state: GameState, f: Fleet, p: PlanetState): void {
-  addUnits(p.orbit, f.units);
-  settleHangar(p);
+  landUnits(p, f.units);
   if (f.reserve > 0) {
     const r = FLIGHT.fuel;
     p.stock[r] = Math.min(capacityOf(p, r), (p.stock[r] ?? 0) + f.reserve);
   }
   delete state.fleets[f.id];
+}
+
+/** The owner's planet nearest to a planet (for a fleet whose home was lost). */
+function nearestOwn(state: GameState, owner: PlayerId, from: PlanetId): PlanetId | null {
+  let best: PlanetId | null = null;
+  let bestLy = Infinity;
+  for (const p of Object.values(state.planets)) {
+    if (p.owner !== owner) continue;
+    const ly = flightDistance(state.world.galaxy, from, p.id).ly;
+    if (ly < bestLy || (ly === bestLy && best !== null && p.id < best)) {
+      best = p.id;
+      bestLy = ly;
+    }
+  }
+  return best;
+}
+
+/** Starts a flight from `from` to `to` for a fleet already in space (no fuel taken). */
+function flyOn(state: GameState, f: Fleet, from: PlanetId, to: PlanetId): void {
+  const galaxy = state.world.galaxy;
+  const { ly, interstellar } = flightDistance(galaxy, from, to);
+  const duration = flightTime(ly, f.speed, interstellar);
+  const plan = { hyperspace: duration - flightTime(ly, f.speed, false), duration } as FlightPlan;
+  f.phase = 'back';
+  f.leg = leg(galaxy, from, to, state.time, plan);
 }
 
 /** What happens when a fleet's leg ends (called with the destination planet settled). */
@@ -434,30 +469,21 @@ export function arriveFleet(state: GameState, id: string): string | null {
   const name = galaxy.planets[where]?.name ?? where;
   const own = state.planets[where]?.owner === f.owner ? state.planets[where] : undefined;
   if (f.phase === 'out' && f.mission === 'return') {
-    const plan: FlightPlan = {
-      ly: f.ly,
-      interstellar: galaxy.planets[where]?.system !== galaxy.planets[f.origin]?.system,
-      speed: f.speed,
-      slowest: 'probe',
-      duration: f.leg.arriveAt - f.leg.departAt,
-      hyperspace: f.leg.moveAt - f.leg.departAt,
-      fuelStart: f.fuelStart,
-      fuelPerLy: f.fuelPerLy,
-      fuelOneWay: f.fuelStart + f.fuelPerLy * f.ly,
-      fuel: 0,
-      free: false,
-    };
-    f.reserve = Math.max(0, f.reserve - plan.fuelOneWay);
-    f.phase = 'back';
-    f.leg = leg(galaxy, where, f.origin, state.time, plan);
+    // The fuel for the way back was paid at the start (attacks and raids: phase 2).
+    f.reserve = Math.max(0, f.reserve - (f.fuelStart + f.fuelPerLy * f.ly));
+    flyOn(state, f, where, f.origin);
     return `Fleet ${f.id} reached ${name} and turns back.`;
   }
   if (own) {
     land(state, f, own);
     return `Fleet ${f.id} landed at ${name}.`;
   }
-  f.phase = 'stationed';
-  f.at = where;
-  f.leg = null;
-  return `Fleet ${f.id} is stationed in the orbit of ${name}.`;
+  // The planet is not (or no longer) the owner's: the fleet heads for the nearest own planet.
+  const home = nearestOwn(state, f.owner, where);
+  if (!home) {
+    delete state.fleets[f.id];
+    return `Fleet ${f.id} found no planet of yours to land at and was lost.`;
+  }
+  flyOn(state, f, where, home);
+  return `Fleet ${f.id} cannot land at ${name} and heads for ${galaxy.planets[home]?.name ?? home}.`;
 }

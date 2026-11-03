@@ -244,3 +244,10 @@ Specyfikacja mówi tylko „kosmoport ogranicza liczbę flot startujących naraz
 | Bombowiec | 27 min, 8 | 2 h 3 min, 32 | 4 h 3 min, 62 |
 | Transportowiec | 33 min, 12 | 2 h 33 min, 52 | 5 h 3 min, 102 |
 | Krążownik | 43 min, 25 | 3 h 23 min, 105 | 6 h 43 min, 205 |
+
+**Odpowiedź (3.11.2026):**
+- **Nie ma stacjonowania floty przy cudzej planecie.** Flota leci do własnej planety albo wylatuje, działa na miejscu (przylot, atak, ewentualna grabież: faza 2) i wraca. Całe paliwo misji jest liczone i pobierane na starcie, więc flocie nigdy nie zabraknie paliwa w drodze. Odwołanie jest zawsze możliwe; niewykorzystane paliwo wraca do magazynu (lot jednokierunkowy odwołany po połowie drogi nic nie zwraca, ale też niczego nie brakuje).
+- **Kosmoport nie jest potrzebny do startu floty** i nie ogranicza liczby startów (zostaje mu czas załadunku transportów, krok 1.10).
+- **Hangar albo orbita:** flota stoi w hangarach (ukryta, zabezpieczona przed atakiem z góry) albo na orbicie (obrona planety). Przejście między nimi nie kosztuje paliwa.
+- **Loty wewnątrz układu nie kosztują paliwa** (niezależnie od kontroli układu).
+Wprowadzone w wersji 0.1.12a. Rola hangaru i orbity w walce: faza 2.

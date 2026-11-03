@@ -5,8 +5,7 @@ import {
   flightPlan,
   FLIGHT,
   hangarPlaces,
-  launchesBusy,
-  launchSlots,
+  dockable,
   MISSIONS,
   placesOf,
   recallLeftover,
@@ -48,19 +47,20 @@ export function unitsText(units: UnitCounts): string {
 }
 
 /** The fleet section of an owned planet's side panel. */
-export function planetFleetHTML(view: PlanetView, time: number): string {
+export function planetFleetHTML(view: PlanetView): string {
   const p = view.planet;
-  const slots = launchSlots(p);
-  const free = Math.max(0, slots - launchesBusy(p, time));
   const here = unitsAt(p);
+  const canDock = countUnits(dockable(p)) > 0;
+  const canLaunch = countUnits(p.units) > 0;
   return `<div class="section">FLEET</div>
 <table>
 <tr><td>In hangars</td><td class="num">${esc(unitsText(p.units))}</td></tr>
 <tr><td>In orbit</td><td class="num">${esc(unitsText(p.orbit))}</td></tr>
 <tr><td>Hangar places</td><td class="num">${placesOf(p.units)} / ${hangarPlaces(p)}</td></tr>
-<tr><td>Launch slots</td><td class="num">${slots === 0 ? 'no spaceport' : `${free} / ${slots} free`}</td></tr>
 <tr><td>Fuel</td><td class="num">${formatAmount(p.stock[FLIGHT.fuel] ?? 0)}</td></tr>
 </table>
+<div class="dim small">Hangars hide units from attacks from above; moving between hangars and orbit is free.</div>
+<div class="row"><button data-action="dock:hangar" ${canDock ? '' : 'disabled'}>Into hangars</button><button data-action="dock:orbit" ${canLaunch ? '' : 'disabled'}>All to orbit</button></div>
 <div class="row"><button data-action="fleetDraft" ${countUnits(here) > 0 ? '' : 'disabled title="No units at this planet."'}>Send a fleet…</button></div>`;
 }
 
@@ -145,7 +145,6 @@ export function previewOf(
 const PHASE: Record<Fleet['phase'], string> = {
   out: 'on its way',
   back: 'coming home',
-  stationed: 'stationed',
 };
 
 /** The player's fleets away from home. */
@@ -156,7 +155,7 @@ export function fleetListHTML(fleets: readonly Fleet[], galaxy: Galaxy, time: nu
     .map((f) => {
       const where = f.leg
         ? `${esc(planetName(galaxy, f.leg.from))} → ${esc(planetName(galaxy, f.leg.to))}, ${formatDuration(f.leg.arriveAt - time)}`
-        : `at ${esc(planetName(galaxy, f.at ?? f.target))}`;
+        : '';
       const recall = canRecallFleet(
         { fleets: { [f.id]: f }, time } as unknown as GameState,
         f.owner,
@@ -164,7 +163,7 @@ export function fleetListHTML(fleets: readonly Fleet[], galaxy: Galaxy, time: nu
       );
       const button =
         f.phase === 'out'
-          ? `<button data-action="fleetRecall:${f.id}" ${recall.ok ? '' : `disabled title="${esc(recall.ok ? '' : recall.error.message)}"`}>Recall${recall.ok ? ` (+${formatAmount(recallLeftover(f, time))} fuel)` : ''}</button>`
+          ? `<button data-action="fleetRecall:${f.id}" ${recall.ok ? '' : `disabled title="${esc(recall.ok ? '' : recall.error.message)}"`}>Recall${recall.ok ? ` (+${formatAmount(Math.max(0, recallLeftover(f, time)))} fuel)` : ''}</button>`
           : '';
       return `<tr><td><b>${f.id}</b> ${esc(MISSIONS[f.mission].name)}, ${PHASE[f.phase]}<br><span class="small">${esc(unitsText(f.units))}</span><br><span class="small dim">${where}</span></td><td>${button}</td></tr>`;
     })

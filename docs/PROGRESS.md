@@ -29,6 +29,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.8 | 0.1.10a | `v0.1.10a-english` | cała gra po angielsku | ✅ |
 | 1.8a | 0.1.11 | `v0.1.11-powierzchnia-planety` | powierzchnia planety: heksy, budowa na polu, grafika wg typu planety | ✅ |
 | 1.9 | 0.1.12 | `v0.1.12-ruch-flot` | ruch flot, paliwo, kosmoport, hangary | ✅ |
+| 1.9 | 0.1.12a | `v0.1.12a-floty-zasady` | zasady flot właściciela: bez stacjonowania, bez kosmoportu, hangar/orbita | ✅ |
 | 1.10a | 0.1.13 | `v0.1.13-stocznia` | stocznia, utrzymanie | ⬜ |
 | 1.10b | 0.1.14 | `v0.1.14-transporty` | transporty, trasy cykliczne, kolonizacja | ⬜ |
 | 1.11 | 0.1.15 | `v0.1.15-mgla-wojny` | `getPlayerView`, sondy, skanery | ⬜ |
@@ -42,6 +43,14 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.1.12a: zasady flot właściciela (krok 1.9, 3.11.2026)
+- Misje: przelot (do własnej planety) i tam i z powrotem; stacjonowanie przy cudzej planecie usunięte. Flota, której cel przestał być Twój, leci do najbliższej Twojej planety.
+- Paliwo całej misji pobierane na starcie; odwołanie zawsze możliwe (zwrot reszty paliwa, bez braków).
+- Kosmoport nie jest wymagany i nie ogranicza startów (`launches` usunięte; kosmoport zostaje dla załadunku transportów). Wersja stanu 10.
+- Loty wewnątrz układu bez paliwa.
+- Hangar albo orbita: komenda `MoveUnits` (darmowa), w panelu planety przyciski „Into hangars” i „All to orbit”. Przylatujące jednostki zajmują wolne miejsca w hangarach, reszta zostaje na orbicie; zmniejszony hangar wypycha jednostki na orbitę (`landUnits`, `fitHangar`, `dockable`).
+- Decyzje zapisane w `docs/PYTANIA.md` (pytanie 35, odpowiedź) i w specyfikacji (sekcja 0).
 
 ### 0.1.12: ruch flot i paliwo (krok 1.9, 3.11.2026)
 - `shared/src/fleet/`: flota jako stan (`GameState.fleets`): jednostki, misja, odcinek lotu (`FleetLeg`: skąd, dokąd, start, koniec wejścia w nadprzestrzeń, przylot), paliwo zapłacone i zapas. Jednostki gracza przy własnej planecie są w `PlanetState.units` (hangary) i `orbit` (bez miejsca w hangarze), `launches` pilnuje kosmoportu. Wersja stanu 9.

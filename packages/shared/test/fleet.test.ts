@@ -6,7 +6,6 @@ import {
   effectiveUnit,
   flightDistance,
   flightTime,
-  FLIGHT,
   hangarPlaces,
   MS_PER_MINUTE,
   type Command,
@@ -87,7 +86,7 @@ function run(s: GameState, cmds: Command[]): GameState {
   return s;
 }
 
-/** Player with a home planet (spaceport, fuel, hangar) and a second planet in another system. */
+/** Player with a home planet (fuel, units) and a second planet in another system. */
 function setup(spaceport = 1) {
   let s = applyCommand(
     JSON.parse(JSON.stringify(base)) as GameState,
@@ -140,14 +139,17 @@ describe('fleets (step 1.9)', () => {
     expect(later.log.at(-1)!.text).toMatch(/landed/);
   });
 
-  it('a hangar takes units by size class; the rest circle in orbit', () => {
+  it('arriving units fill the hangar by size class; the rest circle in orbit', () => {
     const { s: s0, home } = setup();
-    const s = run(s0, [{ type: 'DebugSetBuilding', planetId: home, kind: 'hangar', level: 1 }]);
+    const s = run(s0, [
+      { type: 'DebugSetBuilding', planetId: home, kind: 'hangar', level: 1 },
+      { type: 'DebugAddUnits', planetId: home, units: { fighter: 5, cruiser: 1, probe: 2 } },
+    ]);
     const p = s.planets[home]!;
     expect(hangarPlaces(p)).toBe(10);
     // fighter (small, 1) ×5 + cruiser (large, 4) ×1 + probe (small) ×1 = 10
     expect(p.units).toEqual({ fighter: 5, cruiser: 1, probe: 1 });
-    expect(p.orbit).toEqual({ probe: 1 });
+    expect(p.orbit).toEqual({ fighter: 5, cruiser: 1, probe: 3 });
   });
 
   it('no fuel, no launch', () => {
@@ -217,7 +219,7 @@ describe('fleets (step 1.9)', () => {
     expect(fuel(s0, home) - fuel(s, home)).toBeCloseTo(used, 4);
   });
 
-  it('a one-way flight past half way cannot turn back', () => {
+  it('a fleet never runs dry: a one-way flight can always be recalled', () => {
     const { s: s0, home, far } = setup();
     let s = run(s0, [
       {
@@ -231,12 +233,15 @@ describe('fleets (step 1.9)', () => {
     ]);
     const f = Object.values(s.fleets)[0]!;
     s = advanceTo(s, f.leg!.moveAt + (f.leg!.arriveAt - f.leg!.moveAt) * 0.75);
-    const r = applyCommand(s, { type: 'RecallFleet', playerId: 'p1', fleetId: f.id }, s.time);
-    expect(r.result).toMatchObject({ ok: false, error: { code: 'NO_FUEL_BACK' } });
+    s = run(s, [{ type: 'RecallFleet', playerId: 'p1', fleetId: f.id }]);
+    const before = fuel(s, home);
+    s = advanceTo(s, s.fleets[f.id]!.leg!.arriveAt);
+    expect(s.fleets).toEqual({});
+    expect(fuel(s, home)).toBe(before); // nothing left to return, nothing missing
   });
 
-  it('the spaceport limits launches at once', () => {
-    const { s: s0, home, far } = setup(1);
+  it('no spaceport is needed; any number of fleets can take off at once', () => {
+    const { s: s0, home, far } = setup(0);
     const send = (u: UnitId): Command => ({
       type: 'SendFleet',
       playerId: 'p1',
@@ -245,23 +250,12 @@ describe('fleets (step 1.9)', () => {
       units: { [u]: 1 },
       mission: 'transfer',
     });
-    const s = run(s0, [send('probe')]);
-    expect(applyCommand(s, send('fighter'), s.time).result).toMatchObject({
-      ok: false,
-      error: { code: 'SPACEPORT_BUSY' },
-    });
-    const later = advanceTo(s, s.time + FLIGHT.launchMinutes * MIN);
-    expect(applyCommand(later, send('fighter'), later.time).result.ok).toBe(true);
-    const { s: none } = setup(0);
-    expect(applyCommand(none, send('probe'), none.time).result).toMatchObject({
-      ok: false,
-      error: { code: 'NO_SPACEPORT' },
-    });
-    const { s: two } = setup(2);
-    expect(applyCommand(run(two, [send('probe')]), send('fighter'), two.time).result.ok).toBe(true);
+    expect(
+      Object.keys(run(s0, [send('probe'), send('fighter'), send('cruiser')]).fleets),
+    ).toHaveLength(3);
   });
 
-  it('in-system flights skip the hyperspace entry; full control of the system makes them free', () => {
+  it('flights inside a system pay no hyperspace entry and burn no fuel', () => {
     const { s: s0, home, near } = setup();
     const g = s0.world.galaxy;
     let s = run(s0, [
@@ -270,31 +264,67 @@ describe('fleets (step 1.9)', () => {
         playerId: 'p1',
         from: home,
         to: near,
-        units: { probe: 1 },
-        mission: 'station',
+        units: { cruiser: 1 },
+        mission: 'return',
       },
     ]);
     const f = Object.values(s.fleets)[0]!;
     const ly = Math.abs(g.planets[home]!.orbit - g.planets[near]!.orbit);
-    expect(f.leg!.arriveAt - f.leg!.departAt).toBe(flightTime(ly, 120, false));
-    s = advanceTo(s, f.leg!.arriveAt);
-    expect(Object.values(s.fleets)[0]!.phase).toBe('stationed');
-    // Own every planet of the system: no fuel.
-    let c = s0;
-    for (const id of g.systems[g.planets[home]!.system]!.planets) {
-      if (!c.planets[id]) c = run(c, [{ type: 'DebugGivePlanet', playerId: 'p1', planetId: id }]);
-    }
-    const free = run(c, [
+    expect(f.leg!.arriveAt - f.leg!.departAt).toBe(flightTime(ly, 30, false));
+    expect(fuel(s, home)).toBe(fuel(s0, home));
+    s = advanceTo(s, 2 * f.leg!.arriveAt);
+    expect(s.fleets).toEqual({});
+    expect(s.planets[home]!.orbit.cruiser).toBe(1);
+  });
+
+  it('a transfer whose target was lost flies to the nearest own planet', () => {
+    const { s: s0, home, far } = setup();
+    let s = run(s0, [
       {
         type: 'SendFleet',
         playerId: 'p1',
         from: home,
-        to: near,
+        to: far,
         units: { probe: 1 },
         mission: 'transfer',
       },
     ]);
-    expect(fuel(free, home)).toBeCloseTo(fuel(c, home), 9);
+    delete s.planets[far];
+    s = advanceTo(s, Object.values(s.fleets)[0]!.leg!.arriveAt);
+    const f = Object.values(s.fleets)[0]!;
+    expect(f.leg!.to).toBe(home);
+    s = advanceTo(s, f.leg!.arriveAt);
+    expect(s.planets[home]!.orbit.probe).toBe(2);
+  });
+
+  it('moving units between hangars and orbit is free; a smaller hangar pushes units out', () => {
+    const { s: s0, home } = setup();
+    let s = run(s0, [{ type: 'DebugSetBuilding', planetId: home, kind: 'hangar', level: 1 }]);
+    // Units that arrived before the hangar stay in orbit until moved.
+    expect(s.planets[home]!.units).toEqual({});
+    s = run(s, [
+      {
+        type: 'MoveUnits',
+        playerId: 'p1',
+        planetId: home,
+        units: { fighter: 5, cruiser: 1 },
+        to: 'hangar',
+      },
+    ]);
+    expect(s.planets[home]!.units).toEqual({ fighter: 5, cruiser: 1 });
+    const full = applyCommand(
+      s,
+      { type: 'MoveUnits', playerId: 'p1', planetId: home, units: { probe: 2 }, to: 'hangar' },
+      s.time,
+    );
+    expect(full.result).toMatchObject({ ok: false, error: { code: 'HANGAR_FULL' } });
+    s = run(s, [
+      { type: 'MoveUnits', playerId: 'p1', planetId: home, units: { fighter: 2 }, to: 'orbit' },
+      { type: 'DebugSetBuilding', planetId: home, kind: 'hangar', level: 0 },
+    ]);
+    expect(s.planets[home]!.units).toEqual({});
+    expect(s.planets[home]!.orbit).toEqual({ fighter: 5, cruiser: 1, probe: 2 });
+    expect(fuel(s, home)).toBe(fuel(s0, home));
   });
 
   it('refuses units that cannot fly and wrong targets', () => {
@@ -317,7 +347,6 @@ describe('fleets (step 1.9)', () => {
     expect(send({ units: { tank: 1 } })).toMatchObject({ error: { code: 'CANNOT_FLY' } });
     expect(send({ units: { probe: 5 } })).toMatchObject({ error: { code: 'NOT_ENOUGH_UNITS' } });
     expect(send({ to: near })).toMatchObject({ error: { code: 'NOT_YOUR_TARGET' } });
-    expect(send({ mission: 'station' })).toMatchObject({ error: { code: 'OWN_TARGET' } });
     expect(send({ units: {} })).toMatchObject({ error: { code: 'NO_UNITS' } });
   });
 });

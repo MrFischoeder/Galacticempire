@@ -9,7 +9,7 @@ import type { PlanetState } from '../economy/planet';
 import type { Fleet } from '../fleet/fleet';
 
 /** Bump when the shape of GameState changes (saves are migrated by version). */
-export const STATE_VERSION = 9;
+export const STATE_VERSION = 10;
 
 export type PlayerId = string;
 
@@ -46,7 +46,7 @@ export interface GameState {
   players: Record<PlayerId, Player>;
   /** Owned planets and their economy (settled lazily, see economy/planet.ts). */
   planets: Record<PlanetId, PlanetState>;
-  /** Fleets away from their owner's planets: flying, or stationed somewhere (spec 12.1). */
+  /** Fleets in flight (spec 12.1); units at their owner's planets are in the planet state. */
   fleets: Record<string, Fleet>;
   /** Next fleet number. */
   nextFleet: number;

@@ -16,6 +16,7 @@ import {
   type TimeMultiplier,
   type UnitId,
   unitsAt,
+  dockable,
 } from '@ge/shared';
 import { GalaxyMap } from './map/galaxyMap';
 import { SimClient, type World } from './sim/client';
@@ -177,7 +178,7 @@ function renderSide(): void {
       slotsOf(view.planet, view.info.fields),
       surface.selected,
     );
-    if (surface.selected === null) html += planetFleetHTML(view, snapshot.time);
+    if (surface.selected === null) html += planetFleetHTML(view);
   } else if (mode === 'planet' && selectedPlanet && galaxy.planets[selectedPlanet]) {
     html = foreignPlanetHTML(
       galaxy.planets[selectedPlanet] as NonNullable<Galaxy['planets'][string]>,
@@ -221,7 +222,17 @@ function onAction(e: PointerEvent): void {
     });
   } else if (kind === 'research' && b)
     void send({ type: 'StartResearch', playerId, planetId: b, tech: a as TechId });
-  else if (kind === 'fleetDraft' && selectedPlanet) {
+  else if (kind === 'dock' && selectedPlanet) {
+    const view = snapshot?.planets.find((v) => v.planet.id === selectedPlanet);
+    if (view)
+      void send({
+        type: 'MoveUnits',
+        playerId,
+        planetId: selectedPlanet,
+        units: a === 'hangar' ? dockable(view.planet) : view.planet.units,
+        to: a === 'hangar' ? 'hangar' : 'orbit',
+      });
+  } else if (kind === 'fleetDraft' && selectedPlanet) {
     draft = { from: selectedPlanet, to: null, mission: 'transfer', units: {} };
     picking = false;
     fleetsPanel.hidden = false;

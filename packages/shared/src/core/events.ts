@@ -1,7 +1,7 @@
 import { BUILDINGS } from '../config/buildings';
 import { settleOwned } from '../economy/access';
 import { finishConstruction } from '../economy/construction';
-import { arriveFleet, settleHangar } from '../fleet/fleet';
+import { arriveFleet } from '../fleet/fleet';
 import { scheduleResearchCheck } from '../economy/schedule';
 import { enqueue } from './queue';
 import { Rng } from './rng';
@@ -65,7 +65,6 @@ export const EVENT_HANDLERS: Handlers = {
     const c = p?.construction;
     if (!p || !c || c.startedAt !== event.startedAt) return;
     const b = finishConstruction(p);
-    settleHangar(p); // a new hangar takes in the units circling in orbit
     if (b) {
       const name = state.world.galaxy.planets[event.planetId]?.name ?? event.planetId;
       state.log.push({

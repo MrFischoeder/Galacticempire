@@ -2,21 +2,22 @@
  * Fleet movement (spec 12.1; owner's decisions 3.11.2026: straight-line flights, no routes).
  * time = distance / speed of the slowest unit + hyperspace entry (once per interstellar flight)
  * fuel per unit = start + per LY × distance, both ways for a mission that comes back.
+ * Flights inside one system burn no fuel; moving units between hangars and orbit is free
+ * (owner 3.11.2026). Fleets need no spaceport to take off.
  */
 export const FLIGHT = {
   /** Entering hyperspace: added once to every flight between systems, not inside a system. */
   hyperspaceMinutes: 3,
-  /**
-   * How long a departure keeps one spaceport launch slot busy (spec 9.1: the spaceport sets how
-   * many fleets can launch at once, 1 per level). PROVISIONAL, docs/PYTANIA.md question 35.
-   */
-  launchMinutes: 3,
   /** Resource burnt by the engines. */
   fuel: 'fuel',
 } as const;
 
-/** What a fleet does at its target (step 1.9; attacks, transports and colonising come later). */
-export type FleetMission = 'transfer' | 'station' | 'return';
+/**
+ * What a fleet does at its target (step 1.9). Owner 3.11.2026: there is no stationing at
+ * someone else's planet; a fleet goes to one of your planets, or flies out, acts (attack and
+ * raid come in phase 2) and comes back, with all the fuel worked out and paid at the start.
+ */
+export type FleetMission = 'transfer' | 'return';
 
 export const MISSIONS: Record<FleetMission, { name: string; text: string; roundTrip: boolean }> = {
   transfer: {
@@ -24,14 +25,9 @@ export const MISSIONS: Record<FleetMission, { name: string; text: string; roundT
     text: 'Move the units to another of your planets (one way).',
     roundTrip: false,
   },
-  station: {
-    name: 'Station',
-    text: 'Fly to a planet and stay in its orbit (one way).',
-    roundTrip: false,
-  },
   return: {
     name: 'There and back',
-    text: 'Fly to a planet and come back (fuel for both ways).',
+    text: 'Fly to a planet and come back home (fuel for both ways, paid at the start).',
     roundTrip: true,
   },
 };

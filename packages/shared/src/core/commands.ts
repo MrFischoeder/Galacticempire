@@ -15,6 +15,7 @@ import {
 import {
   capacityOf,
   createPlanetState,
+  type PlanetState,
   resourceCapacity,
   STOCKED,
   STORED_RESOURCES,
@@ -23,12 +24,15 @@ import { scheduleEvent, scheduleFleet } from './events';
 import type { FleetMission } from '../config/fleets';
 import { UNITS, type UnitId } from '../config/units';
 import {
-  addUnits,
   canRecallFleet,
   canSendFleet,
   recallFleet,
   sendFleet,
-  settleHangar,
+  canMoveUnits,
+  fitHangar,
+  landUnits,
+  moveUnits,
+  type UnitPlace,
   type UnitCounts,
 } from '../fleet/fleet';
 import { fail, OK, type Result } from './result';
@@ -51,7 +55,17 @@ export type Command =
   | DebugAddResourcesCommand
   | SendFleetCommand
   | RecallFleetCommand
-  | DebugAddUnitsCommand;
+  | DebugAddUnitsCommand
+  | MoveUnitsCommand;
+
+/** Move units between the hangars and orbit of their planet (free, owner 3.11.2026). */
+export interface MoveUnitsCommand {
+  readonly type: 'MoveUnits';
+  readonly playerId: PlayerId;
+  readonly planetId: string;
+  readonly units: UnitCounts;
+  readonly to: UnitPlace;
+}
 
 /** Send units from an owned planet to another planet (spec 12.1). */
 export interface SendFleetCommand {
@@ -381,7 +395,7 @@ export const COMMANDS: Specs = {
           ...(c.deposit ? { deposit: c.deposit } : {}),
         });
       }
-      settleHangar(p); // a hangar lowered or removed sends units into orbit
+      fitHangar(p); // a hangar lowered or removed sends units into orbit
       // Lowering a warehouse can shrink the capacity below the stock.
       const cap = resourceCapacity(p);
       for (const r of STORED_RESOURCES) if ((p.stock[r] ?? 0) > cap) p.stock[r] = cap;
@@ -434,6 +448,18 @@ export const COMMANDS: Specs = {
       scheduleFleet(state, c.fleetId);
     },
   },
+  MoveUnits: {
+    validate(state, c) {
+      const own = ownedBy(state, c.playerId, c.planetId);
+      if (!own.ok) return own;
+      if (c.to !== 'hangar' && c.to !== 'orbit') return fail('BAD_PLACE', 'No such place.');
+      return canMoveUnits(state.planets[c.planetId] as PlanetState, c.units, c.to);
+    },
+    apply(state, c) {
+      const p = settleOwned(state, c.planetId);
+      if (p) moveUnits(p, c.units, c.to);
+    },
+  },
   DebugAddUnits: {
     validate(state, c) {
       if (!state.planets[c.planetId]) return fail('NOT_OWNED', 'This planet has no owner.');
@@ -449,8 +475,7 @@ export const COMMANDS: Specs = {
     apply(state, c) {
       const p = settleOwned(state, c.planetId);
       if (!p) return;
-      addUnits(p.orbit, c.units);
-      settleHangar(p);
+      landUnits(p, c.units);
     },
   },
 };
