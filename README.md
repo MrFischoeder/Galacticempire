@@ -44,24 +44,24 @@ Oprawa graficzna to proste, płasko cieniowane 3D z neonowymi liniami, w duchu f
 
 Gra jest budowana krok po kroku według planu w [`docs/plan-budowy.md`](docs/plan-budowy.md). Aktualny postęp jest w [`docs/PROGRESS.md`](docs/PROGRESS.md).
 
-| Faza | Zakres | Status |
-|---|---|---|
-| 1 | Fundamenty i ekonomia, widok 3D | ⏳ w trakcie |
-| 2 | Walka, obrona planet, grabież, desant | ⬜ |
-| 3 | Przeciwnicy komputerowi i gra jednoosobowa (pierwsza grywalna wersja) | ⬜ |
-| 4 | Serwer, konta, powiadomienia, gra ze znajomymi | ⬜ |
-| 5 | Blokady, kontrola układów, rynek, inwazja | ⬜ |
-| 6 | Balans i skalowanie | ⬜ |
+| Faza | Zakres                                                                | Status       |
+| ---- | --------------------------------------------------------------------- | ------------ |
+| 1    | Fundamenty i ekonomia, widok 3D                                       | ⏳ w trakcie |
+| 2    | Walka, obrona planet, grabież, desant                                 | ⬜           |
+| 3    | Przeciwnicy komputerowi i gra jednoosobowa (pierwsza grywalna wersja) | ⬜           |
+| 4    | Serwer, konta, powiadomienia, gra ze znajomymi                        | ⬜           |
+| 5    | Blokady, kontrola układów, rynek, inwazja                             | ⬜           |
+| 6    | Balans i skalowanie                                                   | ⬜           |
 
 ## Technologia
 
-| Obszar | Wybór |
-|---|---|
-| Język | TypeScript (strict) |
-| Monorepo | pnpm workspaces |
-| Grafika | Three.js, interfejs w HTML/CSS |
-| Budowanie | Vite |
-| Testy | Vitest |
+| Obszar             | Wybór                               |
+| ------------------ | ----------------------------------- |
+| Język              | TypeScript (strict)                 |
+| Monorepo           | pnpm workspaces                     |
+| Grafika            | Three.js, interfejs w HTML/CSS      |
+| Budowanie          | Vite                                |
+| Testy              | Vitest                              |
 | Serwer (od fazy 4) | Node.js, WebSocket, SQLite na start |
 
 ### Zasady architektury

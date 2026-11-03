@@ -1,6 +1,6 @@
-# Surowce: propozycja (do akceptacji)
+# Surowce
 
-Status: **propozycja**, wersja 2 z 3.11.2026 (właściciel: 6 surowców specjalnych to za dużo → zostają 4). Po akceptacji trafia do specyfikacji (wersja 2.8, sekcje 2.3, 4, 9, 10). Liczby są wstępne i zostaną przeliczone w kroku 1.2b (balans ekonomii).
+Status: **zaakceptowane przez właściciela 3.11.2026**, wersja 2 z 3.11.2026 (właściciel: 6 surowców specjalnych to za dużo → zostają 4). Po akceptacji trafia do specyfikacji (wersja 2.8, sekcje 2.3, 4, 9, 10). Liczby są wstępne i zostaną przeliczone w kroku 1.2b (balans ekonomii).
 
 ## Zasada
 - **Surowce podstawowe** są na każdej planecie (małe złoża). Wystarczają na budynki do poziomu 4, badania do poziomu 4 i jednostki ze stoczni poziomu 1–3, czyli na podstawową gospodarkę i podstawową flotę.
