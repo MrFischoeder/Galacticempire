@@ -17,7 +17,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.2a | 0.1.2 | `v0.1.2-konfiguracja` | wszystkie liczby jako dane, modyfikatory | ✅ |
 | 1.2b | 0.1.3 | `v0.1.3-balans-ekonomii` | narzędzie liczące + tabela kosztów, czasów i wydajności budynków do akceptacji | ✅ |
 | 1.2b | 0.1.3a | `v0.1.3a-balans-imperium` | analiza wielu planet: kolonie wspierane dowozem | ✅ zaakceptowane |
-| 1.3 | 0.1.4 | `v0.1.4-galaktyka` | generator galaktyki i tras | ⬜ |
+| 1.3 | 0.1.4 | `v0.1.4-galaktyka` | generator galaktyki i tras | ✅ |
 | 1.4a | 0.1.5 | `v0.1.5-produkcja` | wydobycie, przetwórstwo, magazyn, rdzeń, energia | ⬜ |
 | 1.4b | 0.1.6 | `v0.1.6-populacja` | populacja, robotnicy, żywność, silos, głód | ⬜ |
 | 1.5 | 0.1.7 | `v0.1.7-budowa` | budowa i ulepszenia budynków | ⬜ |
@@ -37,6 +37,15 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.1.4: generator galaktyki (krok 1.3, 3.11.2026)
+- `packages/shared/src/galaxy/`: `types.ts` (Galaxy, StarSystem, Planet, Deposit, Route), `graph.ts` (sąsiedztwo, Dijkstra po LY, liczba skoków, `shortestPath`, spójność), `names.ts` (nazwy gwiazd z sylab, planety z cyframi rzymskimi), `generate.ts` (`generateGalaxy(seed, {systems, radius, startSlots})`, `systemsFor(gracze)`, `radiusFor(układy)`); `config/galaxy.ts` (`GALAXY`). Stan gry (`World.galaxy`, wersja stanu 2) dostaje galaktykę przy `createGameState`.
+- Kroki generatora (strumień losowy `galaxy`): układy w dysku (min. 8 LY odstępu), trasy z grafu Gabriela obcięte do 5 połączeń (bez rozspójnienia) i uzupełnione do 2; pozycje startowe = największy zbiór układów oddalonych o ≥ 60 LY po trasach (heurystyka „najmniej konfliktów najpierw”, 40 prób z ziarnem); układy bogate (15%) i anomalie (3–6) najdalej od startów; w układzie startowym planeta startowa (`STARTER_PLANET`, 16 pól) i planeta lodowa/gazowy gigant; w promieniu 3 skoków od każdego startu planeta radioaktywna i krystaliczna albo gazowy gigant z helem-3; każdy układ ma ≥ 3 różne specjalizacje, bogaty układ rzadką planetę.
+- Planety: typ, orbita 1–5 LY, 8–14 pól, żyzność, energia odnawialna, specjalność (bogate złoże podstawowe, złoże specjalne albo biomasa), 4 złoża podstawowe (ubogie, pula 10–40 tys.), złoże specjalne (pula 15–80 tys.).
+- Wyniki na 50 ziarnach: połączenia 2–5, trasy 8–74 LY (średnio 22,4; spec: 8–ok. 60, średnio 22), średnia odległość po trasach 104 LY (spec: ok. 100), najdłuższa ok. 230 LY (spec: ok. 240). Generowanie: ok. 10–35 ms.
+- Decyzja do potwierdzenia (pytanie 29): 60 układów mieści ok. 10 graczy przy 60 LY odstępu; 12 graczy dostaje 84 układy o tej samej gęstości.
+- Testy (11 nowych, 50 ziaren × 2 rozmiary): determinizm, odstępy, spójność i stopnie, skala tras, specjalności i bogate układy, złoża, 12 pozycji startowych, planeta startowa, surowce specjalne przy startach, anomalie daleko od startów, najkrótsza ścieżka, galaktyka w stanie gry.
+- Do sprawdzenia ręcznie: nic w grze (galaktykę zobaczysz w kroku 1.7, mapa 3D); `pnpm check`.
 
 ### 0.1.3a: tempo przy wielu planetach (3.11.2026)
 - **Zaakceptowane przez właściciela (3.11.2026)** razem z balansem z 0.1.3.

@@ -1,9 +1,11 @@
 import { createQueue, type EventQueue } from './queue';
 import { hashString, type RngState } from './rng';
 import type { GameEvent } from './events';
+import { generateGalaxy, type GalaxyOptions } from '../galaxy/generate';
+import type { Galaxy } from '../galaxy/types';
 
 /** Bump when the shape of GameState changes (saves are migrated by version). */
-export const STATE_VERSION = 1;
+export const STATE_VERSION = 2;
 
 export type PlayerId = string;
 
@@ -12,9 +14,10 @@ export interface Player {
   name: string;
 }
 
-/** Placeholder for galaxy, systems and planets (step 1.3 onwards). */
+/** The generated world. Planets change during the game (owners, buildings, deposits). */
 export interface World {
   readonly seed: string;
+  galaxy: Galaxy;
 }
 
 /** One line of the event log: what happened at which game time. */
@@ -39,11 +42,11 @@ export interface GameState {
   log: LogEntry[];
 }
 
-export function createGameState(seed: string): GameState {
+export function createGameState(seed: string, galaxy: GalaxyOptions = {}): GameState {
   return {
     version: STATE_VERSION,
     time: 0,
-    world: { seed },
+    world: { seed, galaxy: generateGalaxy(seed, galaxy) },
     players: {},
     rng: hashString(`${seed}\u0000events`),
     events: createQueue<GameEvent>(),

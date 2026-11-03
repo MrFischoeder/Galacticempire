@@ -45,6 +45,7 @@ Przeglądarkowa strategia kosmiczna w czasie rzeczywistym. Właściciel: Łukasz
 - Stan gry serializowalny (JSON), żeby działał zapis, Web Worker i serwer.
 - Rdzeń (`packages/shared/src/core/`): `clock.ts` (zegar gry), `rng.ts` (`Rng`, `rngStream`), `queue.ts` (kolejka zdarzeń), `state.ts` (`GameState`), `commands.ts` (komendy: każda ma `validate` i `apply` w `COMMANDS`), `events.ts` (zdarzenia: `EVENT_HANDLERS`, `scheduleEvent`), `engine.ts` (`advanceTo`, `applyCommand`, `replay`). Nowa komenda = typ w unii `Command` + wpis w `COMMANDS`; nowe zdarzenie = typ w unii `GameEvent` + wpis w `EVENT_HANDLERS`. Losowość w zdarzeniach z `state.rng` albo z `rngStream(seed, ...)`.
 - Dane (`packages/shared/src/config/`): `resources`, `recipes`, `planets`, `buildings` (+ `BUILD`, `CORE`), `units`, `techs` (+ `RESEARCH`), `races`, `population`, `modifiers` (typy modyfikatorów), `schema` (`validateConfig`). Nowy element gry = wpis w danych + przejście walidacji. Wartości oznaczone `PROVISIONAL` czekają na krok 1.2b.
+- Galaktyka (`packages/shared/src/galaxy/`): `generateGalaxy(seed, opts)` deterministycznie ze strumienia `galaxy`; `systemsFor(gracze)` dobiera wielkość; trasy i odległości w LY (`shortestPath`, `dijkstra`). Zmiana generatora zmienia wszystkie galaktyki: pilnuj testów w `test/galaxy.test.ts`.
 - Efektywne statystyki: wyłącznie `packages/shared/src/rules/modifiers.ts` (`effectiveUnit`, `economyBonus`, `researchCostMultiplier`). W obrębie jednego źródła bonusy się dodają, różne źródła mnożą.
 
 ## Polecenia

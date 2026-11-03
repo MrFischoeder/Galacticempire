@@ -172,3 +172,7 @@ Czy gracz zaczyna z pustymi 16 polami (wtedy działa tylko zbiór awaryjny rdzen
 
 **Odpowiedź (3.11.2026):** na starcie 16 pustych pól. Gracz od początku sam decyduje, co zbudować pierwsze: kopalnię, magazyn, farmę biomasy... Rdzeń zbiera minimalne ilości także bez budynków.
 Uwaga do balansu (krok 1.2b): przy obecnym zbiorze rdzenia (5/h) i najtańszym budynku 150 pierwsza budowa zajęłaby 30 h gry. Dobiorę tempo zbioru rdzenia stolicy i koszt pierwszych budynków tak, żeby pierwszy budynek był po kilkudziesięciu minutach, a kolejne coraz szybciej dzięki kopalniom.
+
+### 29. 🟡 12 graczy w galaktyce 60 układów
+Plan budowy (krok 1.3) wymaga 12 pozycji startowych co najmniej 60 LY od siebie (spec 15), a specyfikacja (2.1) daje 60 układów. Symulacja na 50 ziarnach: 60 układów mieści zwykle 10–11 takich pozycji (najlepszy znaleziony układ, czasem 9).
+**Rozwiązanie przyjęte w kroku 1.3 (do potwierdzenia):** domyślnie 60 układów (do ok. 10 graczy); większa gra dostaje większą galaktykę o tej samej gęstości: `systemsFor(gracze)` = max(60, 7 × gracze), np. 84 układy dla 12 graczy (zawsze 12 pozycji). Alternatywy: zmniejszyć odstęp startowy do ok. 50 LY albo zwiększyć gęstość układów.

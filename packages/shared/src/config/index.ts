@@ -9,3 +9,4 @@ export * from './techs';
 export * from './time';
 export * from './units';
 export * from './schema';
+export * from './galaxy';

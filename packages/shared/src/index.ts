@@ -5,4 +5,5 @@ export const GAME_NAME = 'Galactic Empire';
 
 export * from './config';
 export * from './core';
+export * from './galaxy';
 export * from './rules';
