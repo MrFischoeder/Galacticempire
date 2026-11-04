@@ -1,7 +1,8 @@
 import { MS_PER_HOUR } from '../config/time';
 import { galaxyPlanet, ownerContext, settleOwned } from '../economy/access';
 import { nextJobHours, planetRates } from '../economy/planet';
-import { arriveFleet } from '../fleet/fleet';
+import { arriveFleet, recallFleet, unloadTransport } from '../fleet/fleet';
+import { runRoute } from '../fleet/routes';
 import { scheduleResearchCheck } from '../economy/schedule';
 import { enqueue } from './queue';
 import { Rng } from './rng';
@@ -11,7 +12,27 @@ import type { GameState } from './state';
  * Events processed by advanceTo at their game time. Later steps add arrivals, finished
  * buildings, battles and so on. `DebugMarker` exists for tests and the debug panel.
  */
-export type GameEvent = DebugMarkerEvent | PlanetJobsEvent | ResearchCheckEvent | FleetArrivalEvent;
+export type GameEvent =
+  | DebugMarkerEvent
+  | PlanetJobsEvent
+  | ResearchCheckEvent
+  | FleetArrivalEvent
+  | FleetRetryEvent
+  | RouteTickEvent;
+
+/** A transport waiting at a full warehouse tries to unload again (spec 12.2). */
+export interface FleetRetryEvent {
+  readonly type: 'FleetRetry';
+  readonly fleetId: string;
+  readonly at: number;
+}
+
+/** A recurring route runs (spec 12.2). */
+export interface RouteTickEvent {
+  readonly type: 'RouteTick';
+  readonly routeId: string;
+  readonly at: number;
+}
 
 /** A fleet reaches the end of its leg (spec 12.1). */
 export interface FleetArrivalEvent {
@@ -75,6 +96,34 @@ export const EVENT_HANDLERS: Handlers = {
     if (text) state.log.push({ at: state.time, text });
     scheduleFleet(state, f.id);
   },
+  FleetRetry(state, event) {
+    const f = state.fleets[event.fleetId];
+    if (!f || f.phase !== 'waiting' || f.retryAt !== event.at) return;
+    const p = settleOwned(state, f.target);
+    let text: string;
+    if (p && p.owner === f.owner) text = unloadTransport(state, f, p);
+    else {
+      recallFleet(state, f.id);
+      text = `Fleet ${f.id} cannot unload any more and turns back.`;
+    }
+    // Only log when something changed (a full warehouse retries quietly).
+    if (f.phase !== 'waiting' || !text.includes('waits')) state.log.push({ at: state.time, text });
+    scheduleFleet(state, f.id);
+  },
+  RouteTick(state, event) {
+    const r = state.routes[event.routeId];
+    if (!r || r.nextAt !== event.at) return;
+    const p = settleOwned(state, r.from);
+    const text = runRoute(state, r, p ? ownerContext(state, p) : {});
+    const name = (id: string) => state.world.galaxy.planets[id]?.name ?? id;
+    state.log.push({
+      at: state.time,
+      text: `Route ${name(r.from)} → ${name(r.to)}: ${text.replace(/\.$/, '')}.`,
+    });
+    for (const f of Object.values(state.fleets))
+      if (f.route === r.id && f.leg?.departAt === state.time) scheduleFleet(state, f.id);
+    scheduleEvent(state, r.nextAt, { type: 'RouteTick', routeId: r.id, at: r.nextAt });
+  },
   DebugMarker(state, event) {
     let text = `Marker: ${event.label}`;
     if (event.roll !== undefined) {
@@ -102,7 +151,12 @@ export function scheduleEvent(state: GameState, at: number, event: GameEvent): v
 
 /** Schedules the arrival of a fleet's current leg (if it is flying). */
 export function scheduleFleet(state: GameState, fleetId: string): void {
-  const leg = state.fleets[fleetId]?.leg;
+  const f = state.fleets[fleetId];
+  if (f?.phase === 'waiting' && f.retryAt !== undefined) {
+    scheduleEvent(state, f.retryAt, { type: 'FleetRetry', fleetId, at: f.retryAt });
+    return;
+  }
+  const leg = f?.leg;
   if (leg)
     scheduleEvent(state, leg.arriveAt, { type: 'FleetArrival', fleetId, arriveAt: leg.arriveAt });
 }

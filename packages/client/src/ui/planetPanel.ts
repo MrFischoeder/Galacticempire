@@ -99,10 +99,11 @@ function depositRows(info: Planet): string {
 }
 
 /** A planet that is not ours: what is known about it. */
-export function foreignPlanetHTML(info: Planet): string {
+export function foreignPlanetHTML(info: Planet, free = false): string {
   return `<div class="panel-title">${esc(info.name)}</div>
 <div class="dim">${esc(planetFacts(info))} · ${info.fields} fields</div>
-<div class="section">Deposits</div><table>${depositRows(info)}</table>`;
+<div class="section">Deposits</div><table>${depositRows(info)}</table>
+${free ? `<div class="row"><button data-action="colonize:${info.id}">Colonize…</button></div><div class="dim small">Needs a colonizer at one of your planets (spec 10.5).</div>` : ''}`;
 }
 
 /** Resources, energy, people and the construction going on (top of the planet panels). */

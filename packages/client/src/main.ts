@@ -16,6 +16,8 @@ import {
   type TimeMultiplier,
   type UnitId,
   unitsAt,
+  flightDistance,
+  type ResourceId,
   dockable,
 } from '@ge/shared';
 import { GalaxyMap } from './map/galaxyMap';
@@ -31,6 +33,7 @@ import { researchHTML } from './ui/researchPanel';
 import {
   draftHTML,
   fleetListHTML,
+  routesHTML,
   planetFleetHTML,
   previewOf,
   type FleetDraft,
@@ -189,6 +192,7 @@ function renderSide(): void {
   } else if (mode === 'planet' && selectedPlanet && galaxy.planets[selectedPlanet]) {
     html = foreignPlanetHTML(
       galaxy.planets[selectedPlanet] as NonNullable<Galaxy['planets'][string]>,
+      !(snapshot?.owners ?? []).includes(selectedPlanet),
     );
   } else
     html = `<div class="panel-title">${esc(galaxy.systems[openSystem]?.name ?? '')}</div><div class="dim">Click a planet.</div>`;
@@ -252,7 +256,7 @@ function onAction(e: PointerEvent): void {
         to: a === 'hangar' ? 'hangar' : 'orbit',
       });
   } else if (kind === 'fleetDraft' && selectedPlanet) {
-    draft = { from: selectedPlanet, to: null, mission: 'transfer', units: {} };
+    draft = newDraft(selectedPlanet);
     picking = false;
     fleetsPanel.hidden = false;
     renderFleets(true);
@@ -279,6 +283,7 @@ function onAction(e: PointerEvent): void {
         to: d.to as string,
         units: d.units,
         mission: d.mission,
+        ...(d.mission === 'transport' ? { cargo: d.cargo } : {}),
       })
       .then((r) => {
         if (!r.ok) return showError(r.error.message);
@@ -286,6 +291,41 @@ function onAction(e: PointerEvent): void {
         renderFleets();
       });
   } else if (kind === 'fleetRecall') void send({ type: 'RecallFleet', playerId, fleetId: a ?? '' });
+  else if (kind === 'routeDelete') void send({ type: 'DeleteRoute', playerId, routeId: a ?? '' });
+  else if (kind === 'routeCreate' && draft?.to) {
+    const d = draft;
+    void sim
+      .command({
+        type: 'CreateRoute',
+        playerId,
+        from: d.from,
+        to: d.to as string,
+        units: d.units,
+        cargo: d.cargo,
+        everyHours: d.every,
+      })
+      .then((r) => {
+        if (!r.ok) return showError(r.error.message);
+        draft = null;
+        renderFleets();
+      });
+  } else if (kind === 'colonize' && a) {
+    // From the free planet's panel: the nearest own planet with a colonizer sends it.
+    const g = galaxy;
+    const from = snapshot?.planets
+      .filter((v) => (unitsAt(v.planet).colonizer ?? 0) > 0)
+      .map((v) => ({ id: v.planet.id, ly: g ? flightDistance(g, v.planet.id, a).ly : 0 }))
+      .sort((x, y) => x.ly - y.ly)[0];
+    if (!from) return showError('No colonizer at any of your planets. Build one in a shipyard.');
+    draft = { ...newDraft(from.id), to: a, mission: 'colonize', units: { colonizer: 1 } };
+    picking = false;
+    fleetsPanel.hidden = false;
+    renderFleets(true);
+  }
+}
+
+function newDraft(from: PlanetId): FleetDraft {
+  return { from, to: null, mission: 'transfer', units: {}, cargo: {}, every: 4 };
 }
 side.addEventListener('pointerdown', onAction);
 researchPanel.addEventListener('pointerdown', onAction);
@@ -295,7 +335,17 @@ fleetsPanel.addEventListener('input', (e) => {
   if (!draft) return;
   if (el.dataset.unit) {
     draft.units[el.dataset.unit as UnitId] = Math.max(0, Math.floor(Number(el.value) || 0));
-  } else if (el.id === 'fleetMission') draft.mission = el.value as FleetMission;
+  } else if (el.dataset.cargo) {
+    draft.cargo[el.dataset.cargo as ResourceId] = Math.max(0, Math.floor(Number(el.value) || 0));
+  } else if (el.id === 'fleetEvery') {
+    draft.every = Math.max(1, Number(el.value) || 1);
+  } else if (el.id === 'fleetMission') {
+    draft.mission = el.value as FleetMission;
+    renderFleets(true);
+    return;
+  }
+  // Typing must not rebuild the form (it would lose the focus): mark it as drawn.
+  if (snapshot && galaxy) lastDraft = draftHTML(draft, galaxy, snapshot.planets, picking);
   renderFleets();
 });
 
@@ -321,7 +371,9 @@ function renderFleets(force = false): void {
     preview.textContent = '';
     sendEl.innerHTML = '';
   }
-  const list = fleetListHTML(snapshot.fleets, galaxy, snapshot.time);
+  const list =
+    fleetListHTML(snapshot.fleets, galaxy, snapshot.time) +
+    routesHTML(snapshot.routes, galaxy, snapshot.time);
   const listEl = $('#fleetList');
   if (listEl.innerHTML !== list) listEl.innerHTML = list;
 }

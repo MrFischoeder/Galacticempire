@@ -2,6 +2,7 @@ import type {
   Command,
   Deposit,
   Fleet,
+  Route,
   Galaxy,
   GameClock,
   GameState,
@@ -49,6 +50,9 @@ export interface Snapshot {
   readonly log: LogEntry[];
   /** The player's fleets away from their planets. */
   readonly fleets: Fleet[];
+  readonly routes: Route[];
+  /** Planets that have an owner (anyone), for the 'free planet' checks. */
+  readonly owners: string[];
 }
 
 export type FromWorker =

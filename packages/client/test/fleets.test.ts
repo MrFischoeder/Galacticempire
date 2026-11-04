@@ -35,7 +35,14 @@ describe('fleet panel (step 1.9)', () => {
     const two = planetFleetHTML(view, snap.player, [{ id: far, name: 'Far' }]);
     expect(two).toContain(`feed:${far}`);
     expect(two).toContain('Units fed by');
-    const draft = { from: home, to: far, mission: 'transfer' as const, units: { fighter: 3 } };
+    const draft = {
+      from: home,
+      to: far,
+      mission: 'transfer' as const,
+      units: { fighter: 3 },
+      cargo: {},
+      every: 4,
+    };
     const p = previewOf(draft, galaxy, snap.planets, snap.player, snap.time);
     expect(p.text).toMatch(/LY .*hyperspace/);
     expect(p.text).toMatch(/Fuel \d+ of 100/);
@@ -78,5 +85,38 @@ describe('shipyard panel (step 1.10a)', () => {
     expect(html).toContain('order:fighter:1');
     expect(html).toContain('Frigate'); // next level shown, disabled
     expect(html).not.toContain('Cruiser');
+  });
+});
+
+describe('transports and routes in the panel (step 1.10b)', () => {
+  it('shows cargo inputs, the cargo room and the routes', async () => {
+    const { draftHTML, routesHTML } = await import('../src/ui/fleetPanel');
+    const { state, home, far, galaxy, cmd } = game();
+    cmd({ type: 'DebugAddUnits', planetId: home, units: { transport: 1 } });
+    cmd({ type: 'DebugAddResources', planetId: home, amounts: { metal: 100 } });
+    cmd({ type: 'DebugGivePlanet', playerId: 'p1', planetId: far });
+    const snap = buildSnapshot(state)!;
+    const draft = {
+      from: home,
+      to: far,
+      mission: 'transport' as const,
+      units: { transport: 1 },
+      cargo: { metal: 50 },
+      every: 4,
+    };
+    expect(draftHTML(draft, galaxy, snap.planets, false)).toContain('data-cargo="metal"');
+    const p = previewOf(draft, galaxy, snap.planets, snap.player, snap.time);
+    expect(p.text).toContain('Cargo 50 of 625'); // Merchants carry 25% more
+    cmd({
+      type: 'CreateRoute',
+      playerId: 'p1',
+      from: home,
+      to: far,
+      units: { transport: 1 },
+      cargo: { metal: 50 },
+      everyHours: 4,
+    });
+    const s2 = buildSnapshot(state)!;
+    expect(routesHTML(s2.routes, galaxy, s2.time)).toContain('routeDelete:r1');
   });
 });

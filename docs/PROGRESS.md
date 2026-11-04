@@ -33,7 +33,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.10a | 0.1.13 | `v0.1.13-stocznia` | stocznia, utrzymanie | ✅ |
 | 1.10a | 0.1.13a | `v0.1.13a-energia-zalogi` | energia tylko dla pracujących budynków i budowy, załogi z populacji | ✅ |
 | 1.10a | 0.1.13b | `v0.1.13b-zaloga-koszt` | załoga jako koszt produkcji, przepisanie wyżywienia floty | ✅ |
-| 1.10b | 0.1.14 | `v0.1.14-transporty` | transporty, trasy cykliczne, kolonizacja | ⬜ |
+| 1.10b | 0.1.14 | `v0.1.14-transporty` | transporty, trasy cykliczne, kolonizacja | ✅ |
 | 1.11 | 0.1.15 | `v0.1.15-mgla-wojny` | `getPlayerView`, sondy, skanery | ⬜ |
 | 1.12 | 0.1.16 | `v0.1.16-sojusze` | sojusze | ⬜ |
 | 1.13 | 0.1.17 | `v0.1.17-bot-symulacja` | bot ekonomiczny, `pnpm sim` | ⬜ |
@@ -45,6 +45,16 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.1.14: transporty, trasy cykliczne, kolonizacja (krok 1.10b, 4.11.2026)
+- Misja `transport` (ładunek `cargo` w `SendFleet`): ładowność z `effectiveUnit` (`cargoCapacity`; Kupcy 625), zasoby i paliwo na obie strony pobierane przy starcie, załadunek przed startem (`loadTime`: kosmoport albo 20 min). U celu rozładunek do magazynu; przy pełnym magazynie flota czeka na orbicie (`phase` `waiting`) i próbuje co 30 min (zdarzenie `FleetRetry`), można ją odwołać; potem wraca. Ładunek po powrocie trafia do magazynu planety macierzystej (nadmiar przepada).
+- Trasy cykliczne (`fleet/routes.ts`, `GameState.routes`): `CreateRoute`/`DeleteRoute`, zdarzenie `RouteTick` co N godzin wysyła transport z tym, co jest (z powodem, gdy się nie da), także bez gracza.
+- Misja `colonize`: wolna planeta, nie w układzie kontrolowanym przez innego gracza (`systemController`); po przylocie rdzeń, 10 mieszkańców, mieszkanie poz. 1, kolonizator zużyty, reszta jednostek ląduje w kolonii.
+- Konfiguracja w `config/fleets.ts` (`TRANSPORT`, misje). Wersja stanu 14.
+- Klient: w formularzu floty misje Transport i Colonize, pola ładunku z zapasami, ładowność, czas załadunku i podgląd, „Repeat every N h → Create route”; lista tras z następnym kursem, liczbą kursów, ostatnim wynikiem i usuwaniem; flota czekająca na orbicie z możliwością odwołania; w panelu wolnej planety przycisk „Colonize…” (wysyła kolonizator z najbliższej Twojej planety, która go ma).
+- Zasady do potwierdzenia: `docs/PYTANIA.md`, pytanie 38.
+- Testy: `shared/test/transport.test.ts` (ładowność, transport w obie strony z paliwem, kosmoport, odmowy, czekanie przy pełnym magazynie, trasa 3 kursy bez gracza, kolonizacja: rdzeń, 10 mieszkańców, mieszkanie; odmowy), testy panelu.
+- Na później: transport do sojusznika, zasięg administracji, kolonizacja przy pakcie (1.12).
 
 ### 0.1.13b: załoga jako koszt, przepisanie floty (pytanie 37, decyzja 4.11.2026)
 - Załoga jest częścią kosztu produkcji: zamówienie zabiera ludzi z populacji na stałe; załogi nie zajmują mieszkań (`crewOf` i `PlanetRates.crews` usunięte), populacja odrasta do pojemności mieszkań. Anulowanie przed zbudowaniem oddaje ludzi. Zniszczony statek = utracona załoga (walka w fazie 2).

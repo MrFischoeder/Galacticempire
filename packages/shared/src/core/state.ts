@@ -7,9 +7,10 @@ import { generateGalaxy, type GalaxyOptions } from '../galaxy/generate';
 import type { Galaxy, PlanetId } from '../galaxy/types';
 import type { PlanetState } from '../economy/planet';
 import type { Fleet } from '../fleet/fleet';
+import type { Route } from '../fleet/routes';
 
 /** Bump when the shape of GameState changes (saves are migrated by version). */
-export const STATE_VERSION = 13;
+export const STATE_VERSION = 14;
 
 export type PlayerId = string;
 
@@ -50,6 +51,9 @@ export interface GameState {
   fleets: Record<string, Fleet>;
   /** Next fleet number. */
   nextFleet: number;
+  /** Recurring transport routes (spec 12.2). */
+  routes: Record<string, Route>;
+  nextRoute: number;
   /** State of the general-purpose generator for events (separate streams use rngStream). */
   rng: RngState;
   events: EventQueue<GameEvent>;
@@ -65,6 +69,8 @@ export function createGameState(seed: string, galaxy: GalaxyOptions = {}): GameS
     planets: {},
     fleets: {},
     nextFleet: 1,
+    routes: {},
+    nextRoute: 1,
     rng: hashString(`${seed}\u0000events`),
     events: createQueue<GameEvent>(),
     log: [],

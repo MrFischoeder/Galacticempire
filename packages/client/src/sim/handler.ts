@@ -63,6 +63,8 @@ export function buildSnapshot(state: WorkerState): Snapshot | null {
     planets,
     log: game.log.slice(-LOG_LINES),
     fleets: Object.values(game.fleets).filter((f) => f.owner === state.playerId),
+    routes: Object.values(game.routes).filter((r) => r.owner === state.playerId),
+    owners: Object.keys(game.planets),
   };
 }
 

@@ -1,7 +1,14 @@
 import {
   canRecallFleet,
   canSendFleet,
+  cargoCapacity,
+  loadTime,
   countUnits,
+  RESOURCES,
+  STOCKED,
+  type ResourceAmounts,
+  type ResourceId,
+  type Route,
   flightPlan,
   FLIGHT,
   hangarPlaces,
@@ -35,6 +42,10 @@ export interface FleetDraft {
   to: PlanetId | null;
   mission: FleetMission;
   units: UnitCounts;
+  /** Resources to carry (transport). */
+  cargo: ResourceAmounts;
+  /** Repeat interval for a recurring route, hours. */
+  every: number;
 }
 
 const planetName = (g: Galaxy, id: PlanetId) => g.planets[id]?.name ?? id;
@@ -114,9 +125,22 @@ export function draftHTML(
 <table>${rows || '<tr><td class="dim">No units here.</td></tr>'}</table>
 <label>Mission <select id="fleetMission">${missions}</select></label>
 <div class="dim small">${esc(MISSIONS[draft.mission].text)}</div>
+${draft.mission === 'transport' ? cargoHTML(draft, view) : ''}
 <div>Target: ${target}</div>
 ${picking ? '<div class="pick">Pick the target: open a system (galaxy map) and click a planet.</div>' : ''}
 <div class="row"><button data-action="fleetPick">${picking ? 'Picking…' : 'Pick target'}</button><button data-action="fleetClose">Close</button></div>`;
+}
+
+/** Cargo inputs of a transport and the recurring-route interval (spec 12.2). */
+function cargoHTML(draft: FleetDraft, view: PlanetView): string {
+  const rows = STOCKED.filter((r) => (view.planet.stock[r] ?? 0) >= 1)
+    .map(
+      (r) =>
+        `<tr><td>${esc(RESOURCES[r].name)}</td><td class="num dim">${formatAmount(view.planet.stock[r] ?? 0)}</td><td><input class="small-input" type="number" min="0" step="10" data-cargo="${r}" value="${draft.cargo[r] ?? 0}" /></td></tr>`,
+    )
+    .join('');
+  return `<div class="section">CARGO</div><table>${rows || '<tr><td class="dim">Nothing to carry.</td></tr>'}</table>
+<div class="row"><label>Repeat every <input class="small-input" type="number" min="1" step="1" id="fleetEvery" value="${draft.every}" /> h</label><button data-action="routeCreate">Create route</button></div>`;
 }
 
 export interface Preview {
@@ -140,13 +164,23 @@ export function previewOf(
   if (countUnits(draft.units) === 0) return { text: 'Choose the units to send.', ok: false };
   if (draft.to === draft.from) return { text: check.ok ? '' : check.error.message, ok: false };
   const plan = flightPlan(state, player.id, draft.from, draft.to, draft.units, draft.mission, ctx);
+  const room = cargoCapacity(draft.units, ctx);
+  const fromView = views.find((v) => v.planet.id === draft.from);
+  const load = draft.mission === 'transport' && fromView ? loadTime(fromView.planet) : 0;
   const have = views.find((v) => v.planet.id === draft.from)?.planet.stock[FLIGHT.fuel] ?? 0;
   const lines = [
     `${formatLy(plan.ly)} ${plan.interstellar ? '(between systems, +3 min hyperspace entry)' : '(inside the system)'}`,
     `Speed ${plan.speed.toFixed(0)} LY/h (slowest: ${UNITS[plan.slowest].name})`,
-    `Time ${formatDuration(plan.duration)}${MISSIONS[draft.mission].roundTrip ? ` each way, back ${formatGameTime(time + 2 * plan.duration)}` : `, arrives ${formatGameTime(time + plan.duration)}`}`,
+    `Time ${formatDuration(plan.duration)}${MISSIONS[draft.mission].roundTrip ? ` each way, back ${formatGameTime(time + load + 2 * plan.duration)}` : `, arrives ${formatGameTime(time + plan.duration)}`}`,
+    ...(load > 0
+      ? [`Loading ${formatDuration(load)} before take-off (faster with a spaceport)`]
+      : []),
     `Fuel ${plan.free ? '0 (your system)' : `${formatAmount(Math.ceil(plan.fuel))} of ${formatAmount(have)}`}`,
   ];
+  if (draft.mission === 'transport') {
+    const load = Object.values(draft.cargo).reduce((a, n) => a + (n ?? 0), 0);
+    lines.push(`Cargo ${formatAmount(load)} of ${formatAmount(room)}`);
+  }
   if (!check.ok) lines.push(`⚠ ${check.error.message}`);
   return { text: lines.join('\n'), ok: check.ok };
 }
@@ -154,6 +188,7 @@ export function previewOf(
 const PHASE: Record<Fleet['phase'], string> = {
   out: 'on its way',
   back: 'coming home',
+  waiting: 'waiting in orbit (warehouse full)',
 };
 
 /** The player's fleets away from home. */
@@ -171,10 +206,11 @@ export function fleetListHTML(fleets: readonly Fleet[], galaxy: Galaxy, time: nu
         f.id,
       );
       const button =
-        f.phase === 'out'
+        f.phase !== 'back'
           ? `<button data-action="fleetRecall:${f.id}" ${recall.ok ? '' : `disabled title="${esc(recall.ok ? '' : recall.error.message)}"`}>Recall${recall.ok ? ` (+${formatAmount(Math.max(0, recallLeftover(f, time)))} fuel)` : ''}</button>`
           : '';
-      return `<tr><td><b>${f.id}</b> ${esc(MISSIONS[f.mission].name)}, ${PHASE[f.phase]}<br><span class="small">${esc(unitsText(f.units))}</span><br><span class="small dim">${where}</span></td><td>${button}</td></tr>`;
+      const load = Object.values(f.cargo ?? {}).reduce((a, n) => a + (n ?? 0), 0);
+      return `<tr><td><b>${f.id}</b> ${esc(MISSIONS[f.mission].name)}, ${PHASE[f.phase]}<br><span class="small">${esc(unitsText(f.units))}${load > 0 ? ` · cargo ${formatAmount(load)}` : ''}</span><br><span class="small dim">${where || (f.phase === 'waiting' ? `at ${esc(planetName(galaxy, f.target))}` : '')}</span></td><td>${button}</td></tr>`;
     })
     .join('');
   return `<div class="section">YOUR FLEETS</div><table>${rows}</table>`;
@@ -194,4 +230,18 @@ function feedRow(
     ),
   ].join('');
   return `<div class="dim small">Units fed by:</div><div class="row">${buttons}</div>`;
+}
+
+/** The player's recurring routes (spec 12.2). */
+export function routesHTML(routes: readonly Route[], galaxy: Galaxy, time: number): string {
+  if (routes.length === 0) return '';
+  const rows = routes
+    .map((r) => {
+      const cargo = (Object.entries(r.cargo) as [ResourceId, number][])
+        .map(([res, n]) => `${formatAmount(n)} ${RESOURCES[res].name.toLowerCase()}`)
+        .join(', ');
+      return `<tr><td>${esc(planetName(galaxy, r.from))} → ${esc(planetName(galaxy, r.to))}<br><span class="small">${esc(unitsText(r.units))} · ${esc(cargo)} · every ${r.everyHours} h</span><br><span class="small dim">next in ${formatDuration(r.nextAt - time)} · ${r.trips} trips · ${esc(r.last)}</span></td><td><button data-action="routeDelete:${r.id}">Delete</button></td></tr>`;
+    })
+    .join('');
+  return `<div class="section">ROUTES</div><table>${rows}</table>`;
 }

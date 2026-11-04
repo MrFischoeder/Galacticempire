@@ -23,6 +23,7 @@ import {
 } from '../economy/planet';
 import { scheduleEvent, scheduleFleet, schedulePlanetJobs } from './events';
 import { canOrderUnits, cancelOrder, orderUnits } from '../fleet/shipyard';
+import { canCreateRoute, createRoute } from '../fleet/routes';
 import type { FleetMission } from '../config/fleets';
 import { UNITS, type UnitId } from '../config/units';
 import {
@@ -60,7 +61,26 @@ export type Command =
   | MoveUnitsCommand
   | OrderUnitsCommand
   | CancelUnitOrderCommand
-  | SetUpkeepPlanetCommand;
+  | SetUpkeepPlanetCommand
+  | CreateRouteCommand
+  | DeleteRouteCommand;
+
+/** A recurring transport route (spec 12.2): every `everyHours` a transport carries the cargo. */
+export interface CreateRouteCommand {
+  readonly type: 'CreateRoute';
+  readonly playerId: PlayerId;
+  readonly from: string;
+  readonly to: string;
+  readonly units: UnitCounts;
+  readonly cargo: ResourceAmounts;
+  readonly everyHours: number;
+}
+
+export interface DeleteRouteCommand {
+  readonly type: 'DeleteRoute';
+  readonly playerId: PlayerId;
+  readonly routeId: string;
+}
 
 /** Reassign a planet's units to be fed by another planet of the player (question 37). */
 export interface SetUpkeepPlanetCommand {
@@ -105,6 +125,8 @@ export interface SendFleetCommand {
   readonly to: string;
   readonly units: UnitCounts;
   readonly mission: FleetMission;
+  /** Resources to carry (transport). */
+  readonly cargo?: ResourceAmounts;
 }
 
 /** Turn a fleet on its way out back home (spec 12.1.2: unused fuel returns to the store). */
@@ -504,6 +526,27 @@ export const COMMANDS: Specs = {
       if (!p) return;
       cancelOrder(p, c.orderId);
       schedulePlanetJobs(state, c.planetId);
+    },
+  },
+  CreateRoute: {
+    validate(state, c) {
+      const p = state.planets[c.from];
+      return canCreateRoute(state, c, p ? ownerContext(state, p) : {});
+    },
+    apply(state, c) {
+      const r = createRoute(state, c);
+      scheduleEvent(state, r.nextAt, { type: 'RouteTick', routeId: r.id, at: r.nextAt });
+    },
+  },
+  DeleteRoute: {
+    validate(state, c) {
+      const r = state.routes[c.routeId];
+      if (!r) return fail('NO_ROUTE', 'No such route.');
+      if (r.owner !== c.playerId) return fail('NOT_YOURS', 'This is not your route.');
+      return OK;
+    },
+    apply(state, c) {
+      delete state.routes[c.routeId]; // its fleets already under way finish their trip
     },
   },
   SetUpkeepPlanet: {

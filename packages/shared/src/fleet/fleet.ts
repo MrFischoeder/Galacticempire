@@ -1,9 +1,19 @@
-import { FLIGHT, MISSIONS, type FleetMission } from '../config/fleets';
+import { BUILDINGS, CORE } from '../config/buildings';
+import { FLIGHT, MISSIONS, TRANSPORT, type FleetMission } from '../config/fleets';
+import type { ResourceAmounts, ResourceId } from '../config/resources';
 import { MS_PER_HOUR, MS_PER_MINUTE } from '../config/time';
 import { HANGAR_SLOTS, UNIT_IDS, UNITS, type UnitId } from '../config/units';
 import { fail, OK, type Result } from '../core/result';
 import type { GameState, PlayerId } from '../core/state';
-import { capacityOf, hangarPlaces, landUnits, placesOf, type PlanetState } from '../economy/planet';
+import {
+  capacityOf,
+  createPlanetState,
+  hangarPlaces,
+  landUnits,
+  placesOf,
+  STOCKED,
+  type PlanetState,
+} from '../economy/planet';
 import type { Galaxy, PlanetId } from '../galaxy/types';
 import { effectiveUnit, type ModifierContext } from '../rules/modifiers';
 
@@ -36,9 +46,15 @@ export interface Fleet {
   readonly mission: FleetMission;
   readonly origin: PlanetId;
   readonly target: PlanetId;
-  /** out: flying to the target; back: flying home. */
-  phase: 'out' | 'back';
+  /** out: flying to the target; back: flying home; waiting: in orbit at a full warehouse. */
+  phase: 'out' | 'back' | 'waiting';
   leg: FleetLeg | null;
+  /** Resources carried (transports, spec 12.2). */
+  cargo: ResourceAmounts;
+  /** A waiting transport tries to unload again at this game time. */
+  retryAt?: number;
+  /** The recurring route that sent it. */
+  route?: string;
   /** Distance of the whole flight (one way), LY. */
   readonly ly: number;
   /** Fleet speed (slowest unit), LY per hour, fixed at launch. */
@@ -268,6 +284,59 @@ export interface SendFleetOrder {
   readonly to: PlanetId;
   readonly units: UnitCounts;
   readonly mission: FleetMission;
+  /** Resources to carry (transport only). */
+  readonly cargo?: ResourceAmounts;
+  /** Set by a recurring route. */
+  readonly route?: string;
+}
+
+/** Cargo room of some units (spec 10.1-10.2; race and research modifiers included). */
+export function cargoCapacity(units: UnitCounts, ctx: ModifierContext): number {
+  return (Object.entries(units) as [UnitId, number][]).reduce(
+    (s, [u, n]) => s + (n > 0 ? effectiveUnit(u, ctx).cargo * n : 0),
+    0,
+  );
+}
+
+const total = (a: ResourceAmounts) => Object.values(a).reduce((s, n) => s + (n ?? 0), 0);
+
+/** Loading time of a transport at a planet: its spaceport's (spec 9.1) or the default. */
+export function loadTime(p: PlanetState): number {
+  let minutes: number = TRANSPORT.loadMinutesNoSpaceport;
+  for (const b of p.buildings) {
+    const e = BUILDINGS[b.kind].effect;
+    if (e.kind === 'spaceport')
+      minutes = Math.min(minutes, e.loadMinutes * e.loadGrowth ** (b.level - 1));
+  }
+  return Math.round(minutes * MS_PER_MINUTE);
+}
+
+/**
+ * The player who controls a system (at least half of its planets, spec 2.4), or null. A free
+ * planet in a system controlled by someone else cannot be colonized (spec 10.5; with a pact or
+ * an alliance it will be allowed, step 1.12).
+ */
+export function systemController(state: Readonly<GameState>, system: number): PlayerId | null {
+  const planets = state.world.galaxy.systems[system]?.planets ?? [];
+  const count = new Map<PlayerId, number>();
+  for (const id of planets) {
+    const o = state.planets[id]?.owner;
+    if (o) count.set(o, (count.get(o) ?? 0) + 1);
+  }
+  for (const [o, n] of count) if (n * 2 >= planets.length && planets.length > 0) return o;
+  return null;
+}
+
+function colonizeProblem(state: Readonly<GameState>, player: PlayerId, to: PlanetId): Result {
+  if (state.planets[to]) return fail('NOT_FREE', 'Only a free planet can be colonized.');
+  const sys = state.world.galaxy.planets[to]?.system ?? -1;
+  const ctl = systemController(state, sys);
+  if (ctl && ctl !== player)
+    return fail(
+      'SYSTEM_CONTROLLED',
+      'Another player controls this system; it cannot be colonized.',
+    );
+  return OK;
 }
 
 /** Checks a SendFleet order against a planet settled to now. */
@@ -297,7 +366,31 @@ export function canSendFleet(
     any = true;
   }
   if (!any) return fail('NO_UNITS', 'Choose the units to send.');
+  const cargo = o.cargo ?? {};
+  if (o.mission === 'transport') {
+    if (state.planets[o.to]?.owner !== o.playerId)
+      return fail('NOT_YOUR_TARGET', 'A transport must go to one of your planets.');
+    for (const [r, n] of Object.entries(cargo) as [ResourceId, number][]) {
+      if (!STOCKED.includes(r)) return fail('BAD_RESOURCE', 'This resource cannot be carried.');
+      if (!Number.isFinite(n) || n < 0) return fail('BAD_AMOUNT', 'Cargo must be non-negative.');
+    }
+    if (total(cargo) <= 0) return fail('NO_CARGO', 'Choose what to carry.');
+    const room = cargoCapacity(o.units, ctx);
+    if (total(cargo) > room + 1e-9)
+      return fail('CARGO_FULL', `The fleet can carry ${Math.floor(room)} units of cargo.`);
+  } else if (total(cargo) > 0) return fail('NO_CARGO_MISSION', 'Only transports carry cargo.');
+  if (o.mission === 'colonize') {
+    if ((o.units.colonizer ?? 0) < 1)
+      return fail('NO_COLONIZER', 'A colonization needs a colonizer.');
+    const c = colonizeProblem(state, o.playerId, o.to);
+    if (!c.ok) return c;
+  }
   const plan = flightPlan(state, o.playerId, o.from, o.to, o.units, o.mission, ctx);
+  for (const [r, n] of Object.entries(cargo) as [ResourceId, number][]) {
+    const need = n + (r === FLIGHT.fuel ? plan.fuel : 0);
+    if ((p.stock[r] ?? 0) < need - 1e-9)
+      return fail('NOT_ENOUGH_CARGO', `Not enough ${r} here to load.`);
+  }
   if ((p.stock[FLIGHT.fuel] ?? 0) < plan.fuel - 1e-9)
     return fail('NO_FUEL', `Not enough fuel: the flight needs ${Math.ceil(plan.fuel)}.`);
   return OK;
@@ -312,6 +405,15 @@ export function sendFleet(state: GameState, o: SendFleetOrder, ctx: ModifierCont
   takeUnits(p, units);
   addUnits(p.away, units); // the crews are still fed by the home planet (spec 10.4)
   p.stock[FLIGHT.fuel] = Math.max(0, (p.stock[FLIGHT.fuel] ?? 0) - plan.fuel);
+  const cargo: ResourceAmounts = {};
+  for (const [r, n] of Object.entries(o.cargo ?? {}) as [ResourceId, number][]) {
+    if (!(n > 0)) continue;
+    cargo[r] = n;
+    p.stock[r] = Math.max(0, (p.stock[r] ?? 0) - n);
+  }
+  // A transport loads before it takes off (spec 9.1: the spaceport sets the loading time).
+  const load = o.mission === 'transport' ? loadTime(p) : 0;
+  const out = { ...plan, hyperspace: plan.hyperspace + load, duration: plan.duration + load };
   const fleet: Fleet = {
     id: `f${state.nextFleet++}`,
     owner: o.playerId,
@@ -320,7 +422,9 @@ export function sendFleet(state: GameState, o: SendFleetOrder, ctx: ModifierCont
     origin: o.from,
     target: o.to,
     phase: 'out',
-    leg: leg(state.world.galaxy, o.from, o.to, state.time, plan),
+    leg: leg(state.world.galaxy, o.from, o.to, state.time, out),
+    cargo,
+    ...(o.route ? { route: o.route } : {}),
     ly: plan.ly,
     speed: plan.speed,
     fuelStart: plan.fuelStart,
@@ -350,6 +454,7 @@ export function canRecallFleet(state: Readonly<GameState>, playerId: PlayerId, i
   const f = state.fleets[id];
   if (!f) return fail('NO_FLEET', 'No such fleet.');
   if (f.owner !== playerId) return fail('NOT_YOUR_FLEET', 'This is not your fleet.');
+  if (f.phase === 'waiting') return OK;
   if (f.phase !== 'out' || !f.leg)
     return fail('NOT_OUTBOUND', 'Only a fleet on its way out can be recalled.');
   return OK;
@@ -358,6 +463,12 @@ export function canRecallFleet(state: Readonly<GameState>, playerId: PlayerId, i
 /** Turns a fleet back: it comes home in the time it has flown, unused fuel goes to the store. */
 export function recallFleet(state: GameState, id: string): Fleet {
   const f = state.fleets[id] as Fleet;
+  if (f.phase === 'waiting') {
+    // A transport waiting at a full warehouse goes home with what it still carries.
+    turnHome(state, f, f.target);
+    f.recalled = true;
+    return f;
+  }
   const l = f.leg as FleetLeg;
   const now = state.time;
   const total = l.arriveAt - l.moveAt;
@@ -406,14 +517,21 @@ function releaseAway(state: GameState, f: Fleet): void {
 }
 
 /** Lands the fleet's units at an own planet and returns its unused fuel to the store. */
-function land(state: GameState, f: Fleet, p: PlanetState): void {
+function land(state: GameState, f: Fleet, p: PlanetState): string {
   releaseAway(state, f);
   landUnits(p, f.units);
+  let lost = 0;
+  for (const [r, n] of Object.entries(f.cargo) as [ResourceId, number][]) {
+    const put = Math.max(0, Math.min(n, capacityOf(p, r) - (p.stock[r] ?? 0)));
+    p.stock[r] = (p.stock[r] ?? 0) + put;
+    lost += n - put;
+  }
   if (f.reserve > 0) {
     const r = FLIGHT.fuel;
     p.stock[r] = Math.min(capacityOf(p, r), (p.stock[r] ?? 0) + f.reserve);
   }
   delete state.fleets[f.id];
+  return lost > 0.5 ? ` ${Math.floor(lost)} units of cargo did not fit and were lost.` : '';
 }
 
 /** The owner's planet nearest to a planet (for a fleet whose home was lost). */
@@ -441,6 +559,53 @@ function flyOn(state: GameState, f: Fleet, from: PlanetId, to: PlanetId): void {
   f.leg = leg(galaxy, from, to, state.time, plan);
 }
 
+/** A round-trip fleet at its target turns home; the fuel for the way back was paid at the start. */
+function turnHome(state: GameState, f: Fleet, where: PlanetId): void {
+  f.reserve = Math.max(0, f.reserve - (f.fuelStart + f.fuelPerLy * f.ly));
+  delete f.retryAt;
+  flyOn(state, f, where, f.origin);
+}
+
+/**
+ * A transport unloads into its target's stores (spec 12.2): what does not fit waits in orbit
+ * and is tried again every TRANSPORT.retryMinutes. Returns the log text.
+ */
+export function unloadTransport(state: GameState, f: Fleet, p: PlanetState): string {
+  const name = state.world.galaxy.planets[p.id]?.name ?? p.id;
+  let put = 0;
+  for (const [r, n] of Object.entries(f.cargo) as [ResourceId, number][]) {
+    const k = Math.max(0, Math.min(n, capacityOf(p, r) - (p.stock[r] ?? 0)));
+    p.stock[r] = (p.stock[r] ?? 0) + k;
+    put += k;
+    if (n - k > 1e-9) f.cargo[r] = n - k;
+    else delete f.cargo[r];
+  }
+  if (total(f.cargo) <= 1e-9) {
+    f.cargo = {};
+    turnHome(state, f, p.id);
+    return `Fleet ${f.id} unloaded ${Math.floor(put)} units at ${name} and turns back.`;
+  }
+  f.phase = 'waiting';
+  f.leg = null;
+  f.retryAt = state.time + TRANSPORT.retryMinutes * MS_PER_MINUTE;
+  return `Fleet ${f.id} waits in the orbit of ${name}: the warehouse is full (${Math.floor(total(f.cargo))} units left).`;
+}
+
+/** Settles a free planet with the fleet's colonizer (spec 10.5). */
+function colonize(state: GameState, f: Fleet, where: PlanetId): string {
+  const name = state.world.galaxy.planets[where]?.name ?? where;
+  const p = createPlanetState(where, f.owner, state.time, CORE.residents);
+  p.buildings.push({ uid: p.nextUid++, kind: 'housing', level: 1, slot: 0 });
+  state.planets[where] = p;
+  // The colonizer is used up; its crew are the settlers (owner 4.11.2026, question 36).
+  releaseAway(state, f);
+  const rest: UnitCounts = { ...f.units, colonizer: (f.units.colonizer ?? 0) - 1 };
+  if (!rest.colonizer) delete rest.colonizer;
+  landUnits(p, rest);
+  delete state.fleets[f.id];
+  return `Fleet ${f.id} founded a colony on ${name}.`;
+}
+
 /** What happens when a fleet's leg ends (called with the destination and home planets settled). */
 export function arriveFleet(state: GameState, id: string): string | null {
   const f = state.fleets[id];
@@ -451,13 +616,24 @@ export function arriveFleet(state: GameState, id: string): string | null {
   const own = state.planets[where]?.owner === f.owner ? state.planets[where] : undefined;
   if (f.phase === 'out' && f.mission === 'return') {
     // The fuel for the way back was paid at the start (attacks and raids: phase 2).
-    f.reserve = Math.max(0, f.reserve - (f.fuelStart + f.fuelPerLy * f.ly));
-    flyOn(state, f, where, f.origin);
+    turnHome(state, f, where);
     return `Fleet ${f.id} reached ${name} and turns back.`;
   }
+  if (f.phase === 'out' && f.mission === 'transport') {
+    if (own) return unloadTransport(state, f, own);
+    turnHome(state, f, where);
+    return `Fleet ${f.id} cannot unload at ${name} and turns back.`;
+  }
+  if (
+    f.phase === 'out' &&
+    f.mission === 'colonize' &&
+    (f.units.colonizer ?? 0) > 0 &&
+    colonizeProblem(state, f.owner, where).ok
+  )
+    return colonize(state, f, where);
   if (own) {
-    land(state, f, own);
-    return `Fleet ${f.id} landed at ${name}.`;
+    const lost = land(state, f, own);
+    return `Fleet ${f.id} landed at ${name}.${lost}`;
   }
   // The planet is not (or no longer) the owner's: the fleet heads for the nearest own planet.
   const home = nearestOwn(state, f.owner, where);

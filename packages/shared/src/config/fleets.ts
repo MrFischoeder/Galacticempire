@@ -17,12 +17,22 @@ export const FLIGHT = {
  * someone else's planet; a fleet goes to one of your planets, or flies out, acts (attack and
  * raid come in phase 2) and comes back, with all the fuel worked out and paid at the start.
  */
-export type FleetMission = 'transfer' | 'return';
+export type FleetMission = 'transfer' | 'return' | 'transport' | 'colonize';
 
 export const MISSIONS: Record<FleetMission, { name: string; text: string; roundTrip: boolean }> = {
   transfer: {
     name: 'Transfer',
     text: 'Move the units to another of your planets (one way).',
+    roundTrip: false,
+  },
+  transport: {
+    name: 'Transport',
+    text: 'Carry resources to one of your planets, unload and come back (spec 12.2).',
+    roundTrip: true,
+  },
+  colonize: {
+    name: 'Colonize',
+    text: 'Settle a free planet with a colonizer (spec 10.5); the colonizer is used up.',
     roundTrip: false,
   },
   return: {
@@ -42,4 +52,18 @@ export const SHIPYARD = {
   maxOrders: 5,
   /** Units in one order. */
   maxBatch: 50,
+} as const;
+
+/** Transports and recurring routes (spec 12.2, step 1.10b). */
+export const TRANSPORT = {
+  /** A transport waiting in orbit at a full warehouse tries again this often (game minutes). */
+  retryMinutes: 30,
+  /**
+   * Loading at a planet without a spaceport (with one: the spaceport's load time, spec 9.1).
+   * PROVISIONAL, docs/PYTANIA.md question 38.
+   */
+  loadMinutesNoSpaceport: 20,
+  /** Recurring routes per player and the shortest interval. */
+  maxRoutes: 10,
+  minEveryHours: 1,
 } as const;
