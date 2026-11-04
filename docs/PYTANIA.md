@@ -267,3 +267,12 @@ B. Załogi z populacji
 To zmienia balans ekonomii (`docs/BALANS.md`) i wymaga ponownego przeliczenia.
 
 **Odpowiedź (4.11.2026):** propozycja przyjęta; farma też zużywa energię. Liczebności załóg pasują (mogą się jeszcze zmienić). Wdrożone w wersji 0.1.13a, przed transportami.
+
+### 37. 🟡 Co z flotą, gdy bombardowanie zniszczy domy i farmy? (uwaga właściciela 4.11.2026)
+**Problem:** załogi mieszkają w domach planety macierzystej i jedzą jej biomasę. Gdy wróg zniszczy domy i farmy, statki nie powinny nagle „przestać działać w powietrzu”.
+**Stan dziś (0.1.13a):** statki działają dalej; przy braku miejsca wyprowadzają się mieszkańcy, nie załogi; przy braku jedzenia mieszkańcy jedzą pierwsi, a głodne jednostki mają −25% ataku i brak napraw.
+**Propozycja (do wyboru, można łączyć):**
+A. **Załoga to koszt werbunku, nie stałe miejsce w domu** (zalecane): budowa jednostki zabiera ludzi z populacji (więc więcej statków = więcej domów i farm, jak chce właściciel), ale potem załoga mieszka na pokładzie i nie zajmuje mieszkań. Zniszczone domy nie ruszają floty; ograniczają tylko werbunek nowych załóg.
+B. **Zapasy na pokładzie:** każdy statek ma prowiant na 3 dni (uzupełniany w hangarze/na orbicie planety, która ma biomasę). Gdy planeta macierzysta nie może karmić, flota je zapasy; po ich wyczerpaniu kary rosną stopniowo: −25% ataku i brak napraw, potem dezercja (1% załogi na godzinę, osłabiona jednostka walczy słabiej), nigdy nagłe zatrzymanie.
+C. **Zmiana bazy:** gracz może przypisać flotę do innej swojej planety (która ją wyżywi); przelot już to robi automatycznie.
+D. **Koszary orbitalne / kwatery w hangarze:** załogi mieszkają w hangarach (chronionych jak jednostki w nich), osobno od cywilów; bombardowanie domów uderza w gospodarkę, nie we flotę.
