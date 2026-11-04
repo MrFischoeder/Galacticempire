@@ -48,7 +48,11 @@ export function unitsText(units: UnitCounts): string {
 }
 
 /** The fleet section of an owned planet's side panel. */
-export function planetFleetHTML(view: PlanetView, player: Player): string {
+export function planetFleetHTML(
+  view: PlanetView,
+  player: Player,
+  others: readonly { id: PlanetId; name: string }[] = [],
+): string {
   const p = view.planet;
   const here = unitsAt(p);
   const canDock = countUnits(dockable(p)) > 0;
@@ -59,12 +63,13 @@ export function planetFleetHTML(view: PlanetView, player: Player): string {
 <tr><td>In hangars</td><td class="num">${esc(unitsText(p.units))}</td></tr>
 <tr><td>In orbit</td><td class="num">${esc(unitsText(p.orbit))}</td></tr>
 <tr><td>Hangar places</td><td class="num">${placesOf(p.units)} / ${hangarPlaces(p)}</td></tr>
-<tr><td>Upkeep</td><td class="num ${view.rates.upkeepFed < 1 ? 'bad' : ''}">${upkeep.toFixed(1)} biomass/h${view.rates.upkeepFed < 1 ? ' · STARVING' : ''}</td></tr>
+<tr><td>Upkeep</td><td class="num ${view.rates.upkeepFed < 1 ? 'bad' : ''}">${upkeep.toFixed(1)} biomass/h${p.upkeepFrom ? ` · fed by ${esc(others.find((o) => o.id === p.upkeepFrom)?.name ?? p.upkeepFrom)}` : view.rates.upkeepFed < 1 ? ' · STARVING' : ''}</td></tr>
 ${countUnits(p.away) > 0 ? `<tr><td>In flight</td><td class="num">${esc(unitsText(p.away))}</td></tr>` : ''}
 <tr><td>Fuel</td><td class="num">${formatAmount(p.stock[FLIGHT.fuel] ?? 0)}</td></tr>
 </table>
 <div class="dim small">Hangars hide units from attacks from above; moving between hangars and orbit is free.</div>
 <div class="row"><button data-action="dock:hangar" ${canDock ? '' : 'disabled'}>Into hangars</button><button data-action="dock:orbit" ${canLaunch ? '' : 'disabled'}>All to orbit</button></div>
+${feedRow(p.upkeepFrom ?? null, others)}
 <div class="row"><button data-action="fleetDraft" ${countUnits(here) > 0 ? '' : 'disabled title="No units at this planet."'}>Send a fleet…</button></div>`;
 }
 
@@ -173,4 +178,20 @@ export function fleetListHTML(fleets: readonly Fleet[], galaxy: Galaxy, time: nu
     })
     .join('');
   return `<div class="section">YOUR FLEETS</div><table>${rows}</table>`;
+}
+
+/** Which planet feeds this planet's units (question 37): this one or another of the player's. */
+function feedRow(
+  current: PlanetId | null,
+  others: readonly { id: PlanetId; name: string }[],
+): string {
+  if (others.length === 0) return '';
+  const buttons = [
+    `<button data-action="feed:" ${current === null ? 'disabled' : ''}>This planet</button>`,
+    ...others.map(
+      (o) =>
+        `<button data-action="feed:${o.id}" ${current === o.id ? 'disabled' : ''}>${esc(o.name)}</button>`,
+    ),
+  ].join('');
+  return `<div class="dim small">Units fed by:</div><div class="row">${buttons}</div>`;
 }

@@ -32,6 +32,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.9 | 0.1.12a | `v0.1.12a-floty-zasady` | zasady flot właściciela: bez stacjonowania, bez kosmoportu, hangar/orbita | ✅ |
 | 1.10a | 0.1.13 | `v0.1.13-stocznia` | stocznia, utrzymanie | ✅ |
 | 1.10a | 0.1.13a | `v0.1.13a-energia-zalogi` | energia tylko dla pracujących budynków i budowy, załogi z populacji | ✅ |
+| 1.10a | 0.1.13b | `v0.1.13b-zaloga-koszt` | załoga jako koszt produkcji, przepisanie wyżywienia floty | ✅ |
 | 1.10b | 0.1.14 | `v0.1.14-transporty` | transporty, trasy cykliczne, kolonizacja | ⬜ |
 | 1.11 | 0.1.15 | `v0.1.15-mgla-wojny` | `getPlayerView`, sondy, skanery | ⬜ |
 | 1.12 | 0.1.16 | `v0.1.16-sojusze` | sojusze | ⬜ |
@@ -44,6 +45,12 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.1.13b: załoga jako koszt, przepisanie floty (pytanie 37, decyzja 4.11.2026)
+- Załoga jest częścią kosztu produkcji: zamówienie zabiera ludzi z populacji na stałe; załogi nie zajmują mieszkań (`crewOf` i `PlanetRates.crews` usunięte), populacja odrasta do pojemności mieszkań. Anulowanie przed zbudowaniem oddaje ludzi. Zniszczony statek = utracona załoga (walka w fazie 2).
+- Przepisanie floty: komenda `SetUpkeepPlanet` (planeta, której jednostki są karmione przez inną planetę gracza, albo `null` z powrotem). `PlanetState.upkeepFrom` / `support`; `refreshSupport` (po każdej komendzie i zdarzeniu) przenosi utrzymanie na planetę karmiącą, rozliczając ją najpierw do bieżącej chwili. Utrata planety karmiącej przywraca karmienie u siebie.
+- Klient: w sekcji FLEET wiersz „Units fed by” z przyciskami planet gracza i opisem „fed by X”.
+- Wersja stanu 13.
 
 ### 0.1.13a: energia i załogi (pytanie 36, decyzja właściciela 4.11.2026)
 - Energię zużywają tylko pracujące budynki; mieszkanie, magazyn, silos, akumulator, schron i hangar mają 0 (`config/buildings.ts`).

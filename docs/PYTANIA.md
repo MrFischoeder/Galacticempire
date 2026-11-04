@@ -276,3 +276,5 @@ A. **Załoga to koszt werbunku, nie stałe miejsce w domu** (zalecane): budowa j
 B. **Zapasy na pokładzie:** każdy statek ma prowiant na 3 dni (uzupełniany w hangarze/na orbicie planety, która ma biomasę). Gdy planeta macierzysta nie może karmić, flota je zapasy; po ich wyczerpaniu kary rosną stopniowo: −25% ataku i brak napraw, potem dezercja (1% załogi na godzinę, osłabiona jednostka walczy słabiej), nigdy nagłe zatrzymanie.
 C. **Zmiana bazy:** gracz może przypisać flotę do innej swojej planety (która ją wyżywi); przelot już to robi automatycznie.
 D. **Koszary orbitalne / kwatery w hangarze:** załogi mieszkają w hangarach (chronionych jak jednostki w nich), osobno od cywilów; bombardowanie domów uderza w gospodarkę, nie we flotę.
+
+**Odpowiedź (4.11.2026):** załoga to niezbędna część kosztu produkcji statku: po zbudowaniu ci ludzie znikają z populacji i nie zajmują mieszkań. Jedzenie to zwykły koszt utrzymania (trzeba mieć odpowiednio duże farmy). Zniszczony statek = zginęła załoga. Gracz może przepisać flotę do innej planety (wyżywienie). Kwatery w hangarach niepotrzebne. Wdrożone w wersji 0.1.13b.

@@ -12,7 +12,7 @@ import {
 import { MS_PER_HOUR } from '../config/time';
 import type { PlayerId } from '../core/state';
 import { RESEARCH, type TechId } from '../config/techs';
-import { CREW, HANGAR_SLOTS, UNIT_IDS, UNITS, type UnitId } from '../config/units';
+import { HANGAR_SLOTS, UNIT_IDS, UNITS, type UnitId } from '../config/units';
 import { economyBonus, effectiveUnit, type ModifierContext } from '../rules/modifiers';
 import type { Planet, PlanetId } from '../galaxy/types';
 
@@ -82,6 +82,13 @@ export interface PlanetState {
   news: { at: number; text: string }[];
   /** Game time of the scheduled PlanetJobs check (stale checks are ignored). */
   checkAt?: number;
+  /**
+   * Another planet of the owner that feeds this planet's units (owner 4.11.2026, question 37:
+   * a fleet can be reassigned to another planet).
+   */
+  upkeepFrom?: PlanetId;
+  /** Upkeep (biomass/h) this planet pays for the units of other planets, by planet. */
+  support?: Partial<Record<PlanetId, number>>;
 }
 
 /** An order of `count` units of one kind, built one after another. */
@@ -196,19 +203,6 @@ export function landUnits(p: PlanetState, units: Counts): void {
     if (n - inside > 0) p.orbit[u] = (p.orbit[u] ?? 0) + n - inside;
     free -= inside * size;
   }
-}
-
-/**
- * Crews of the planet's units (owner 4.11.2026, question 36): in the hangars, in orbit, in
- * flight and those of units ordered but not built yet. They live in the planet's housing.
- */
-export function crewOf(p: PlanetState): number {
-  let n = 0;
-  for (const store of [p.units, p.orbit, p.away]) {
-    for (const [u, k] of Object.entries(store ?? {}) as [UnitId, number][]) n += CREW[u] * k;
-  }
-  for (const o of p.shipyard ?? []) n += CREW[o.unit] * (o.count - o.built);
-  return n;
 }
 
 /** Applies a finished construction (level up or a new building). */
@@ -445,8 +439,11 @@ function processes(
     powered: false,
     people: true,
   });
-  // The crews of the planet's units, also those in flight (spec 10.4).
-  const upkeep = upkeepPerHour(p, ctx);
+  // The crews of the planet's units, also those in flight (spec 10.4), unless another planet
+  // feeds them, and the units of other planets this one feeds (question 37).
+  const upkeep =
+    (p.upkeepFrom ? 0 : upkeepPerHour(p, ctx)) +
+    Object.values(p.support ?? {}).reduce((sum: number, n) => sum + (n ?? 0), 0);
   if (upkeep > 0)
     list.push({
       label: 'upkeep',
@@ -523,8 +520,6 @@ export interface PlanetRates {
   /** Share of the units' upkeep that is fed (1 = all); below 1 the units starve (spec 10.4). */
   readonly upkeepFed: number;
   readonly housing: number;
-  /** Crews of the planet's units, living in its housing (question 36). */
-  readonly crews: number;
   /** Construction progress per hour (energy shortage slows it). */
   readonly construction: number;
   /** Progress per hour of the unit the shipyard is building (energy × the shipyard's crew). */
@@ -636,8 +631,7 @@ export function planetRates(
   // Population (spec 6): grows while biomass production beats what the residents eat and
   // there is room; starves while the stores are empty and the meals fall short.
   const housing = housingCapacity(p, planet);
-  const crews = crewOf(p);
-  const room = housing - crews;
+  const room = housing;
   const eatPerHead = POPULATION.biomassPerResident * economyBonus('populationFood', ctx);
   const fullMeals = p.population * eatPerHead;
   // What the farms and the core can grow (a full silo throttles the farms, but the food is
@@ -679,7 +673,6 @@ export function planetRates(
     starving,
     upkeepFed,
     housing,
-    crews,
     construction,
     shipyard,
     research,

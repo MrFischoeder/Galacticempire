@@ -178,7 +178,14 @@ function renderSide(): void {
       slotsOf(view.planet, view.info.fields),
       surface.selected,
     );
-    if (surface.selected === null) html += planetFleetHTML(view, snapshot.player);
+    if (surface.selected === null)
+      html += planetFleetHTML(
+        view,
+        snapshot.player,
+        snapshot.planets
+          .filter((v) => v.planet.id !== view.planet.id)
+          .map((v) => ({ id: v.planet.id, name: v.info.name })),
+      );
   } else if (mode === 'planet' && selectedPlanet && galaxy.planets[selectedPlanet]) {
     html = foreignPlanetHTML(
       galaxy.planets[selectedPlanet] as NonNullable<Galaxy['planets'][string]>,
@@ -232,6 +239,8 @@ function onAction(e: PointerEvent): void {
     });
   else if (kind === 'ordercancel' && selectedPlanet)
     void send({ type: 'CancelUnitOrder', playerId, planetId: selectedPlanet, orderId: Number(a) });
+  else if (kind === 'feed' && selectedPlanet)
+    void send({ type: 'SetUpkeepPlanet', playerId, planetId: selectedPlanet, from: a || null });
   else if (kind === 'dock' && selectedPlanet) {
     const view = snapshot?.planets.find((v) => v.planet.id === selectedPlanet);
     if (view)

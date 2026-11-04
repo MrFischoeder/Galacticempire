@@ -59,7 +59,17 @@ export type Command =
   | DebugAddUnitsCommand
   | MoveUnitsCommand
   | OrderUnitsCommand
-  | CancelUnitOrderCommand;
+  | CancelUnitOrderCommand
+  | SetUpkeepPlanetCommand;
+
+/** Reassign a planet's units to be fed by another planet of the player (question 37). */
+export interface SetUpkeepPlanetCommand {
+  readonly type: 'SetUpkeepPlanet';
+  readonly playerId: PlayerId;
+  readonly planetId: string;
+  /** The feeding planet; null = the units' own planet again. */
+  readonly from: string | null;
+}
 
 /** Order units in a planet's shipyard (spec 9.2, 10.7); paid in full at once. */
 export interface OrderUnitsCommand {
@@ -494,6 +504,29 @@ export const COMMANDS: Specs = {
       if (!p) return;
       cancelOrder(p, c.orderId);
       schedulePlanetJobs(state, c.planetId);
+    },
+  },
+  SetUpkeepPlanet: {
+    validate(state, c) {
+      const own = ownedBy(state, c.playerId, c.planetId);
+      if (!own.ok) return own;
+      if (c.from === null) return OK;
+      if (c.from === c.planetId)
+        return fail('SAME_PLANET', 'Choose another planet, or none to feed them here.');
+      const from = ownedBy(state, c.playerId, c.from);
+      return from.ok ? OK : fail('NOT_YOURS', 'The feeding planet must be yours.');
+    },
+    apply(state, c) {
+      const p = settleOwned(state, c.planetId);
+      if (!p) return;
+      const old = p.upkeepFrom;
+      if (old) {
+        const y = settleOwned(state, old);
+        if (y?.support) delete y.support[c.planetId];
+      }
+      if (c.from) p.upkeepFrom = c.from;
+      else delete p.upkeepFrom;
+      // refreshSupport (run after every command) puts the upkeep on the new planet.
     },
   },
   MoveUnits: {

@@ -242,42 +242,54 @@ describe('energy and crews (owner 4.11.2026, question 36)', () => {
     expect(s.planets[home]!.orbit.interceptor).toBe(1);
   });
 
-  it('crews come from free residents and live in the housing', () => {
+  it('the crew is part of the cost: it leaves the residents for good (question 37)', () => {
     const { s: s0, home } = setup();
     const before = s0.planets[home]!.population;
-    let s = run(s0, [order(home, 'cruiser', 2)]);
-    const p = s.planets[home]!;
-    expect(p.population).toBe(before - 20);
-    expect(planetRates(p, s.world.galaxy.planets[home]!).crews).toBe(20);
-    // Residents + crews cannot outgrow the housing.
+    let s = run(s0, [
+      order(home, 'cruiser', 2),
+      { type: 'DebugSetBuilding', planetId: home, kind: 'farm', level: 10 },
+    ]);
+    expect(s.planets[home]!.population).toBe(before - 20);
+    // Crews take no housing: the residents grow back up to the housing.
     s = advanceTo(s, 48 * MS_PER_HOUR);
     const q = s.planets[home]!;
     const r = planetRates(q, s.world.galaxy.planets[home]!);
-    expect(q.population + r.crews).toBeLessThanOrEqual(r.housing);
-    // Cancelling gives the unfinished crews back.
+    expect(q.population).toBe(r.housing);
+    // Cancelling before the units are built gives their crews back.
     const t = run(s0, [order(home, 'cruiser', 2)]);
     const id = t.planets[home]!.shipyard[0]!.id;
     const u = run(t, [{ type: 'CancelUnitOrder', playerId: 'p1', planetId: home, orderId: id }]);
     expect(u.planets[home]!.population).toBe(before);
   });
+});
 
-  it('a unit that moves to another planet takes its crew there', () => {
+describe('reassigning a fleet to another planet (question 37)', () => {
+  it('another planet of the player can feed the units', () => {
     const { s: s0, home, far } = setup();
     let s = run(s0, [
-      { type: 'DebugAddUnits', planetId: home, units: { destroyer: 1 } },
-      {
-        type: 'SendFleet',
-        playerId: 'p1',
-        from: home,
-        to: far,
-        units: { destroyer: 1 },
-        mission: 'transfer',
-      },
+      { type: 'DebugAddUnits', planetId: home, units: { cruiser: 2 } },
+      { type: 'DebugAddResources', planetId: far, amounts: { biomass: 100 } },
     ]);
     const g = s.world.galaxy.planets;
-    expect(planetRates(s.planets[home]!, g[home]!).crews).toBe(10);
-    s = advanceTo(s, Object.values(s.fleets)[0]!.leg!.arriveAt);
-    expect(planetRates(s.planets[home]!, g[home]!).crews).toBe(0);
-    expect(planetRates(s.planets[far]!, g[far]!).crews).toBe(10);
+    const upkeep = (id: string) => planetRates(s.planets[id]!, g[id]!).used.biomass ?? 0;
+    const homeBefore = upkeep(home);
+    const farBefore = upkeep(far);
+    s = run(s, [{ type: 'SetUpkeepPlanet', playerId: 'p1', planetId: home, from: far }]);
+    expect(upkeep(home)).toBeCloseTo(homeBefore - 5.2, 6);
+    expect(upkeep(far)).toBeCloseTo(farBefore + 5.2, 6);
+    expect(s.planets[far]!.support?.[home]).toBeCloseTo(5.2, 6);
+    // New units at home are fed by the far planet too.
+    s = run(s, [{ type: 'DebugAddUnits', planetId: home, units: { cruiser: 1 } }]);
+    expect(upkeep(far)).toBeCloseTo(farBefore + 7.8, 6);
+    // Back to the own planet.
+    s = run(s, [{ type: 'SetUpkeepPlanet', playerId: 'p1', planetId: home, from: null }]);
+    expect(upkeep(far)).toBeCloseTo(farBefore, 6);
+    expect(upkeep(home)).toBeCloseTo(homeBefore + 2.6, 6);
+    const bad = applyCommand(
+      s,
+      { type: 'SetUpkeepPlanet', playerId: 'p1', planetId: home, from: home },
+      s.time,
+    );
+    expect(bad.result).toMatchObject({ error: { code: 'SAME_PLANET' } });
   });
 });

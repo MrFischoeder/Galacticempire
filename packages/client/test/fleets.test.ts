@@ -32,6 +32,9 @@ describe('fleet panel (step 1.9)', () => {
     const html = planetFleetHTML(view, snap.player);
     expect(html).toContain('3 Fighter');
     expect(html).toContain('dock:orbit');
+    const two = planetFleetHTML(view, snap.player, [{ id: far, name: 'Far' }]);
+    expect(two).toContain(`feed:${far}`);
+    expect(two).toContain('Units fed by');
     const draft = { from: home, to: far, mission: 'transfer' as const, units: { fighter: 3 } };
     const p = previewOf(draft, galaxy, snap.planets, snap.player, snap.time);
     expect(p.text).toMatch(/LY .*hyperspace/);

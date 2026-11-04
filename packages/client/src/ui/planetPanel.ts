@@ -132,7 +132,7 @@ export function planetStatusHTML(view: PlanetView): string {
 <div>Stored ${formatAmount(p.energy)} / ${formatAmount(energyCapacity(p))}${rates.efficiency < 1 ? ` · <span class="bad">efficiency ${Math.round(rates.efficiency * 100)}%</span>` : ''}</div>`);
   const workers = view.planet.buildings.reduce((s, b) => s + BUILDINGS[b.kind].workers, 0);
   parts.push(`<div class="section">Population</div>
-<div>Residents ${p.population}${rates.crews > 0 ? ` + crews ${rates.crews}` : ''} / housing ${rates.housing}${rates.growth !== 0 ? ` · <span class="${rates.growth < 0 ? 'bad' : 'good'}">${formatRate(rates.growth)}</span>` : ''} · workers needed ${workers}${rates.starving ? ' · <span class="bad">STARVING</span>' : ''}</div>`);
+<div>Residents ${p.population} / housing ${rates.housing}${rates.growth !== 0 ? ` · <span class="${rates.growth < 0 ? 'bad' : 'good'}">${formatRate(rates.growth)}</span>` : ''} · workers needed ${workers}${rates.starving ? ' · <span class="bad">STARVING</span>' : ''}</div>`);
 
   // Construction
   if (p.construction) {

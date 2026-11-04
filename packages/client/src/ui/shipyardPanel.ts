@@ -43,6 +43,6 @@ export function shipyardHTML(view: PlanetView, player: Player): string {
     .join('');
   return `<div class="section">SHIPYARD</div>
 ${queue ? `<table>${queue}</table>` : '<div class="dim">Nothing is being built.</div>'}
-<div class="dim small">Paid in full when ordered; the crew leaves the residents at once and lives in the housing. Built one after another at the pace of the energy and the shipyard's crew. Free residents: ${freeResidents(p)}.</div>
+<div class="dim small">Paid in full when ordered; the crew leaves the residents for good (it is part of the cost). Built one after another at the pace of the energy and the shipyard's crew. Free residents: ${freeResidents(p)}.</div>
 <table>${rows}</table>`;
 }

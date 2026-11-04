@@ -9,7 +9,7 @@ import type { PlanetState } from '../economy/planet';
 import type { Fleet } from '../fleet/fleet';
 
 /** Bump when the shape of GameState changes (saves are migrated by version). */
-export const STATE_VERSION = 12;
+export const STATE_VERSION = 13;
 
 export type PlayerId = string;
 

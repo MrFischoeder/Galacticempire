@@ -488,9 +488,10 @@ export const HANGAR_REPAIR_PER_HOUR = 0.1;
 export const MILITIA_PER_HOUSING = 1;
 
 /**
- * Crew of each unit, taken from the residents of the planet that builds it (owner 4.11.2026,
- * question 36). Crews live in the housing of their home planet: residents + crews ≤ housing.
- * The colonizer's 10 are the settlers of the new colony (spec 10.5). Defences have none.
+ * Crew of each unit: residents of the planet that builds it, part of the unit's cost (owner
+ * 4.11.2026, questions 36 and 37). They leave the population for good and do not take up
+ * housing; a destroyed unit loses its crew. The colonizer's 10 are the settlers of the new
+ * colony (spec 10.5). Defences have none.
  */
 export const CREW: Record<UnitId, number> = {
   interceptor: 1,

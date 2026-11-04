@@ -3,6 +3,7 @@ import { EVENT_HANDLERS, type GameEvent } from './events';
 import { dequeue, peek } from './queue';
 import { fail, type Result } from './result';
 import { cloneState, type GameState } from './state';
+import { refreshSupport } from '../economy/access';
 
 /** Safety net against an event that keeps scheduling itself at the same time forever. */
 const MAX_EVENTS_PER_ADVANCE = 1_000_000;
@@ -19,6 +20,7 @@ function advanceInPlace(state: GameState, time: number): void {
     dequeue(state.events);
     state.time = next.at;
     runEvent(state, next.event);
+    refreshSupport(state);
     if (++processed > MAX_EVENTS_PER_ADVANCE) {
       throw new Error('Too many events in one advance (an event keeps rescheduling itself?)');
     }
@@ -58,7 +60,10 @@ export function applyCommand(state: GameState, command: Command, time: number): 
   const next = cloneState(state);
   advanceInPlace(next, time);
   const result = validateCommand(next, command);
-  if (result.ok) applyValidated(next, command);
+  if (result.ok) {
+    applyValidated(next, command);
+    refreshSupport(next);
+  }
   return { state: next, result };
 }
 

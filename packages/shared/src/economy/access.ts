@@ -1,6 +1,6 @@
 import type { GameState } from '../core/state';
 import type { Planet, PlanetId } from '../galaxy/types';
-import { settlePlanet, type PlanetState } from './planet';
+import { settlePlanet, upkeepPerHour, type PlanetState } from './planet';
 import { finalizeResearch } from './research';
 import type { ModifierContext } from '../rules/modifiers';
 
@@ -47,4 +47,39 @@ export function planetAt(
   const g = JSON.parse(JSON.stringify(galaxyPlanet(state, id))) as Planet;
   settlePlanet(p, g, Math.max(time, p.updatedAt), ownerContext(state, p));
   return { planet: p, deposits: g.deposits };
+}
+
+/**
+ * Keeps the upkeep that planets pay for each other's units up to date (question 37). Run after
+ * every command and event: each feeding planet is settled to now before its rate changes.
+ */
+export function refreshSupport(state: GameState): void {
+  for (const p of Object.values(state.planets)) {
+    for (const [x, n] of Object.entries(p.support ?? {})) {
+      const fed = state.planets[x];
+      const want =
+        fed && fed.upkeepFrom === p.id && fed.owner === p.owner
+          ? upkeepPerHour(fed, ownerContext(state, fed))
+          : 0;
+      if (Math.abs((n ?? 0) - want) > 1e-12) {
+        settleOwned(state, p.id);
+        if (want > 0) (p.support ??= {})[x] = want;
+        else delete p.support?.[x];
+      }
+    }
+  }
+  for (const x of Object.values(state.planets)) {
+    if (!x.upkeepFrom) continue;
+    const y = state.planets[x.upkeepFrom];
+    if (!y || y.owner !== x.owner) {
+      settleOwned(state, x.id);
+      delete x.upkeepFrom;
+      continue;
+    }
+    const want = upkeepPerHour(x, ownerContext(state, x));
+    if (Math.abs((y.support?.[x.id] ?? 0) - want) > 1e-12) {
+      settleOwned(state, y.id);
+      (y.support ??= {})[x.id] = want;
+    }
+  }
 }
