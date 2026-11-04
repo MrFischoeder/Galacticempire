@@ -251,3 +251,17 @@ Specyfikacja mówi tylko „kosmoport ogranicza liczbę flot startujących naraz
 - **Hangar albo orbita:** flota stoi w hangarach (ukryta, zabezpieczona przed atakiem z góry) albo na orbicie (obrona planety). Przejście między nimi nie kosztuje paliwa.
 - **Loty wewnątrz układu nie kosztują paliwa** (niezależnie od kontroli układu).
 Wprowadzone w wersji 0.1.12a. Rola hangaru i orbity w walce: faza 2.
+
+### 36. 🔴 Energia, populacja i jednostki (uwaga właściciela 4.11.2026, propozycja do akceptacji)
+**Właściciel:** energia ma być potrzebna tylko do utrzymania fabryk i do budowania nowych rzeczy; lepiej rozwinięta energia pozwala ulepszonym fabrykom (stoczni) budować większe i lepsze statki. Żeby budować więcej myśliwców, trzeba mieć większą populację; większa populacja wymaga więcej domów, a domy muszą być zaopatrywane przez farmy (biomasa).
+
+**Propozycja:**
+A. Energia
+1. Energię zużywają tylko budynki, które pracują: kopalnie, rafineria, huta, warsztat, farma, stocznia, kosmoport, laboratorium, skaner, działa, tarcza (liczby z 5.1). Budynki bierne (mieszkanie, magazyn, silos, akumulator, schron, hangar) nie zużywają energii.
+2. Budowa i ulepszanie budynku pobiera energię: plac budowy zużywa tyle, ile budynek na nowym poziomie. Przy niedoborze energii budowa trwa dłużej (tempo = wydajność energii).
+3. Stocznia buduje jednostki tylko z energią i załogą: tempo budowy = wydajność energii × obsada stoczni. Wyższy poziom stoczni (więcej energii) odblokowuje większe statki, jak dotąd (9.2).
+B. Załogi z populacji
+4. Każda jednostka potrzebuje załogi z mieszkańców planety, na której powstaje: mała 1 (sonda, przechwytywacz, myśliwiec, piechota, szturmowcy), średnia 3 (fregata, bombowiec, transportowiec, okręt naprawczy, artyleria), kolonizator 10 (to 10 osadników nowej kolonii, 10.5), duża 10 (niszczyciel, krążownik, ciężki transportowiec, czołg 3), ogromna 30 (pancernik).
+5. Załoga zajmuje miejsce w mieszkaniach planety macierzystej: mieszkańcy + załogi ≤ pojemność mieszkań. Więcej statków = więcej domów, a domy = więcej biomasy z farm. Załogi nie pracują w budynkach; jedzą tak jak dziś (utrzymanie z tabel 10.x).
+6. Bez wolnych mieszkańców (populacja minus potrzebni robotnicy) stocznia nie przyjmie zamówienia. Zniszczona jednostka traci załogę; jednostka, która przeniesie się na inną planetę, przenosi tam załogę (zajmuje tam mieszkania).
+To zmienia balans ekonomii (`docs/BALANS.md`) i wymaga ponownego przeliczenia.
