@@ -17,6 +17,7 @@ import {
 import type { Galaxy, PlanetId } from '../galaxy/types';
 import { effectiveUnit, type ModifierContext } from '../rules/modifiers';
 import { discover, scanSystem } from '../intel/intel';
+import { allianceOf, allied, atPeace } from '../diplomacy/diplomacy';
 
 /**
  * Fleets (spec 12.1, step 1.9). A player's units at their own planets live in the planet's
@@ -47,8 +48,11 @@ export interface Fleet {
   readonly mission: FleetMission;
   readonly origin: PlanetId;
   readonly target: PlanetId;
-  /** out: flying to the target; back: flying home; waiting: in orbit at a full warehouse. */
-  phase: 'out' | 'back' | 'waiting';
+  /**
+   * out: flying to the target; back: flying home; waiting: in orbit at a full warehouse;
+   * stationed: defending an ally's planet (spec 16).
+   */
+  phase: 'out' | 'back' | 'waiting' | 'stationed';
   leg: FleetLeg | null;
   /** Resources carried (transports, spec 12.2). */
   cargo: ResourceAmounts;
@@ -319,10 +323,12 @@ export function loadTime(p: PlanetState): number {
  */
 export function systemController(state: Readonly<GameState>, system: number): PlayerId | null {
   const planets = state.world.galaxy.systems[system]?.planets ?? [];
+  // Control is counted for an alliance as a whole (spec 16); the first member stands for it.
+  const group = (o: PlayerId) => allianceOf(state, o)?.members[0] ?? o;
   const count = new Map<PlayerId, number>();
   for (const id of planets) {
     const o = state.planets[id]?.owner;
-    if (o) count.set(o, (count.get(o) ?? 0) + 1);
+    if (o) count.set(group(o), (count.get(group(o)) ?? 0) + 1);
   }
   for (const [o, n] of count) if (n * 2 >= planets.length && planets.length > 0) return o;
   return null;
@@ -332,7 +338,8 @@ function colonizeProblem(state: Readonly<GameState>, player: PlayerId, to: Plane
   if (state.planets[to]) return fail('NOT_FREE', 'Only a free planet can be colonized.');
   const sys = state.world.galaxy.planets[to]?.system ?? -1;
   const ctl = systemController(state, sys);
-  if (ctl && ctl !== player)
+  // Next to an ally or a pact partner colonizing is allowed (question 34).
+  if (ctl && !atPeace(state, ctl, player))
     return fail(
       'SYSTEM_CONTROLLED',
       'Another player controls this system; it cannot be colonized.',
@@ -368,9 +375,16 @@ export function canSendFleet(
   }
   if (!any) return fail('NO_UNITS', 'Choose the units to send.');
   const cargo = o.cargo ?? {};
+  const targetOwner = state.planets[o.to]?.owner;
+  if (
+    o.mission === 'defend' &&
+    (!targetOwner || targetOwner === o.playerId || !allied(state, targetOwner, o.playerId))
+  )
+    return fail('NOT_ALLY', "A defence fleet must go to an ally's planet.");
   if (o.mission === 'transport') {
-    if (state.planets[o.to]?.owner !== o.playerId)
-      return fail('NOT_YOUR_TARGET', 'A transport must go to one of your planets.');
+    // To your own planets or an ally's (spec 16).
+    if (!targetOwner || !allied(state, targetOwner, o.playerId))
+      return fail('NOT_YOUR_TARGET', "A transport must go to one of your or your allies' planets.");
     for (const [r, n] of Object.entries(cargo) as [ResourceId, number][]) {
       if (!STOCKED.includes(r)) return fail('BAD_RESOURCE', 'This resource cannot be carried.');
       if (!Number.isFinite(n) || n < 0) return fail('BAD_AMOUNT', 'Cargo must be non-negative.');
@@ -457,7 +471,7 @@ export function canRecallFleet(state: Readonly<GameState>, playerId: PlayerId, i
   const f = state.fleets[id];
   if (!f) return fail('NO_FLEET', 'No such fleet.');
   if (f.owner !== playerId) return fail('NOT_YOUR_FLEET', 'This is not your fleet.');
-  if (f.phase === 'waiting') return OK;
+  if (f.phase === 'waiting' || f.phase === 'stationed') return OK;
   if (f.phase !== 'out' || !f.leg)
     return fail('NOT_OUTBOUND', 'Only a fleet on its way out can be recalled.');
   return OK;
@@ -466,8 +480,9 @@ export function canRecallFleet(state: Readonly<GameState>, playerId: PlayerId, i
 /** Turns a fleet back: it comes home in the time it has flown, unused fuel goes to the store. */
 export function recallFleet(state: GameState, id: string): Fleet {
   const f = state.fleets[id] as Fleet;
-  if (f.phase === 'waiting') {
-    // A transport waiting at a full warehouse goes home with what it still carries.
+  if (f.phase === 'waiting' || f.phase === 'stationed') {
+    // A transport waiting at a full warehouse goes home with what it still carries; a defence
+    // fleet leaves its ally (the fuel for the way back was paid at the start).
     turnHome(state, f, f.target);
     f.recalled = true;
     return f;
@@ -618,6 +633,17 @@ export function arriveFleet(state: GameState, id: string): string | null {
   const where = f.leg.to;
   const name = galaxy.planets[where]?.name ?? where;
   const own = state.planets[where]?.owner === f.owner ? state.planets[where] : undefined;
+  const targetOwner = state.planets[where]?.owner;
+  const ally = targetOwner !== undefined && allied(state, targetOwner, f.owner);
+  if (f.phase === 'out' && f.mission === 'defend') {
+    if (ally && !own) {
+      f.phase = 'stationed';
+      f.leg = null;
+      return `Fleet ${f.id} is stationed at ${name} to defend your ally.`;
+    }
+    turnHome(state, f, where);
+    return `Fleet ${f.id} cannot defend ${name} (no longer an ally) and turns back.`;
+  }
   if (f.phase === 'out' && f.mission === 'scan') {
     // A probe discovers the system and scans its planets (spec 13), then comes back.
     scanSystem(state, f.owner, galaxy.planets[where]?.system ?? -1);
@@ -630,7 +656,7 @@ export function arriveFleet(state: GameState, id: string): string | null {
     return `Fleet ${f.id} reached ${name} and turns back.`;
   }
   if (f.phase === 'out' && f.mission === 'transport') {
-    if (own) return unloadTransport(state, f, own);
+    if (ally) return unloadTransport(state, f, state.planets[where] as PlanetState);
     turnHome(state, f, where);
     return `Fleet ${f.id} cannot unload at ${name} and turns back.`;
   }

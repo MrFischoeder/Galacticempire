@@ -59,3 +59,30 @@ describe('planet and research panels (step 1.8)', () => {
     expect(researchHTML(snap.player, snap.planets, view.planet.id)).toContain('No laboratory');
   });
 });
+
+describe('diplomacy panel (step 1.12)', () => {
+  it('offers to create an alliance, invite and propose pacts', async () => {
+    const { diplomacyHTML } = await import('../src/ui/diplomacyPanel');
+    const players = [
+      { id: 'p1', name: 'Alice' },
+      { id: 'p2', name: 'Bob' },
+    ];
+    const none = diplomacyHTML('p1', players, {
+      alliance: null,
+      invites: [],
+      pacts: [],
+      pactOffers: [],
+    });
+    expect(none).toContain('createAlliance');
+    expect(none).toContain('proposePact:p2');
+    const inAlliance = diplomacyHTML('p1', players, {
+      alliance: { id: 'a1', name: 'League', members: ['p1'], invites: [] },
+      invites: [],
+      pacts: [],
+      pactOffers: [{ from: 'p2', to: 'p1', at: 0 }],
+    });
+    expect(inAlliance).toContain('invite:p2');
+    expect(inAlliance).toContain('acceptPact:p2');
+    expect(inAlliance).toContain('leaveAlliance');
+  });
+});

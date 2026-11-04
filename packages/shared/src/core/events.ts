@@ -4,6 +4,7 @@ import { nextJobHours, planetRates } from '../economy/planet';
 import { arriveFleet, recallFleet, unloadTransport } from '../fleet/fleet';
 import { runRoute } from '../fleet/routes';
 import { warningTime } from '../intel/intel';
+import { allied } from '../diplomacy/diplomacy';
 import { scheduleResearchCheck } from '../economy/schedule';
 import { enqueue } from './queue';
 import { Rng } from './rng';
@@ -20,7 +21,15 @@ export type GameEvent =
   | FleetArrivalEvent
   | FleetRetryEvent
   | RouteTickEvent
-  | FleetWarningEvent;
+  | FleetWarningEvent
+  | PactEndsEvent;
+
+/** A broken non-aggression pact ends (12 h after it was broken, question 34). */
+export interface PactEndsEvent {
+  readonly type: 'PactEnds';
+  readonly key: string;
+  readonly at: number;
+}
 
 /** A fleet heading for a player's planet enters the range of their scanners (spec 13). */
 export interface FleetWarningEvent {
@@ -159,6 +168,13 @@ export const EVENT_HANDLERS: Handlers = {
       text: `WARNING: a fleet of ${who} heads for ${name}, arriving in ${Math.round((f.leg.arriveAt - state.time) / 60000)} min.`,
     });
   },
+  PactEnds(state, event) {
+    const p = state.pacts[event.key];
+    if (!p || p.breakAt !== event.at) return;
+    delete state.pacts[event.key];
+    for (const who of [p.a, p.b])
+      state.log.push({ at: state.time, who, text: 'The non-aggression pact has ended.' });
+  },
   DebugMarker(state, event) {
     let text = `Marker: ${event.label}`;
     if (event.roll !== undefined) {
@@ -194,7 +210,7 @@ export function scheduleFleet(state: GameState, fleetId: string): void {
   const leg = f?.leg;
   // Defenders whose planet the fleet flies to are warned when it enters their scanners' range.
   const defender = leg ? state.planets[leg.to]?.owner : undefined;
-  if (f && leg && defender && defender !== f.owner) {
+  if (f && leg && defender && !allied(state, defender, f.owner)) {
     const t = warningTime(state, leg, defender);
     if (t !== null)
       scheduleEvent(state, Math.max(state.time, t), {

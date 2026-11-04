@@ -69,7 +69,8 @@ describe('player view (spec 13, step 1.11)', () => {
     ]);
     s = advanceTo(s, MS_PER_HOUR);
     const view = getPlayerView(s, 'p1')!;
-    const json = JSON.stringify(view);
+    // Every player's public name is in the view (diplomacy, spec 16); nothing else about them.
+    const json = JSON.stringify({ ...view, players: [] });
     const found = ids(json);
     const known = new Set(view.known);
     const allowedPlanets = new Set(

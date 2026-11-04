@@ -6,6 +6,7 @@ import { fleetPosition, type Fleet } from '../fleet/fleet';
 import type { Route } from '../fleet/routes';
 import type { Galaxy, Planet, PlanetId, StarSystem, SystemId } from '../galaxy/types';
 import { scanFreshMs, scannersOf, type Alert, type ScanReport } from './intel';
+import { allianceOf, alliesOf, type Alliance, type Pact } from '../diplomacy/diplomacy';
 
 /**
  * Everything one player may know (spec 13, 23.3): the AI and the client read only this, never
@@ -33,6 +34,18 @@ export interface PlayerView {
   readonly routes: Route[];
   readonly alerts: Alert[];
   readonly log: LogEntry[];
+  /** Allies' planets, fully visible (spec 16: buildings and defence included). */
+  readonly allyPlanets: PlanetState[];
+  /** Every player's public name (for diplomacy). */
+  readonly players: { readonly id: PlayerId; readonly name: string }[];
+  readonly diplomacy: {
+    readonly alliance: Alliance | null;
+    /** Alliances that invited the player. */
+    readonly invites: { readonly id: string; readonly name: string }[];
+    readonly pacts: Pact[];
+    /** Pact offers to and from the player. */
+    readonly pactOffers: { readonly from: PlayerId; readonly to: PlayerId; readonly at: number }[];
+  };
 }
 
 /** A foreign fleet seen by a scanner: position, heading and units; the target only if it is ours. */
@@ -46,6 +59,8 @@ export interface Contact {
   readonly x0: number;
   readonly y0: number;
   readonly units: Partial<Record<UnitId, number>>;
+  /** A fleet of an ally (not a threat). */
+  readonly ally: boolean;
   /** Set when it flies to one of the player's planets. */
   readonly target?: PlanetId;
   readonly arriveAt?: number;
@@ -82,10 +97,21 @@ export function getPlayerView(
     ownDeposits.set(p.id, v.deposits);
   }
 
-  // Known systems: discovered, with an own planet, or in range of an own scanner.
-  const known = new Set<SystemId>(Object.keys(player.known).map(Number));
-  for (const p of planets) known.add(galaxy.planets[p.id]?.system ?? -1);
-  const scanners = scannersOf(state, playerId);
+  // Allies share the discovered map, their scanners and warnings (spec 16).
+  const team = [playerId, ...alliesOf(state, playerId)];
+  const allyPlanets: PlanetState[] = [];
+  for (const p of Object.values(state.planets)) {
+    if (p.owner === playerId || !team.includes(p.owner)) continue;
+    const v = planetAt(state as GameState, p.id, time);
+    if (v) allyPlanets.push(v.planet);
+  }
+
+  // Known systems: discovered, with a team planet, or in range of a team scanner.
+  const known = new Set<SystemId>();
+  for (const m of team)
+    for (const sys of Object.keys(state.players[m]?.known ?? {})) known.add(Number(sys));
+  for (const p of [...planets, ...allyPlanets]) known.add(galaxy.planets[p.id]?.system ?? -1);
+  const scanners = team.flatMap((m) => scannersOf(state, m));
   for (const s of galaxy.systems)
     if (scanners.some((sc) => Math.hypot(sc.x - s.x, sc.y - s.y) <= sc.range)) known.add(s.id);
   if (all) for (const s of galaxy.systems) known.add(s.id);
@@ -130,8 +156,9 @@ export function getPlayerView(
     for (const id of s.planets) {
       const g = galaxy.planets[id];
       if (!g) continue;
-      const deposits = ownDeposits.get(id) ?? scans[id]?.deposits ?? [];
-      const seen = ownDeposits.has(id) || scans[id] !== undefined;
+      const allyP = allyPlanets.find((x) => x.id === id);
+      const deposits = ownDeposits.get(id) ?? scans[id]?.deposits ?? (allyP ? g.deposits : []);
+      const seen = ownDeposits.has(id) || scans[id] !== undefined || allyP !== undefined;
       chartPlanets[id] = {
         ...g,
         deposits: JSON.parse(JSON.stringify(deposits)) as Planet['deposits'],
@@ -168,6 +195,7 @@ export function getPlayerView(
       x0: f.leg?.x0 ?? pos.x,
       y0: f.leg?.y0 ?? pos.y,
       units: { ...f.units },
+      ally: team.includes(f.owner),
       ...(mine && f.leg ? { target: f.leg.to, arriveAt: f.leg.arriveAt } : {}),
     });
   }
@@ -184,7 +212,24 @@ export function getPlayerView(
     fleets: JSON.parse(JSON.stringify(fleets)) as Fleet[],
     contacts,
     routes: Object.values(state.routes).filter((r) => r.owner === playerId),
-    alerts: player.alerts.filter((a) => state.fleets[a.fleetId]?.leg?.arriveAt === a.arriveAt),
+    alerts: team
+      .flatMap((m) => state.players[m]?.alerts ?? [])
+      .filter((a) => state.fleets[a.fleetId]?.leg?.arriveAt === a.arriveAt),
     log,
+    allyPlanets,
+    players: Object.values(state.players).map((p) => ({ id: p.id, name: p.name })),
+    diplomacy: {
+      alliance: (() => {
+        const al = allianceOf(state, playerId);
+        return al ? (JSON.parse(JSON.stringify(al)) as Alliance) : null;
+      })(),
+      invites: Object.values(state.alliances)
+        .filter((al) => al.invites.includes(playerId))
+        .map((al) => ({ id: al.id, name: al.name })),
+      pacts: Object.values(state.pacts).filter((p) => p.a === playerId || p.b === playerId),
+      pactOffers: Object.values(state.pactOffers).filter(
+        (o) => o.from === playerId || o.to === playerId,
+      ),
+    },
   };
 }

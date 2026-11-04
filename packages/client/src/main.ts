@@ -30,6 +30,7 @@ import { esc } from './ui/html';
 import { renderStats, renderSystemPanel } from './ui/panels';
 import { foreignPlanetHTML, surfacePanelHTML } from './ui/planetPanel';
 import { researchHTML } from './ui/researchPanel';
+import { diplomacyHTML } from './ui/diplomacyPanel';
 import {
   draftHTML,
   alertsHTML,
@@ -66,6 +67,7 @@ const sim = new SimClient();
 const side = $('#side');
 const researchPanel = $('#research');
 const fleetsPanel = $('#fleets');
+const diplomacyPanel = $('#diplomacy');
 const errorPanel = $('#error');
 
 let world: World | null = null;
@@ -192,7 +194,19 @@ function renderSide(): void {
       );
   } else if (mode === 'planet' && selectedPlanet && galaxy.planets[selectedPlanet]) {
     const owner = snapshot?.owners[selectedPlanet];
-    const scan = snapshot?.scans[selectedPlanet];
+    // An ally's planet is fully visible (spec 16): shown like a fresh scan.
+    const allyP = snapshot?.allyPlanets.find((x) => x.id === selectedPlanet);
+    const scan = allyP
+      ? {
+          at: snapshot?.time ?? 0,
+          owner: allyP.owner,
+          deposits: [],
+          buildings: allyP.buildings.map((b) => ({ kind: b.kind, level: b.level })),
+          units: { ...allyP.units, ...allyP.orbit },
+          age: 0,
+          stale: false,
+        }
+      : snapshot?.scans[selectedPlanet];
     html = foreignPlanetHTML(
       galaxy.planets[selectedPlanet] as NonNullable<Galaxy['planets'][string]>,
       !owner,
@@ -295,6 +309,16 @@ function onAction(e: PointerEvent): void {
         renderFleets();
       });
   } else if (kind === 'fleetRecall') void send({ type: 'RecallFleet', playerId, fleetId: a ?? '' });
+  else if (kind === 'createAlliance') {
+    const name = $<HTMLInputElement>('#allianceName').value;
+    void send({ type: 'CreateAlliance', playerId, name });
+  } else if (kind === 'invite' && a) void send({ type: 'InviteToAlliance', playerId, target: a });
+  else if (kind === 'acceptAlliance' && a)
+    void send({ type: 'AcceptAlliance', playerId, allianceId: a });
+  else if (kind === 'leaveAlliance') void send({ type: 'LeaveAlliance', playerId });
+  else if (kind === 'proposePact' && a) void send({ type: 'ProposePact', playerId, target: a });
+  else if (kind === 'acceptPact' && a) void send({ type: 'AcceptPact', playerId, from: a });
+  else if (kind === 'breakPact' && a) void send({ type: 'BreakPact', playerId, other: a });
   else if (kind === 'routeDelete') void send({ type: 'DeleteRoute', playerId, routeId: a ?? '' });
   else if (kind === 'routeCreate' && draft?.to) {
     const d = draft;
@@ -343,6 +367,18 @@ function newDraft(from: PlanetId): FleetDraft {
 side.addEventListener('pointerdown', onAction);
 researchPanel.addEventListener('pointerdown', onAction);
 fleetsPanel.addEventListener('pointerdown', onAction);
+diplomacyPanel.addEventListener('pointerdown', onAction);
+
+let lastDiplomacy = '';
+function renderDiplomacy(): void {
+  if (diplomacyPanel.hidden || !snapshot) return;
+  const html = diplomacyHTML(snapshot.player.id, snapshot.players, snapshot.diplomacy);
+  // Rebuild only on change: the alliance name field keeps what is typed.
+  if (html !== lastDiplomacy) {
+    diplomacyPanel.innerHTML = html;
+    lastDiplomacy = html;
+  }
+}
 fleetsPanel.addEventListener('input', (e) => {
   const el = e.target as HTMLInputElement | HTMLSelectElement;
   if (!draft) return;
@@ -403,6 +439,11 @@ $('#toSystem').addEventListener('click', () => {
   if (openSystem !== null) openSystemView(openSystem);
 });
 $('#toHome').addEventListener('click', goHome);
+$('#toDiplomacy').addEventListener('click', () => {
+  diplomacyPanel.hidden = !diplomacyPanel.hidden;
+  lastDiplomacy = '';
+  renderDiplomacy();
+});
 $('#toFleets').addEventListener('click', () => {
   fleetsPanel.hidden = !fleetsPanel.hidden;
   renderFleets(true);
@@ -470,6 +511,7 @@ sim.onSnapshot = (s) => {
   renderSide();
   renderResearch();
   renderFleets();
+  renderDiplomacy();
   renderTimebar();
   renderLog();
 };
@@ -538,6 +580,22 @@ $('#addUnits').addEventListener('click', () => {
   });
 });
 
+// Debug: a rival player on a free start position, and the rival saying yes to everything.
+$('#addRival').addEventListener('click', () => {
+  if (!snapshot || !world) return;
+  const n = snapshot.players.length + 1;
+  const id = `p${n}`;
+  void send({ type: 'DebugAddRival', playerId: id, name: `Rival ${n - 1}` });
+});
+$('#rivalAccepts').addEventListener('click', () => {
+  if (!snapshot) return;
+  const me = snapshot.player.id;
+  const al = snapshot.diplomacy.alliance;
+  for (const p of al?.invites ?? [])
+    void send({ type: 'AcceptAlliance', playerId: p, allianceId: al?.id ?? '' });
+  for (const o of snapshot.diplomacy.pactOffers)
+    if (o.from === me) void send({ type: 'AcceptPact', playerId: o.to, from: me });
+});
 $<HTMLInputElement>('#reveal').addEventListener('change', (e) =>
   sim.reveal((e.target as HTMLInputElement).checked),
 );

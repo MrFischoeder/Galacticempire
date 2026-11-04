@@ -35,7 +35,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.10a | 0.1.13b | `v0.1.13b-zaloga-koszt` | załoga jako koszt produkcji, przepisanie wyżywienia floty | ✅ |
 | 1.10b | 0.1.14 | `v0.1.14-transporty` | transporty, trasy cykliczne, kolonizacja | ✅ |
 | 1.11 | 0.1.15 | `v0.1.15-mgla-wojny` | `getPlayerView`, sondy, skanery | ✅ |
-| 1.12 | 0.1.16 | `v0.1.16-sojusze` | sojusze | ⬜ |
+| 1.12 | 0.1.16 | `v0.1.16-sojusze` | sojusze, pakt o nieagresji | ✅ |
 | 1.13 | 0.1.17 | `v0.1.17-bot-symulacja` | bot ekonomiczny, `pnpm sim` | ⬜ |
 | 5.1 | — | — | blokady: usunięte (decyzja 3.11.2026) | ✖ |
 | 2.1–2.4 | 0.2.x | `v0.2.x-...` | walka | ⬜ |
@@ -45,6 +45,15 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.1.16: sojusze i pakt o nieagresji (krok 1.12, 4.11.2026)
+- `shared/src/diplomacy/`: sojusze (`GameState.alliances`; tworzenie, zaproszenie, przyjęcie, opuszczenie; maks. 6 członków, `config/diplomacy.ts`) i pakty o nieagresji (`pacts`, `pactOffers`; propozycja, przyjęcie, zerwanie działające po 12 h, zdarzenie `PactEnds`). `allied`, `hasPact`, `atPeace`, `canAttack` (walidacja ataku gotowa na fazę 2: odmowa `ALLY` / `PACT`).
+- Widok gracza: planety sojuszników w pełni widoczne (`allyPlanets`), wspólna odkryta mapa, wspólne skanery i ostrzeżenia; lista graczy i stan dyplomacji. Kontrola układu liczona dla sojuszu łącznie; kolonizacja w układzie sojusznika lub partnera paktu dozwolona.
+- Transport do sojusznika (rozładunek do jego magazynu); misja `defend`: flota stacjonuje przy planecie sojusznika (`phase` `stationed`, paliwo na powrót z góry, karmiona przez swoją planetę), można ją odwołać. Opuszczenie sojuszu: odkryta mapa zostaje (odkrycia sojuszników są kopiowane), widoczność planet znika, floty obrony i transporty po obu stronach wracają do domu. Sojusznicy nie dostają ostrzeżeń o swoich flotach.
+- Klient: panel „Diplomacy” (sojusz, członkowie, zaproszenia, wyjście, pakty i oferty); misja „Defend ally” w formularzu floty; panel planety sojusznika pokazuje jej budynki i jednostki. Debug: „+ rival” (rywal na wolnej pozycji startowej, `DebugAddRival`) i „Rival accepts”.
+- Decyzja właściciela: wspólna obrona dozwolona (pytanie 40). Wersja stanu 16.
+- Testy: `shared/test/diplomacy.test.ts` (limit członków, widoczność przed i po opuszczeniu, transport do sojusznika, powrót floty obrony po opuszczeniu, blokada ataku, pakt i jego zerwanie po 12 h, kolonizacja przy partnerze paktu), test panelu.
+- Na później: wspólne ataki i obrona w bitwie (faza 2), miejsca stacjonujących flot w hangarach sojusznika (na razie krążą na orbicie).
 
 ### 0.1.15: mgła wojny i widok gracza (krok 1.11, 4.11.2026)
 - `shared/src/intel/`: `getPlayerView(stan, gracz, czas, {revealAll})` zwraca tylko to, co gracz może wiedzieć: własne planety (rozliczone na czas widoku), mapę nieba (`chart`: położenia wszystkich układów, nazwy i planety tylko odkrytych, złoża tylko z własnych planet i skanów, bez ziarna galaktyki), znane układy, właścicieli planet w nich, skany z wiekiem i oznaczeniem „stale”, własne floty i trasy, obce floty w zasięgu skanerów (`contacts`), ostrzeżenia i własne wpisy dziennika (`LogEntry.who`).

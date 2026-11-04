@@ -9,9 +9,10 @@ import type { PlanetState } from '../economy/planet';
 import type { Fleet } from '../fleet/fleet';
 import type { Alert, ScanReport } from '../intel/intel';
 import type { Route } from '../fleet/routes';
+import type { Alliance, Pact } from '../diplomacy/diplomacy';
 
 /** Bump when the shape of GameState changes (saves are migrated by version). */
-export const STATE_VERSION = 15;
+export const STATE_VERSION = 16;
 
 export type PlayerId = string;
 
@@ -63,6 +64,14 @@ export interface GameState {
   /** Recurring transport routes (spec 12.2). */
   routes: Record<string, Route>;
   nextRoute: number;
+  /** Alliances (spec 16) and non-aggression pacts (question 34), with pending pact offers. */
+  alliances: Record<string, Alliance>;
+  nextAlliance: number;
+  pacts: Record<string, Pact>;
+  pactOffers: Record<
+    string,
+    { readonly from: PlayerId; readonly to: PlayerId; readonly at: number }
+  >;
   /** State of the general-purpose generator for events (separate streams use rngStream). */
   rng: RngState;
   events: EventQueue<GameEvent>;
@@ -80,6 +89,10 @@ export function createGameState(seed: string, galaxy: GalaxyOptions = {}): GameS
     nextFleet: 1,
     routes: {},
     nextRoute: 1,
+    alliances: {},
+    nextAlliance: 1,
+    pacts: {},
+    pactOffers: {},
     rng: hashString(`${seed}\u0000events`),
     events: createQueue<GameEvent>(),
     log: [],

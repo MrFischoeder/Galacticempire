@@ -314,3 +314,19 @@ label.check {
   width: auto;
   flex: none;
 }
+
+/* --- step 1.12: diplomacy --- */
+#diplomacy {
+  top: 110px;
+  left: 16px;
+  width: 440px;
+  max-height: calc(100vh - 380px);
+  overflow-y: auto;
+}
+#diplomacy input {
+  background: var(--bg);
+  color: var(--cyan);
+  border: 1px solid var(--cyan-dim);
+  font-family: var(--font);
+  flex: 1;
+}

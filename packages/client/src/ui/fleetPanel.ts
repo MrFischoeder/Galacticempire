@@ -190,6 +190,7 @@ const PHASE: Record<Fleet['phase'], string> = {
   out: 'on its way',
   back: 'coming home',
   waiting: 'waiting in orbit (warehouse full)',
+  stationed: 'defending an ally',
 };
 
 /** The player's fleets away from home. */
@@ -211,7 +212,7 @@ export function fleetListHTML(fleets: readonly Fleet[], galaxy: Galaxy, time: nu
           ? `<button data-action="fleetRecall:${f.id}" ${recall.ok ? '' : `disabled title="${esc(recall.ok ? '' : recall.error.message)}"`}>Recall${recall.ok ? ` (+${formatAmount(Math.max(0, recallLeftover(f, time)))} fuel)` : ''}</button>`
           : '';
       const load = Object.values(f.cargo ?? {}).reduce((a, n) => a + (n ?? 0), 0);
-      return `<tr><td><b>${f.id}</b> ${esc(MISSIONS[f.mission].name)}, ${PHASE[f.phase]}<br><span class="small">${esc(unitsText(f.units))}${load > 0 ? ` · cargo ${formatAmount(load)}` : ''}</span><br><span class="small dim">${where || (f.phase === 'waiting' ? `at ${esc(planetName(galaxy, f.target))}` : '')}</span></td><td>${button}</td></tr>`;
+      return `<tr><td><b>${f.id}</b> ${esc(MISSIONS[f.mission].name)}, ${PHASE[f.phase]}<br><span class="small">${esc(unitsText(f.units))}${load > 0 ? ` · cargo ${formatAmount(load)}` : ''}</span><br><span class="small dim">${where || (f.phase === 'waiting' || f.phase === 'stationed' ? `at ${esc(planetName(galaxy, f.target))}` : '')}</span></td><td>${button}</td></tr>`;
     })
     .join('');
   return `<div class="section">YOUR FLEETS</div><table>${rows}</table>`;

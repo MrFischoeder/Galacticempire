@@ -293,3 +293,6 @@ D. **Koszary orbitalne / kwatery w hangarze:** załogi mieszkają w hangarach (c
 4. **Właściciele planet** w odkrytych układach są widoczni bez skanu (wiadomo, kto tam mieszka); szczegóły tylko ze skanu.
 5. **Floty innych graczy** widać, gdy są w zasięgu któregoś z naszych skanerów (pozycja, skład, ślad); cel znamy tylko, gdy to nasza planeta. **Ostrzeżenie** (wpis w dzienniku i lista „INCOMING”) przychodzi w chwili, gdy flota lecąca do naszej planety wejdzie w zasięg naszego skanera; liczone przy starcie floty (skaner zbudowany później nie przyspieszy ostrzeżenia o flocie już w drodze).
 6. **Dziennik:** każdy gracz widzi tylko swoje wpisy.
+
+### 40. 🟢 Wspólna obrona z sojusznikiem (pytanie z 3.11.2026)
+**Odpowiedź (4.11.2026):** sojusznik może przesunąć flotę do planety sojusznika, żeby jej broniła (wyjątek od zakazu stacjonowania przy cudzych planetach, spec 16). Wprowadzone w kroku 1.12.

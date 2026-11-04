@@ -23,6 +23,15 @@ import {
 } from '../economy/planet';
 import { scheduleEvent, scheduleFleet, schedulePlanetJobs } from './events';
 import { discover } from '../intel/intel';
+import { DIPLOMACY } from '../config/diplomacy';
+import {
+  allianceOf,
+  canAcceptAlliance,
+  canCreateAlliance,
+  canInvite,
+  canProposePact,
+  pairKey,
+} from '../diplomacy/diplomacy';
 import { canOrderUnits, cancelOrder, orderUnits } from '../fleet/shipyard';
 import { canCreateRoute, createRoute } from '../fleet/routes';
 import type { FleetMission } from '../config/fleets';
@@ -64,7 +73,59 @@ export type Command =
   | CancelUnitOrderCommand
   | SetUpkeepPlanetCommand
   | CreateRouteCommand
-  | DeleteRouteCommand;
+  | DeleteRouteCommand
+  | CreateAllianceCommand
+  | InviteToAllianceCommand
+  | AcceptAllianceCommand
+  | LeaveAllianceCommand
+  | ProposePactCommand
+  | AcceptPactCommand
+  | BreakPactCommand
+  | DebugAddRivalCommand;
+
+/** Debug only: a rival player on the next free start position (testing diplomacy alone). */
+export interface DebugAddRivalCommand {
+  readonly type: 'DebugAddRival';
+  readonly playerId: PlayerId;
+  readonly name: string;
+}
+
+/** Alliances (spec 16). */
+export interface CreateAllianceCommand {
+  readonly type: 'CreateAlliance';
+  readonly playerId: PlayerId;
+  readonly name: string;
+}
+export interface InviteToAllianceCommand {
+  readonly type: 'InviteToAlliance';
+  readonly playerId: PlayerId;
+  readonly target: PlayerId;
+}
+export interface AcceptAllianceCommand {
+  readonly type: 'AcceptAlliance';
+  readonly playerId: PlayerId;
+  readonly allianceId: string;
+}
+export interface LeaveAllianceCommand {
+  readonly type: 'LeaveAlliance';
+  readonly playerId: PlayerId;
+}
+/** Non-aggression pacts (question 34). */
+export interface ProposePactCommand {
+  readonly type: 'ProposePact';
+  readonly playerId: PlayerId;
+  readonly target: PlayerId;
+}
+export interface AcceptPactCommand {
+  readonly type: 'AcceptPact';
+  readonly playerId: PlayerId;
+  readonly from: PlayerId;
+}
+export interface BreakPactCommand {
+  readonly type: 'BreakPact';
+  readonly playerId: PlayerId;
+  readonly other: PlayerId;
+}
 
 /** A recurring transport route (spec 12.2): every `everyHours` a transport carries the cargo. */
 export interface CreateRouteCommand {
@@ -554,6 +615,132 @@ export const COMMANDS: Specs = {
       delete state.routes[c.routeId]; // its fleets already under way finish their trip
     },
   },
+  DebugAddRival: {
+    validate(state, c) {
+      if (state.players[c.playerId])
+        return fail('PLAYER_EXISTS', 'A player with this id already exists.');
+      return freeStart(state) ? OK : fail('NO_START', 'No free start position left.');
+    },
+    apply(state, c) {
+      const planet = freeStart(state);
+      if (!planet) return;
+      state.players[c.playerId] = {
+        id: c.playerId,
+        name: c.name,
+        techs: {},
+        known: {},
+        scans: {},
+        alerts: [],
+      };
+      state.planets[planet] = createPlanetState(planet, c.playerId, state.time);
+      discover(state, c.playerId, state.world.galaxy.planets[planet]?.system ?? -1);
+    },
+  },
+  CreateAlliance: {
+    validate(state, c) {
+      return canCreateAlliance(state, c.playerId, c.name);
+    },
+    apply(state, c) {
+      const id = `a${state.nextAlliance++}`;
+      state.alliances[id] = { id, name: c.name.trim(), members: [c.playerId], invites: [] };
+    },
+  },
+  InviteToAlliance: {
+    validate(state, c) {
+      return canInvite(state, c.playerId, c.target);
+    },
+    apply(state, c) {
+      const al = allianceOf(state, c.playerId);
+      if (!al) return;
+      al.invites.push(c.target);
+      state.log.push({
+        at: state.time,
+        who: c.target,
+        text: `${state.players[c.playerId]?.name ?? c.playerId} invites you to the alliance ${al.name}.`,
+      });
+    },
+  },
+  AcceptAlliance: {
+    validate(state, c) {
+      return canAcceptAlliance(state, c.playerId, c.allianceId);
+    },
+    apply(state, c) {
+      const al = state.alliances[c.allianceId];
+      if (!al) return;
+      al.invites = al.invites.filter((p) => p !== c.playerId);
+      al.members.push(c.playerId);
+      for (const other of Object.values(state.alliances))
+        other.invites = other.invites.filter((p) => p !== c.playerId);
+      for (const m of al.members)
+        state.log.push({
+          at: state.time,
+          who: m,
+          text: `${state.players[c.playerId]?.name ?? c.playerId} joined the alliance ${al.name}.`,
+        });
+    },
+  },
+  LeaveAlliance: {
+    validate(state, c) {
+      return allianceOf(state, c.playerId)
+        ? OK
+        : fail('NO_ALLIANCE', 'You are not in an alliance.');
+    },
+    apply(state, c) {
+      leaveAlliance(state, c.playerId);
+    },
+  },
+  ProposePact: {
+    validate(state, c) {
+      return canProposePact(state, c.playerId, c.target);
+    },
+    apply(state, c) {
+      state.pactOffers[pairKey(c.playerId, c.target)] = {
+        from: c.playerId,
+        to: c.target,
+        at: state.time,
+      };
+      state.log.push({
+        at: state.time,
+        who: c.target,
+        text: `${state.players[c.playerId]?.name ?? c.playerId} offers you a non-aggression pact.`,
+      });
+    },
+  },
+  AcceptPact: {
+    validate(state, c) {
+      const offer = state.pactOffers[pairKey(c.playerId, c.from)];
+      if (!offer || offer.to !== c.playerId) return fail('NO_OFFER', 'No such pact offer.');
+      return OK;
+    },
+    apply(state, c) {
+      const key = pairKey(c.playerId, c.from);
+      delete state.pactOffers[key];
+      state.pacts[key] = { a: c.from, b: c.playerId, since: state.time };
+      for (const who of [c.from, c.playerId])
+        state.log.push({ at: state.time, who, text: 'A non-aggression pact was signed.' });
+    },
+  },
+  BreakPact: {
+    validate(state, c) {
+      const p = state.pacts[pairKey(c.playerId, c.other)];
+      if (!p) return fail('NO_PACT', 'There is no pact to break.');
+      if (p.breakAt !== undefined) return fail('ALREADY_BROKEN', 'The pact is already ending.');
+      return OK;
+    },
+    apply(state, c) {
+      const key = pairKey(c.playerId, c.other);
+      const p = state.pacts[key];
+      if (!p) return;
+      p.breakAt = state.time + DIPLOMACY.pactBreakMs;
+      scheduleEvent(state, p.breakAt, { type: 'PactEnds', key, at: p.breakAt });
+      for (const who of [c.playerId, c.other])
+        state.log.push({
+          at: state.time,
+          who,
+          text: `${state.players[c.playerId]?.name ?? c.playerId} broke the non-aggression pact; it ends in 12 h.`,
+        });
+    },
+  },
   SetUpkeepPlanet: {
     validate(state, c) {
       const own = ownedBy(state, c.playerId, c.planetId);
@@ -623,4 +810,59 @@ export function validateCommand(state: Readonly<GameState>, command: Command): R
 
 export function applyValidated(state: GameState, command: Command): void {
   (COMMANDS[command.type] as CommandSpec<Command>).apply(state, command);
+}
+
+/**
+ * A player leaves their alliance (spec 16): the discovered map stays (the allies' discoveries
+ * are kept), the view of their planets goes, and the defence fleets on both sides go home.
+ */
+function leaveAlliance(state: GameState, player: PlayerId): void {
+  const al = allianceOf(state, player);
+  if (!al) return;
+  const me = state.players[player];
+  const others = al.members.filter((m) => m !== player);
+  for (const m of others) {
+    const p = state.players[m];
+    if (!me || !p) continue;
+    for (const [sys, t] of Object.entries(p.known)) me.known[Number(sys)] ??= t;
+    for (const pl of Object.values(state.planets))
+      if (pl.owner === m) discover(state, player, state.world.galaxy.planets[pl.id]?.system ?? -1);
+  }
+  al.members = others;
+  if (al.members.length === 0) delete state.alliances[al.id];
+  // Fleets defending (or carrying to) former allies, either way, turn home.
+  for (const f of Object.values(state.fleets)) {
+    const at = f.phase === 'stationed' ? f.target : f.phase === 'out' ? f.leg?.to : undefined;
+    const host = at ? state.planets[at]?.owner : undefined;
+    if (!host || host === f.owner) continue;
+    const crosses =
+      (f.owner === player && others.includes(host)) ||
+      (host === player && others.includes(f.owner));
+    if (!crosses || (f.mission !== 'defend' && f.mission !== 'transport')) continue;
+    recallFleet(state, f.id);
+    scheduleFleet(state, f.id);
+    state.log.push({
+      at: state.time,
+      who: f.owner,
+      text: `Fleet ${f.id} returns home: the alliance is over.`,
+    });
+  }
+  for (const who of [player, ...others])
+    state.log.push({
+      at: state.time,
+      who,
+      text: `${me?.name ?? player} left the alliance ${al.name}.`,
+    });
+}
+
+/** The starter planet of the first start position nobody lives in. */
+function freeStart(state: Readonly<GameState>): string | undefined {
+  const g = state.world.galaxy;
+  for (const slot of g.startSlots) {
+    const planets = g.systems[slot]?.planets ?? [];
+    if (planets.some((id) => state.planets[id])) continue;
+    const starter = planets.find((id) => g.planets[id]?.starter) ?? planets[0];
+    if (starter) return starter;
+  }
+  return undefined;
 }

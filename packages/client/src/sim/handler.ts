@@ -67,6 +67,9 @@ export function buildSnapshot(state: WorkerState): Snapshot | null {
     contacts: view.contacts,
     alerts: view.alerts,
     revealAll: state.revealAll,
+    allyPlanets: view.allyPlanets,
+    players: view.players,
+    diplomacy: view.diplomacy,
     ...(chartChanged ? { chart: view.chart } : {}),
   };
 }

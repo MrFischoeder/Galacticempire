@@ -64,6 +64,10 @@ export interface Snapshot {
   /** The star chart, sent only when it changed (new systems discovered, scans). */
   readonly chart?: Galaxy;
   readonly revealAll: boolean;
+  /** Allies' planets (spec 16), every player's name and the player's diplomacy. */
+  readonly allyPlanets: PlanetState[];
+  readonly players: PlayerView['players'];
+  readonly diplomacy: PlayerView['diplomacy'];
 }
 
 export type FromWorker =
