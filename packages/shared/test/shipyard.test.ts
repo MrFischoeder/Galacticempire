@@ -43,6 +43,9 @@ function setup(shipyard = 7, race?: 'swarm') {
       type: 'DebugAddResources',
       planetId: home,
       amounts: {
+        metal: 500,
+        titanium: 500,
+        silicon: 500,
         alloy: 20000,
         components: 5000,
         biomass: 2000,
@@ -54,6 +57,12 @@ function setup(shipyard = 7, race?: 'swarm') {
       },
     },
   ]);
+  // Power, room and people for the shipyard's crew and the units' crews (question 36).
+  s = run(s, [
+    { type: 'DebugSetBuilding', planetId: home, kind: 'renewable', level: 10 },
+    { type: 'DebugSetBuilding', planetId: home, kind: 'housing', level: 10 },
+  ]);
+  s.planets[home]!.population = 150;
   if (shipyard > 0)
     s = run(s, [{ type: 'DebugSetBuilding', planetId: home, kind: 'shipyard', level: shipyard }]);
   return { s, home, far };
@@ -126,6 +135,11 @@ describe('shipyard (step 1.10a)', () => {
       (s0.planets[home]!.stock.biomass ?? 0) - (s.planets[home]!.stock.biomass ?? 0),
     ).toBeCloseTo(200, 0);
     expect(applyCommand(s, order(home, 'battleship', 50), 0).result).toMatchObject({
+      error: { code: 'NO_CREW' },
+    });
+    const poor = JSON.parse(JSON.stringify(s)) as GameState;
+    poor.planets[home]!.stock.alloy = 10;
+    expect(applyCommand(poor, order(home, 'fighter'), 0).result).toMatchObject({
       error: { code: 'NOT_ENOUGH' },
     });
   });
@@ -180,6 +194,7 @@ describe('upkeep (spec 10.4)', () => {
     const { s: s0, home } = setup();
     let s = JSON.parse(JSON.stringify(s0)) as GameState;
     s.planets[home]!.stock.biomass = 0;
+    s.planets[home]!.population = 10;
     s = run(s, [{ type: 'DebugAddUnits', planetId: home, units: { battleship: 1 } }]);
     const view = planetAt(s, home, s.time + MS_PER_HOUR)!;
     const r = planetRates(view.planet, s.world.galaxy.planets[home]!);
@@ -187,5 +202,82 @@ describe('upkeep (spec 10.4)', () => {
     expect(r.starving).toBe(false);
     expect(r.upkeepFed).toBeLessThan(1);
     expect(r.upkeepFed).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('energy and crews (owner 4.11.2026, question 36)', () => {
+  it('a construction draws energy; a shortage slows it down', () => {
+    const { s: s0, home } = setup();
+    // No power at all: the renewable plant goes, the store is empty.
+    let s = run(s0, [{ type: 'DebugSetBuilding', planetId: home, kind: 'renewable', level: 0 }]);
+    s.planets[home]!.energy = 0;
+    s = run(s, [{ type: 'StartBuilding', playerId: 'p1', planetId: home, kind: 'farm' }]);
+    const p = s.planets[home]!;
+    const r = planetRates(p, s.world.galaxy.planets[home]!);
+    expect(r.energyUsed).toBeGreaterThan(0); // the site draws the farm's energy
+    expect(r.efficiency).toBeLessThan(0.5); // only the core's trickle of energy
+    const hours = p.construction!.hours;
+    expect(r.construction).toBeCloseTo(r.efficiency / hours, 9);
+    // At full power it would be done by now; short of energy it is not.
+    s = advanceTo(s, s.time + Math.ceil(hours * MS_PER_HOUR * 1.5));
+    expect(s.planets[home]!.construction).not.toBeNull();
+    // Power back: it finishes soon.
+    s = run(s, [{ type: 'DebugSetBuilding', planetId: home, kind: 'renewable', level: 10 }]);
+    s = advanceTo(s, s.time + MS_PER_HOUR);
+    expect(s.planets[home]!.construction).toBeNull();
+    expect(s.planets[home]!.buildings.some((b) => b.kind === 'farm')).toBe(true);
+  });
+
+  it('the shipyard builds only with energy and its crew', () => {
+    const { s: s0, home } = setup();
+    let s = run(s0, [order(home, 'interceptor')]);
+    const p = s.planets[home]!;
+    const g = s.world.galaxy.planets[home]!;
+    const full = planetRates(p, g).shipyard;
+    expect(full).toBeCloseTo(60 / effectiveUnit('interceptor').buildMinutes, 6);
+    const empty = JSON.parse(JSON.stringify(p)) as typeof p;
+    empty.population = 0; // nobody to man the shipyard
+    expect(planetRates(empty, g).shipyard).toBe(0);
+    s = advanceTo(s, MS_PER_HOUR);
+    expect(s.planets[home]!.orbit.interceptor).toBe(1);
+  });
+
+  it('crews come from free residents and live in the housing', () => {
+    const { s: s0, home } = setup();
+    const before = s0.planets[home]!.population;
+    let s = run(s0, [order(home, 'cruiser', 2)]);
+    const p = s.planets[home]!;
+    expect(p.population).toBe(before - 20);
+    expect(planetRates(p, s.world.galaxy.planets[home]!).crews).toBe(20);
+    // Residents + crews cannot outgrow the housing.
+    s = advanceTo(s, 48 * MS_PER_HOUR);
+    const q = s.planets[home]!;
+    const r = planetRates(q, s.world.galaxy.planets[home]!);
+    expect(q.population + r.crews).toBeLessThanOrEqual(r.housing);
+    // Cancelling gives the unfinished crews back.
+    const t = run(s0, [order(home, 'cruiser', 2)]);
+    const id = t.planets[home]!.shipyard[0]!.id;
+    const u = run(t, [{ type: 'CancelUnitOrder', playerId: 'p1', planetId: home, orderId: id }]);
+    expect(u.planets[home]!.population).toBe(before);
+  });
+
+  it('a unit that moves to another planet takes its crew there', () => {
+    const { s: s0, home, far } = setup();
+    let s = run(s0, [
+      { type: 'DebugAddUnits', planetId: home, units: { destroyer: 1 } },
+      {
+        type: 'SendFleet',
+        playerId: 'p1',
+        from: home,
+        to: far,
+        units: { destroyer: 1 },
+        mission: 'transfer',
+      },
+    ]);
+    const g = s.world.galaxy.planets;
+    expect(planetRates(s.planets[home]!, g[home]!).crews).toBe(10);
+    s = advanceTo(s, Object.values(s.fleets)[0]!.leg!.arriveAt);
+    expect(planetRates(s.planets[home]!, g[home]!).crews).toBe(0);
+    expect(planetRates(s.planets[far]!, g[far]!).crews).toBe(10);
   });
 });

@@ -113,7 +113,9 @@ export function simulate(plan: PlanItem[], days: number, opts: SimOptions = {}):
   let pop: number = CORE.residents;
   const buildings: Building[] = opts.colony ? [{ id: 'housing', level: 1 }] : [];
   const imports = opts.importPerHour ?? 0;
-  let construction: { item: PlanItem; target?: Building; end: number } | null = null;
+  /** Hours of work left at full energy (owner 4.11.2026: a shortage slows construction). */
+  let construction: { item: PlanItem; target?: Building; left: number; level: number } | null =
+    null;
   const log: Report['log'] = [];
   const milestones: Report['milestones'] = {};
   const hours = { energyShort: 0, workersShort: 0, storageFull: 0, waiting: 0, idle: 0 };
@@ -155,7 +157,7 @@ export function simulate(plan: PlanItem[], days: number, opts: SimOptions = {}):
     const t = step * dt;
 
     // --- finish construction ---
-    if (construction && t >= construction.end) {
+    if (construction && construction.left <= 1e-9) {
       const { item, target } = construction;
       if (target) target.level += 1;
       else
@@ -225,7 +227,8 @@ export function simulate(plan: PlanItem[], days: number, opts: SimOptions = {}):
             construction = {
               item,
               ...(target ? { target } : {}),
-              end: t + levelMinutes(item.id, level) / 60,
+              left: levelMinutes(item.id, level) / 60,
+              level,
             };
             if (built === 0) mark('first building started', t);
           } else if (milestones['every building at its basic cap'] === undefined) {
@@ -267,6 +270,8 @@ export function simulate(plan: PlanItem[], days: number, opts: SimOptions = {}):
       if (b.id === 'renewable') made += renewableOut(b.level);
       used += energyUse(b.id, b.level) * (staff.get(b) ?? 1);
     }
+    // The construction site draws what the building will draw at its new level.
+    if (construction) used += energyUse(construction.item.id, construction.level);
     let eff = 1;
     lastNet = made - used;
     const net = (made - used) * dt;
@@ -276,6 +281,8 @@ export function simulate(plan: PlanItem[], days: number, opts: SimOptions = {}):
       energy = 0;
       hours.energyShort += dt;
     }
+
+    if (construction) construction.left -= eff * dt;
 
     // --- production ---
     let full = false;

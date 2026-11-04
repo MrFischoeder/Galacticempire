@@ -1,9 +1,7 @@
-import { BUILDINGS } from '../config/buildings';
-import { settleOwned } from '../economy/access';
-import { finishConstruction } from '../economy/construction';
+import { MS_PER_HOUR } from '../config/time';
+import { galaxyPlanet, ownerContext, settleOwned } from '../economy/access';
+import { nextJobHours, planetRates } from '../economy/planet';
 import { arriveFleet } from '../fleet/fleet';
-import { finishUnit, nextUnitAt } from '../fleet/shipyard';
-import { UNITS } from '../config/units';
 import { scheduleResearchCheck } from '../economy/schedule';
 import { enqueue } from './queue';
 import { Rng } from './rng';
@@ -13,19 +11,7 @@ import type { GameState } from './state';
  * Events processed by advanceTo at their game time. Later steps add arrivals, finished
  * buildings, battles and so on. `DebugMarker` exists for tests and the debug panel.
  */
-export type GameEvent =
-  | DebugMarkerEvent
-  | ConstructionDoneEvent
-  | ResearchCheckEvent
-  | FleetArrivalEvent
-  | UnitBuiltEvent;
-
-/** The shipyard finishes a unit (spec 10.7). */
-export interface UnitBuiltEvent {
-  readonly type: 'UnitBuilt';
-  readonly planetId: string;
-  readonly at: number;
-}
+export type GameEvent = DebugMarkerEvent | PlanetJobsEvent | ResearchCheckEvent | FleetArrivalEvent;
 
 /** A fleet reaches the end of its leg (spec 12.1). */
 export interface FleetArrivalEvent {
@@ -42,12 +28,13 @@ export interface ResearchCheckEvent {
   readonly jobId: string;
 }
 
-/** A building or an upgrade finishes (spec 9). */
-export interface ConstructionDoneEvent {
-  readonly type: 'ConstructionDone';
+/**
+ * Look at a planet's construction and shipyard (owner 4.11.2026: energy and crews set their
+ * pace, so they finish while the planet is settled). Re-scheduled at the expected end.
+ */
+export interface PlanetJobsEvent {
+  readonly type: 'PlanetJobs';
   readonly planetId: string;
-  /** Identifies the construction: a cancelled one leaves a stale event that does nothing. */
-  readonly startedAt: number;
 }
 
 export interface DebugMarkerEvent {
@@ -73,18 +60,11 @@ export const EVENT_HANDLERS: Handlers = {
       scheduleResearchCheck(state, event.planetId, event.jobId);
     }
   },
-  ConstructionDone(state, event) {
-    const p = settleOwned(state, event.planetId);
-    const c = p?.construction;
-    if (!p || !c || c.startedAt !== event.startedAt) return;
-    const b = finishConstruction(p);
-    if (b) {
-      const name = state.world.galaxy.planets[event.planetId]?.name ?? event.planetId;
-      state.log.push({
-        at: state.time,
-        text: `${name}: ${BUILDINGS[b.kind].name} level ${b.level} completed.`,
-      });
-    }
+  PlanetJobs(state, event) {
+    const p = state.planets[event.planetId];
+    if (!p || p.checkAt !== state.time) return; // stale check
+    settleOwned(state, event.planetId); // finishes what is done and logs it
+    schedulePlanetJobs(state, event.planetId);
   },
   FleetArrival(state, event) {
     const f = state.fleets[event.fleetId];
@@ -94,15 +74,6 @@ export const EVENT_HANDLERS: Handlers = {
     const text = arriveFleet(state, f.id);
     if (text) state.log.push({ at: state.time, text });
     scheduleFleet(state, f.id);
-  },
-  UnitBuilt(state, event) {
-    const p = settleOwned(state, event.planetId);
-    if (!p) return;
-    const unit = finishUnit(p, event.at);
-    if (!unit) return; // cancelled or stale
-    const name = state.world.galaxy.planets[event.planetId]?.name ?? event.planetId;
-    state.log.push({ at: state.time, text: `${name}: ${UNITS[unit].name} built.` });
-    scheduleShipyard(state, event.planetId);
   },
   DebugMarker(state, event) {
     let text = `Marker: ${event.label}`;
@@ -136,9 +107,21 @@ export function scheduleFleet(state: GameState, fleetId: string): void {
     scheduleEvent(state, leg.arriveAt, { type: 'FleetArrival', fleetId, arriveAt: leg.arriveAt });
 }
 
-/** Schedules the end of the unit the planet's shipyard is building (if any). */
-export function scheduleShipyard(state: GameState, planetId: string): void {
+/**
+ * Schedules the next check of a planet's jobs (the planet must be settled to now): at the
+ * expected end at today's pace, or in an hour while they are stalled.
+ */
+export function schedulePlanetJobs(state: GameState, planetId: string): void {
   const p = state.planets[planetId];
-  const at = p ? nextUnitAt(p) : null;
-  if (at !== null) scheduleEvent(state, at, { type: 'UnitBuilt', planetId, at });
+  if (!p) return;
+  if (!p.construction && p.shipyard.length === 0) {
+    delete p.checkAt;
+    return;
+  }
+  const rates = planetRates(p, galaxyPlanet(state, planetId), ownerContext(state, p));
+  const h = nextJobHours(p, rates);
+  const at =
+    state.time + (Number.isFinite(h) ? Math.max(1, Math.ceil(h * MS_PER_HOUR)) : MS_PER_HOUR);
+  p.checkAt = at;
+  scheduleEvent(state, at, { type: 'PlanetJobs', planetId });
 }

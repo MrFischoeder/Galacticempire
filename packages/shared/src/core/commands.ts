@@ -15,12 +15,13 @@ import {
 import {
   capacityOf,
   createPlanetState,
+  landUnits,
   type PlanetState,
   resourceCapacity,
   STOCKED,
   STORED_RESOURCES,
 } from '../economy/planet';
-import { scheduleEvent, scheduleFleet, scheduleShipyard } from './events';
+import { scheduleEvent, scheduleFleet, schedulePlanetJobs } from './events';
 import { canOrderUnits, cancelOrder, orderUnits } from '../fleet/shipyard';
 import type { FleetMission } from '../config/fleets';
 import { UNITS, type UnitId } from '../config/units';
@@ -31,7 +32,6 @@ import {
   sendFleet,
   canMoveUnits,
   fitHangar,
-  landUnits,
   moveUnits,
   type UnitPlace,
   type UnitCounts,
@@ -229,9 +229,7 @@ function settledCopy(state: Readonly<GameState>, planetId: string): GameState {
 }
 
 function schedule(state: GameState, planetId: string): void {
-  const c = state.planets[planetId]?.construction;
-  if (c)
-    scheduleEvent(state, c.endsAt, { type: 'ConstructionDone', planetId, startedAt: c.startedAt });
+  schedulePlanetJobs(state, planetId);
 }
 
 export const COMMANDS: Specs = {
@@ -479,9 +477,8 @@ export const COMMANDS: Specs = {
     apply(state, c) {
       const p = settleOwned(state, c.planetId);
       if (!p) return;
-      const idle = p.shipyard.length === 0;
-      orderUnits(p, c.unit, c.count, state.time, ownerContext(state, p), p.nextUid++);
-      if (idle) scheduleShipyard(state, c.planetId);
+      orderUnits(p, c.unit, c.count, ownerContext(state, p), p.nextUid++);
+      schedulePlanetJobs(state, c.planetId);
     },
   },
   CancelUnitOrder: {
@@ -495,9 +492,8 @@ export const COMMANDS: Specs = {
     apply(state, c) {
       const p = settleOwned(state, c.planetId);
       if (!p) return;
-      const first = p.shipyard[0]?.id === c.orderId;
-      cancelOrder(p, c.orderId, state.time);
-      if (first) scheduleShipyard(state, c.planetId);
+      cancelOrder(p, c.orderId);
+      schedulePlanetJobs(state, c.planetId);
     },
   },
   MoveUnits: {

@@ -1,10 +1,9 @@
-import { BUILDINGS } from '../config/buildings';
 import { FLIGHT, MISSIONS, type FleetMission } from '../config/fleets';
 import { MS_PER_HOUR, MS_PER_MINUTE } from '../config/time';
 import { HANGAR_SLOTS, UNIT_IDS, UNITS, type UnitId } from '../config/units';
 import { fail, OK, type Result } from '../core/result';
 import type { GameState, PlayerId } from '../core/state';
-import { capacityOf, type PlanetState } from '../economy/planet';
+import { capacityOf, hangarPlaces, landUnits, placesOf, type PlanetState } from '../economy/planet';
 import type { Galaxy, PlanetId } from '../galaxy/types';
 import { effectiveUnit, type ModifierContext } from '../rules/modifiers';
 
@@ -72,37 +71,6 @@ export function unitsAt(p: PlanetState): UnitCounts {
 
 export function countUnits(units: UnitCounts): number {
   return Object.values(units).reduce((s, n) => s + (n ?? 0), 0);
-}
-
-/** Hangar places taken by units (spec 10.0: small 1, medium 2, large 4, huge 10). */
-export function placesOf(units: UnitCounts): number {
-  return (Object.entries(units) as [UnitId, number][]).reduce(
-    (s, [u, n]) => s + HANGAR_SLOTS[UNITS[u].size] * n,
-    0,
-  );
-}
-
-export function hangarPlaces(p: PlanetState): number {
-  let places = 0;
-  for (const b of p.buildings) {
-    const e = BUILDINGS[b.kind].effect;
-    if (e.kind === 'hangar') places += e.slotsPerLevel * b.level;
-  }
-  return places;
-}
-
-/** Lands units at a planet: into the hangars as far as the places go, the rest into orbit. */
-export function landUnits(p: PlanetState, units: UnitCounts): void {
-  let free = hangarPlaces(p) - placesOf(p.units);
-  for (const u of UNIT_IDS) {
-    const n = units[u] ?? 0;
-    if (n <= 0) continue;
-    const size = HANGAR_SLOTS[UNITS[u].size];
-    const inside = Math.max(0, Math.min(n, Math.floor(free / size)));
-    if (inside > 0) p.units[u] = (p.units[u] ?? 0) + inside;
-    if (n - inside > 0) p.orbit[u] = (p.orbit[u] ?? 0) + n - inside;
-    free -= inside * size;
-  }
 }
 
 /** Hangars that lost places push units out into orbit (the biggest kinds last in, first out). */

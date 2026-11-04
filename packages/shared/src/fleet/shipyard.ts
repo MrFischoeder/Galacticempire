@@ -2,11 +2,11 @@ import { BUILDINGS, CANCEL_REFUND } from '../config/buildings';
 import { SHIPYARD } from '../config/fleets';
 import type { ResourceAmounts, ResourceId } from '../config/resources';
 import { MS_PER_MINUTE } from '../config/time';
-import { UNITS, type UnitId } from '../config/units';
+import { CREW, UNITS, type UnitId } from '../config/units';
 import { fail, OK, type Result } from '../core/result';
-import { capacityOf, type PlanetState, type ShipOrder } from '../economy/planet';
+import { capacityOf, workersNeeded, type PlanetState, type ShipOrder } from '../economy/planet';
+import { POPULATION } from '../config/population';
 import { effectiveUnit, type ModifierContext } from '../rules/modifiers';
-import { landUnits } from './fleet';
 
 /** The shipyard (spec 9.2, 10.7): a queue of unit orders built one unit after another. */
 
@@ -51,6 +51,12 @@ export function canOrderUnits(
     return fail('SHIPYARD_LEVEL', `${spec.name} needs a level ${spec.shipyardLevel} shipyard.`);
   if (p.shipyard.length >= SHIPYARD.maxOrders)
     return fail('QUEUE_FULL', `At most ${SHIPYARD.maxOrders} orders can wait in the shipyard.`);
+  const crew = CREW[unit] * count;
+  if (freeResidents(p) < crew)
+    return fail(
+      'NO_CREW',
+      `The crew needs ${crew} free residents (residents not needed as workers); there are ${freeResidents(p)}.`,
+    );
   const { cost } = unitOrderSpec(unit, ctx);
   for (const [r, n] of Object.entries(cost) as [ResourceId, number][]) {
     if ((p.stock[r] ?? 0) < n * count - 1e-9)
@@ -59,18 +65,29 @@ export function canOrderUnits(
   return OK;
 }
 
-/** Pays and queues an order; starts it at once if the shipyard is idle. */
+/**
+ * Residents who can become crews (owner 4.11.2026, question 36): not needed as workers, and
+ * the planet keeps its minimum population.
+ */
+export function freeResidents(p: PlanetState): number {
+  return Math.max(
+    0,
+    Math.min(p.population - workersNeeded(p), p.population - POPULATION.minPopulation),
+  );
+}
+
+/** Pays and queues an order (the crew leaves the residents at once). */
 export function orderUnits(
   p: PlanetState,
   unit: UnitId,
   count: number,
-  time: number,
   ctx: ModifierContext,
   id: number,
 ): ShipOrder {
   const { cost, ms } = unitOrderSpec(unit, ctx);
   for (const [r, n] of Object.entries(cost) as [ResourceId, number][])
     p.stock[r] = Math.max(0, (p.stock[r] ?? 0) - n * count);
+  p.population -= CREW[unit] * count;
   const order: ShipOrder = {
     id,
     unit,
@@ -78,37 +95,17 @@ export function orderUnits(
     built: 0,
     unitMs: ms,
     cost,
-    startedAt: p.shipyard.length === 0 ? time : null,
+    progress: 0,
   };
   p.shipyard.push(order);
   return order;
 }
 
-/** When the unit now being built is done (null while idle). */
-export function nextUnitAt(p: PlanetState): number | null {
-  const o = p.shipyard[0];
-  return o && o.startedAt !== null ? o.startedAt + o.unitMs : null;
-}
-
 /**
- * Finishes the unit due at `time` (if any): it lands at the planet; the next unit or order
- * starts at once. Returns the finished unit kind.
+ * Cancels an order: CANCEL_REFUND of the unfinished units' cost comes back (what fits) and
+ * their crews return to the residents.
  */
-export function finishUnit(p: PlanetState, time: number): UnitId | null {
-  const o = p.shipyard[0];
-  if (!o || o.startedAt === null || o.startedAt + o.unitMs !== time) return null;
-  landUnits(p, { [o.unit]: 1 });
-  o.built++;
-  if (o.built >= o.count) {
-    p.shipyard.shift();
-    const next = p.shipyard[0];
-    if (next) next.startedAt = time;
-  } else o.startedAt = time;
-  return o.unit;
-}
-
-/** Cancels an order: CANCEL_REFUND of the unfinished units' cost comes back (what fits). */
-export function cancelOrder(p: PlanetState, id: number, time: number): ResourceAmounts {
+export function cancelOrder(p: PlanetState, id: number): ResourceAmounts {
   const i = p.shipyard.findIndex((o) => o.id === id);
   if (i < 0) return {};
   const [o] = p.shipyard.splice(i, 1) as [ShipOrder];
@@ -120,6 +117,6 @@ export function cancelOrder(p: PlanetState, id: number, time: number): ResourceA
     p.stock[r] = (p.stock[r] ?? 0) + got;
     back[r] = got;
   }
-  if (i === 0 && p.shipyard[0]) p.shipyard[0].startedAt = time;
+  p.population += CREW[o.unit] * left;
   return back;
 }

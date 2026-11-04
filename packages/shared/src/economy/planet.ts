@@ -12,7 +12,7 @@ import {
 import { MS_PER_HOUR } from '../config/time';
 import type { PlayerId } from '../core/state';
 import { RESEARCH, type TechId } from '../config/techs';
-import type { UnitId } from '../config/units';
+import { CREW, HANGAR_SLOTS, UNIT_IDS, UNITS, type UnitId } from '../config/units';
 import { economyBonus, effectiveUnit, type ModifierContext } from '../rules/modifiers';
 import type { Planet, PlanetId } from '../galaxy/types';
 
@@ -78,6 +78,10 @@ export interface PlanetState {
   away: Partial<Record<UnitId, number>>;
   /** Shipyard orders, the first one being built (spec 9.2, 10.7). */
   shipyard: ShipOrder[];
+  /** Things finished while settling (buildings, units), moved to the game log by settleOwned. */
+  news: { at: number; text: string }[];
+  /** Game time of the scheduled PlanetJobs check (stale checks are ignored). */
+  checkAt?: number;
 }
 
 /** An order of `count` units of one kind, built one after another. */
@@ -90,8 +94,8 @@ export interface ShipOrder {
   readonly unitMs: number;
   /** Paid per unit (for refunds). */
   readonly cost: Partial<Record<ResourceId, number>>;
-  /** Game time the unit now being built was started; null while the order waits. */
-  startedAt: number | null;
+  /** Progress of the unit now being built (first order only), 0..1. */
+  progress: number;
 }
 
 /** One technology level being researched (spec 9.3.3). */
@@ -125,7 +129,10 @@ export interface Construction {
   /** Level it reaches when done. */
   readonly level: number;
   readonly startedAt: number;
-  readonly endsAt: number;
+  /** Build time at full energy, hours (owner 4.11.2026: an energy shortage slows it down). */
+  readonly hours: number;
+  /** 0..1, settled with the planet. */
+  progress: number;
   /** What was paid (for refunds). */
   readonly cost: Partial<Record<ResourceId, number>>;
 }
@@ -152,7 +159,90 @@ export function createPlanetState(
     orbit: {},
     away: {},
     shipyard: [],
+    news: [],
   };
+}
+
+// --- units at the planet (spec 10.0, 10.7) ----------------------------------------------
+
+type Counts = Partial<Record<UnitId, number>>;
+
+/** Hangar places taken by units (spec 10.0: small 1, medium 2, large 4, huge 10). */
+export function placesOf(units: Counts): number {
+  return (Object.entries(units) as [UnitId, number][]).reduce(
+    (s, [u, n]) => s + HANGAR_SLOTS[UNITS[u].size] * n,
+    0,
+  );
+}
+
+export function hangarPlaces(p: PlanetState): number {
+  let places = 0;
+  for (const b of p.buildings) {
+    const e = BUILDINGS[b.kind].effect;
+    if (e.kind === 'hangar') places += e.slotsPerLevel * b.level;
+  }
+  return places;
+}
+
+/** Lands units at a planet: into the hangars as far as the places go, the rest into orbit. */
+export function landUnits(p: PlanetState, units: Counts): void {
+  let free = hangarPlaces(p) - placesOf(p.units);
+  for (const u of UNIT_IDS) {
+    const n = units[u] ?? 0;
+    if (n <= 0) continue;
+    const size = HANGAR_SLOTS[UNITS[u].size];
+    const inside = Math.max(0, Math.min(n, Math.floor(free / size)));
+    if (inside > 0) p.units[u] = (p.units[u] ?? 0) + inside;
+    if (n - inside > 0) p.orbit[u] = (p.orbit[u] ?? 0) + n - inside;
+    free -= inside * size;
+  }
+}
+
+/**
+ * Crews of the planet's units (owner 4.11.2026, question 36): in the hangars, in orbit, in
+ * flight and those of units ordered but not built yet. They live in the planet's housing.
+ */
+export function crewOf(p: PlanetState): number {
+  let n = 0;
+  for (const store of [p.units, p.orbit, p.away]) {
+    for (const [u, k] of Object.entries(store ?? {}) as [UnitId, number][]) n += CREW[u] * k;
+  }
+  for (const o of p.shipyard ?? []) n += CREW[o.unit] * (o.count - o.built);
+  return n;
+}
+
+/** Applies a finished construction (level up or a new building). */
+export function finishConstruction(p: PlanetState): BuildingState | undefined {
+  const c = p.construction;
+  if (!c) return undefined;
+  p.construction = null;
+  if (c.uid !== undefined) {
+    const b = p.buildings.find((x) => x.uid === c.uid);
+    if (b) b.level = c.level;
+    return b;
+  }
+  const b: BuildingState = {
+    uid: c.newUid as number,
+    kind: c.kind,
+    level: 1,
+    ...(c.deposit ? { deposit: c.deposit } : {}),
+    ...(c.slot !== undefined ? { slot: c.slot } : {}),
+  };
+  p.buildings.push(b);
+  return b;
+}
+
+/** The shipyard's crew share (0 without a shipyard). */
+function shipyardCrew(p: PlanetState, staff: number[]): number {
+  let best = 0;
+  let level = 0;
+  p.buildings.forEach((b, i) => {
+    if (BUILDINGS[b.kind].effect.kind === 'shipyard' && b.level > level) {
+      level = b.level;
+      best = staff[i] ?? 1;
+    }
+  });
+  return best;
 }
 
 const grow = (base: number, growth: number, level: number) => base * growth ** (level - 1);
@@ -393,10 +483,19 @@ function steadyEnergy(p: PlanetState, planet: Planet): number {
 
 /** Energy drawn per hour: every building, crewed ones in proportion to their crew. */
 export function energyUse(p: PlanetState, staff: number[] = staffing(p)): number {
-  return p.buildings.reduce(
-    (s, b, i) => s + grow(BUILDINGS[b.kind].energy, BUILD.energyGrowth, b.level) * (staff[i] ?? 1),
-    0,
+  return (
+    p.buildings.reduce(
+      (s, b, i) =>
+        s + grow(BUILDINGS[b.kind].energy, BUILD.energyGrowth, b.level) * (staff[i] ?? 1),
+      0,
+    ) + constructionEnergy(p)
   );
+}
+
+/** A construction site draws what its building will draw at the new level (question 36). */
+export function constructionEnergy(p: PlanetState): number {
+  const c = p.construction;
+  return c ? grow(BUILDINGS[c.kind].energy, BUILD.energyGrowth, c.level) : 0;
 }
 
 export interface PlanetRates {
@@ -424,6 +523,12 @@ export interface PlanetRates {
   /** Share of the units' upkeep that is fed (1 = all); below 1 the units starve (spec 10.4). */
   readonly upkeepFed: number;
   readonly housing: number;
+  /** Crews of the planet's units, living in its housing (question 36). */
+  readonly crews: number;
+  /** Construction progress per hour (energy shortage slows it). */
+  readonly construction: number;
+  /** Progress per hour of the unit the shipyard is building (energy × the shipyard's crew). */
+  readonly shipyard: number;
   /** Research time progress per hour of every job (0 without a laboratory). */
   readonly research: Record<string, number>;
   /** Payment per hour of every job, by resource. */
@@ -531,6 +636,8 @@ export function planetRates(
   // Population (spec 6): grows while biomass production beats what the residents eat and
   // there is room; starves while the stores are empty and the meals fall short.
   const housing = housingCapacity(p, planet);
+  const crews = crewOf(p);
+  const room = housing - crews;
   const eatPerHead = POPULATION.biomassPerResident * economyBonus('populationFood', ctx);
   const fullMeals = p.population * eatPerHead;
   // What the farms and the core can grow (a full silo throttles the farms, but the food is
@@ -544,13 +651,19 @@ export function planetRates(
   if (starving) {
     if (p.population > POPULATION.minPopulation)
       growth = -p.population * POPULATION.starvationPerHour;
-  } else if (produced > fullMeals + EPS && p.population < housing) {
+  } else if (produced > fullMeals + EPS && p.population < room) {
     const feedable = (produced - fullMeals) / eatPerHead;
     growth = Math.min(Math.max(1, p.population * POPULATION.growthPerHour), feedable);
-  } else if (p.population > housing) {
-    growth = -Math.max(1, (p.population - housing) * POPULATION.growthPerHour);
+  } else if (p.population > Math.max(room, POPULATION.minPopulation)) {
+    growth = -Math.max(1, (p.population - room) * POPULATION.growthPerHour);
   }
   const energyNet = efficiency < 1 ? 0 : energyMade - use;
+  const c = p.construction;
+  const order = p.shipyard?.[0];
+  const construction = c ? efficiency / Math.max(c.hours, 1e-9) : 0;
+  const shipyard = order
+    ? (efficiency * shipyardCrew(p, staff)) / Math.max(order.unitMs / MS_PER_HOUR, 1e-9)
+    : 0;
   return {
     net,
     made,
@@ -566,6 +679,9 @@ export function planetRates(
     starving,
     upkeepFed,
     housing,
+    crews,
+    construction,
+    shipyard,
     research,
     researchPay,
   };
@@ -602,6 +718,10 @@ export function nextChangePoint(p: PlanetState, planet: Planet, rates: PlanetRat
       if (rate > EPS && left > EPS) t = Math.min(t, left / rate);
     }
   }
+  if (p.construction && rates.construction > EPS)
+    t = Math.min(t, (1 - p.construction.progress) / rates.construction);
+  const order = p.shipyard?.[0];
+  if (order && rates.shipyard > EPS) t = Math.min(t, (1 - order.progress) / rates.shipyard);
   const g = progressStart(p.growth, rates.growth);
   if (rates.growth > EPS) t = Math.min(t, (1 - g) / rates.growth);
   if (rates.growth < -EPS) t = Math.min(t, (1 + g) / -rates.growth);
@@ -673,6 +793,26 @@ export function settlePlanet(
     }
     p.growth = g;
     left -= dt;
+    const at = Math.round(time - left * MS_PER_HOUR);
+    const c = p.construction;
+    if (c) {
+      c.progress = Math.min(1, c.progress + rates.construction * dt);
+      if (c.progress >= 1 - SNAP) {
+        const b = finishConstruction(p);
+        if (b) p.news.push({ at, text: `${BUILDINGS[b.kind].name} level ${b.level} completed.` });
+      }
+    }
+    const order = p.shipyard?.[0];
+    if (order) {
+      order.progress = Math.min(1, order.progress + rates.shipyard * dt);
+      if (order.progress >= 1 - SNAP) {
+        landUnits(p, { [order.unit]: 1 });
+        order.built++;
+        order.progress = 0;
+        if (order.built >= order.count) p.shipyard.shift();
+        p.news.push({ at, text: `${UNITS[order.unit].name} built.` });
+      }
+    }
     for (const job of p.research ?? []) {
       const v = rates.research[job.id] ?? 0;
       if (v > 0 && job.progress < 1) {
@@ -695,4 +835,33 @@ export function settlePlanet(
   }
   p.updatedAt = time;
   return segments;
+}
+
+/**
+ * Hours until the construction or the shipyard's unit is done at the current rates
+ * (Infinity when nothing runs or it is stalled). Used to schedule the next check.
+ */
+export function nextJobHours(p: PlanetState, rates: PlanetRates): number {
+  let t = Infinity;
+  if (p.construction && rates.construction > EPS)
+    t = Math.min(t, (1 - p.construction.progress) / rates.construction);
+  const order = p.shipyard[0];
+  if (order && rates.shipyard > EPS) t = Math.min(t, (1 - order.progress) / rates.shipyard);
+  return t;
+}
+
+/** Game ms until the construction is done at the current pace (Infinity while stalled). */
+export function constructionLeft(p: PlanetState, rates: PlanetRates): number {
+  const c = p.construction;
+  if (!c) return 0;
+  return rates.construction > EPS
+    ? ((1 - c.progress) / rates.construction) * MS_PER_HOUR
+    : Infinity;
+}
+
+/** Game ms until the shipyard's current unit is done at the current pace (Infinity = stalled). */
+export function unitLeft(p: PlanetState, rates: PlanetRates): number {
+  const o = p.shipyard[0];
+  if (!o) return 0;
+  return rates.shipyard > EPS ? ((1 - o.progress) / rates.shipyard) * MS_PER_HOUR : Infinity;
 }

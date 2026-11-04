@@ -69,7 +69,7 @@ describe('shipyard panel (step 1.10a)', () => {
     cmd({ type: 'DebugAddResources', planetId: home, amounts: { alloy: 150, components: 50 } });
     cmd({ type: 'OrderUnits', playerId: 'p1', planetId: home, unit: 'probe', count: 2 });
     const snap = buildSnapshot(state)!;
-    const html = shipyardHTML(snap.planets[0]!, snap.player, snap.time);
+    const html = shipyardHTML(snap.planets[0]!, snap.player);
     expect(html).toContain('Probe 0/2');
     expect(html).toContain('ordercancel:');
     expect(html).toContain('order:fighter:1');

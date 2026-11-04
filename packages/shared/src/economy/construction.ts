@@ -6,7 +6,7 @@ import {
   type ResourceAmounts,
   type ResourceId,
 } from '../config/resources';
-import { MS_PER_MINUTE } from '../config/time';
+import { MS_PER_HOUR, MS_PER_MINUTE } from '../config/time';
 import { UNITS, type UnitId } from '../config/units';
 import { fail, OK, type Result } from '../core/result';
 import type { Planet } from '../galaxy/types';
@@ -210,31 +210,11 @@ export function startConstruction(
     ...(!existing && target.slot !== undefined ? { slot: target.slot } : {}),
     level,
     startedAt: now,
-    endsAt: now + buildingTime(target.kind, level),
+    hours: buildingTime(target.kind, level) / MS_PER_HOUR,
+    progress: 0,
     cost,
   };
   return p.construction;
-}
-
-/** Finishes the construction (the planet must be settled to its end time). */
-export function finishConstruction(p: PlanetState): BuildingState | undefined {
-  const c = p.construction;
-  if (!c) return undefined;
-  p.construction = null;
-  if (c.uid !== undefined) {
-    const b = findBuilding(p, c.uid);
-    if (b) b.level = c.level;
-    return b;
-  }
-  const b: BuildingState = {
-    uid: c.newUid as number,
-    kind: c.kind,
-    level: 1,
-    ...(c.deposit ? { deposit: c.deposit } : {}),
-    ...(c.slot !== undefined ? { slot: c.slot } : {}),
-  };
-  p.buildings.push(b);
-  return b;
 }
 
 /** Cancels the construction and returns CANCEL_REFUND of what was paid (what fits). */

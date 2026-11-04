@@ -18,31 +18,31 @@ Koszt i czas na poziomie 1, 5 i 8 (budynki cywilne i magazynowe dochodzą do 8 b
 
 | Budynek | Poziom 1 | Czas 1 | Poziom 5 | Czas 5 | Poziom 8 | Czas 8 | Energia 1 / 5 | Maks. bez specjalnych |
 |---|---|---|---|---|---|---|---|---|
-| Kopalnia | 25 ruda metalu, 20 ruda tytanu, 15 krzem | 3 min | 164 ruda metalu, 131 ruda tytanu, 98 krzem | 31 min | 671 ruda metalu, 537 ruda tytanu, 403 krzem | 3.1 h | 10 / 17 | 5 |
-| Rafineria | 35 ruda metalu, 20 ruda tytanu, 25 krzem | 6 min | 229 ruda metalu, 131 ruda tytanu, 164 krzem | 1.0 h | 940 ruda metalu, 537 ruda tytanu, 671 krzem | 6.1 h | 15 / 26 | 5 |
-| Huta | 35 ruda metalu, 30 ruda tytanu, 25 krzem | 6 min | 229 ruda metalu, 197 ruda tytanu, 164 krzem | 1.0 h | 940 ruda metalu, 805 ruda tytanu, 671 krzem | 6.1 h | 20 / 35 | 5 |
-| Warsztat | 35 ruda metalu, 25 ruda tytanu, 40 krzem | 8 min | 229 ruda metalu, 164 ruda tytanu, 262 krzem | 1.4 h | 940 ruda metalu, 671 ruda tytanu, 1074 krzem | 8.2 h | 20 / 35 | 5 |
-| Farma | 25 ruda metalu, 10 ruda tytanu, 15 krzem | 3 min | 164 ruda metalu, 66 ruda tytanu, 98 krzem | 31 min | 671 ruda metalu, 268 ruda tytanu, 403 krzem | 3.1 h | 5 / 9 | 8 |
-| Reaktor | 100 ruda metalu, 80 ruda tytanu, 50 materiał rozpadowy | 20 min | 655 ruda metalu, 524 ruda tytanu, 328 materiał rozpadowy | 3.5 h | 2684 ruda metalu, 2147 ruda tytanu, 1342 materiał rozpadowy | 20.4 h | — | 0 |
-| Reaktor fuzyjny | 200 stopy, 40 komponenty, 40 hel-3 | 1.0 h | 1311 stopy, 262 komponenty, 262 hel-3 | 10.5 h | 5369 stopy, 1074 komponenty, 1074 hel-3 | 2.6 d | — | 0 |
-| Elektrownia odnawialna | 20 ruda metalu, 10 ruda tytanu, 25 krzem | 3 min | 131 ruda metalu, 66 ruda tytanu, 164 krzem | 31 min | 537 ruda metalu, 268 ruda tytanu, 671 krzem | 3.1 h | — | 8 |
-| Mieszkanie | 25 ruda metalu, 25 ruda tytanu, 10 krzem | 4 min | 164 ruda metalu, 164 ruda tytanu, 66 krzem | 42 min | 671 ruda metalu, 671 ruda tytanu, 268 krzem | 4.1 h | 2 / 3 | 8 |
-| Magazyn | 30 ruda metalu, 25 ruda tytanu, 5 krzem | 4 min | 197 ruda metalu, 164 ruda tytanu, 33 krzem | 42 min | 805 ruda metalu, 671 ruda tytanu, 134 krzem | 4.1 h | 2 / 3 | 8 |
-| Akumulator | 15 ruda metalu, 15 ruda tytanu, 30 krzem | 4 min | 98 ruda metalu, 98 ruda tytanu, 197 krzem | 42 min | 403 ruda metalu, 403 ruda tytanu, 805 krzem | 4.1 h | 1 / 2 | 4 |
-| Silos | 25 ruda metalu, 15 ruda tytanu, 20 krzem | 4 min | 164 ruda metalu, 98 ruda tytanu, 131 krzem | 42 min | 671 ruda metalu, 403 ruda tytanu, 537 krzem | 4.1 h | 1 / 2 | 8 |
-| Schron | 30 ruda metalu, 45 ruda tytanu, 5 krzem | 6 min | 197 ruda metalu, 295 ruda tytanu, 33 krzem | 1.0 h | 805 ruda metalu, 1208 ruda tytanu, 134 krzem | 6.1 h | 2 / 3 | 8 |
-| Hangar | 45 ruda metalu, 40 ruda tytanu, 15 krzem | 8 min | 295 ruda metalu, 262 ruda tytanu, 98 krzem | 1.4 h | 1208 ruda metalu, 1074 ruda tytanu, 403 krzem | 8.2 h | 5 / 9 | 4 |
-| Stocznia | 80 ruda metalu, 70 ruda tytanu, 50 krzem | 15 min | 524 ruda metalu, 459 ruda tytanu, 328 krzem | 2.6 h | 2147 ruda metalu, 1879 ruda tytanu, 1342 krzem | 15.3 h | 15 / 26 | 4 |
-| Kosmoport | 60 ruda metalu, 50 ruda tytanu, 40 krzem | 12 min | 393 ruda metalu, 328 ruda tytanu, 262 krzem | 2.1 h | 1611 ruda metalu, 1342 ruda tytanu, 1074 krzem | 12.2 h | 10 / 17 | 4 |
-| Skaner | 40 ruda metalu, 30 ruda tytanu, 80 krzem | 12 min | 262 ruda metalu, 197 ruda tytanu, 524 krzem | 2.1 h | 1074 ruda metalu, 805 ruda tytanu, 2147 krzem | 12.2 h | 15 / 26 | 4 |
-| Generator tarczy | 150 stopy, 30 komponenty, 30 krystalit | 30 min | 983 stopy, 197 komponenty, 197 krystalit | 5.2 h | 4027 stopy, 805 komponenty, 805 krystalit | 30.6 h | 30 / 52 | 0 |
-| Laboratorium badawcze | 60 stopy, 15 komponenty, 60 krzem | 20 min | 393 stopy, 98 komponenty, 393 krzem | 3.5 h | 1611 stopy, 403 komponenty, 1611 krzem | 20.4 h | 20 / 35 | 4 |
-| Giełda handlowa | 400 stopy, 100 komponenty | 40 min | 2621 stopy, 655 komponenty | 7.0 h | — | — | 15 / 26 | 5 |
-| Centrum administracyjne | 300 stopy, 80 komponenty, 10 egzotyczna materia | 2.0 h | — | — | — | — | 15 / 26 | 0 |
-| Stacja orbitalna | 600 stopy, 120 komponenty, 40 krystalit, 10 egzotyczna materia | 3.0 h | — | — | — | — | 20 / 35 | 0 |
-| Działko przeciwlotnicze | 240 stopy, 35 komponenty | 1.7 h | 1573 stopy, 229 komponenty | 17.5 h | 6442 stopy, 940 komponenty | 4.3 d | 10 / 17 | 4 |
-| Wyrzutnia torped | 350 stopy, 56 komponenty, 30 materiał rozpadowy | 2.6 h | 2294 stopy, 367 komponenty, 197 materiał rozpadowy | 27.1 h | 9395 stopy, 1503 komponenty, 805 materiał rozpadowy | 6.6 d | 15 / 26 | 0 |
-| Działo obronne | 450 stopy, 65 komponenty | 3.2 h | 2949 stopy, 426 komponenty | 33.2 h | 12 080 stopy, 1745 komponenty | 8.1 d | 20 / 35 | 4 |
+| Mine | 25 metal ore, 20 titanium ore, 15 silicon | 3 min | 164 metal ore, 131 titanium ore, 98 silicon | 31 min | 671 metal ore, 537 titanium ore, 403 silicon | 3.1 h | 10 / 17 | 5 |
+| Refinery | 35 metal ore, 20 titanium ore, 25 silicon | 6 min | 229 metal ore, 131 titanium ore, 164 silicon | 1.0 h | 940 metal ore, 537 titanium ore, 671 silicon | 6.1 h | 15 / 26 | 5 |
+| Smelter | 35 metal ore, 30 titanium ore, 25 silicon | 6 min | 229 metal ore, 197 titanium ore, 164 silicon | 1.0 h | 940 metal ore, 805 titanium ore, 671 silicon | 6.1 h | 20 / 35 | 5 |
+| Workshop | 35 metal ore, 25 titanium ore, 40 silicon | 8 min | 229 metal ore, 164 titanium ore, 262 silicon | 1.4 h | 940 metal ore, 671 titanium ore, 1074 silicon | 8.2 h | 20 / 35 | 5 |
+| Farm | 25 metal ore, 10 titanium ore, 15 silicon | 3 min | 164 metal ore, 66 titanium ore, 98 silicon | 31 min | 671 metal ore, 268 titanium ore, 403 silicon | 3.1 h | 5 / 9 | 8 |
+| Reactor | 100 metal ore, 80 titanium ore, 50 fissile material | 20 min | 655 metal ore, 524 titanium ore, 328 fissile material | 3.5 h | 2684 metal ore, 2147 titanium ore, 1342 fissile material | 20.4 h | — | 0 |
+| Fusion reactor | 200 alloys, 40 components, 40 helium-3 | 1.0 h | 1311 alloys, 262 components, 262 helium-3 | 10.5 h | 5369 alloys, 1074 components, 1074 helium-3 | 2.6 d | — | 0 |
+| Renewable power plant | 20 metal ore, 10 titanium ore, 25 silicon | 3 min | 131 metal ore, 66 titanium ore, 164 silicon | 31 min | 537 metal ore, 268 titanium ore, 671 silicon | 3.1 h | — | 8 |
+| Housing | 25 metal ore, 25 titanium ore, 10 silicon | 4 min | 164 metal ore, 164 titanium ore, 66 silicon | 42 min | 671 metal ore, 671 titanium ore, 268 silicon | 4.1 h | — | 8 |
+| Warehouse | 30 metal ore, 25 titanium ore, 5 silicon | 4 min | 197 metal ore, 164 titanium ore, 33 silicon | 42 min | 805 metal ore, 671 titanium ore, 134 silicon | 4.1 h | — | 8 |
+| Accumulator | 15 metal ore, 15 titanium ore, 30 silicon | 4 min | 98 metal ore, 98 titanium ore, 197 silicon | 42 min | 403 metal ore, 403 titanium ore, 805 silicon | 4.1 h | — | 4 |
+| Silo | 25 metal ore, 15 titanium ore, 20 silicon | 4 min | 164 metal ore, 98 titanium ore, 131 silicon | 42 min | 671 metal ore, 403 titanium ore, 537 silicon | 4.1 h | — | 8 |
+| Bunker | 30 metal ore, 45 titanium ore, 5 silicon | 6 min | 197 metal ore, 295 titanium ore, 33 silicon | 1.0 h | 805 metal ore, 1208 titanium ore, 134 silicon | 6.1 h | — | 8 |
+| Hangar | 45 metal ore, 40 titanium ore, 15 silicon | 8 min | 295 metal ore, 262 titanium ore, 98 silicon | 1.4 h | 1208 metal ore, 1074 titanium ore, 403 silicon | 8.2 h | — | 4 |
+| Shipyard | 80 metal ore, 70 titanium ore, 50 silicon | 15 min | 524 metal ore, 459 titanium ore, 328 silicon | 2.6 h | 2147 metal ore, 1879 titanium ore, 1342 silicon | 15.3 h | 15 / 26 | 4 |
+| Spaceport | 60 metal ore, 50 titanium ore, 40 silicon | 12 min | 393 metal ore, 328 titanium ore, 262 silicon | 2.1 h | 1611 metal ore, 1342 titanium ore, 1074 silicon | 12.2 h | 10 / 17 | 4 |
+| Scanner | 40 metal ore, 30 titanium ore, 80 silicon | 12 min | 262 metal ore, 197 titanium ore, 524 silicon | 2.1 h | 1074 metal ore, 805 titanium ore, 2147 silicon | 12.2 h | 15 / 26 | 4 |
+| Shield generator | 150 alloys, 30 components, 30 crystalite | 30 min | 983 alloys, 197 components, 197 crystalite | 5.2 h | 4027 alloys, 805 components, 805 crystalite | 30.6 h | 30 / 52 | 0 |
+| Research laboratory | 60 alloys, 15 components, 60 silicon | 20 min | 393 alloys, 98 components, 393 silicon | 3.5 h | 1611 alloys, 403 components, 1611 silicon | 20.4 h | 20 / 35 | 4 |
+| Trade exchange | 400 alloys, 100 components | 40 min | 2621 alloys, 655 components | 7.0 h | — | — | 15 / 26 | 5 |
+| Administration center | 300 alloys, 80 components, 10 exotic matter | 2.0 h | — | — | — | — | 15 / 26 | 0 |
+| Orbital station | 600 alloys, 120 components, 40 crystalite, 10 exotic matter | 3.0 h | — | — | — | — | 20 / 35 | 0 |
+| Anti-aircraft gun | 240 alloys, 35 components | 1.7 h | 1573 alloys, 229 components | 17.5 h | 6442 alloys, 940 components | 4.3 d | 10 / 17 | 4 |
+| Torpedo launcher | 350 alloys, 56 components, 30 fissile material | 2.6 h | 2294 alloys, 367 components, 197 fissile material | 27.1 h | 9395 alloys, 1503 components, 805 fissile material | 6.6 d | 15 / 26 | 0 |
+| Defense cannon | 450 alloys, 65 components | 3.2 h | 2949 alloys, 426 components | 33.2 h | 12 080 alloys, 1745 components | 8.1 d | 20 / 35 | 4 |
 
 ## Kopalnia: wydobycie i zwrot ulepszenia
 
@@ -69,47 +69,47 @@ Bot „rozsądny gracz”: najpierw elektrownia, farma, kopalnia metalu, mieszka
 | Pierwszy budynek gotowy | 1.3 h |  |
 | 5 budynków | 4.4 h | ok. 6 h |
 | 10 budynków | 13.0 h |  |
-| Stocznia | 36.3 h | 1–2 dni |
-| Stać nas na pierwszy myśliwiec | 38.8 h | 1–2 dni |
-| Wszystkie 16 pól zajęte | 39.8 h | 2–3 dni |
+| Stocznia | 36.0 h | 1–2 dni |
+| Stać nas na pierwszy myśliwiec | 36.9 h | 1–2 dni |
+| Wszystkie 16 pól zajęte | 37.8 h | 2–3 dni |
 | Wszystko na maksimum bez surowców specjalnych | 9.0 d | ok. 1–2 tygodni (dalej tylko z surowcami specjalnymi, czyli ekspansja) |
 
-Ograniczenia w czasie 21 dni: brak energii 4.0 h, brak rąk do pracy 9.7 h, czekanie na zasoby 6.3 d, jakiś minerał w pełnym magazynie 5.0 d.
+Ograniczenia w czasie 21 dni: brak energii 0 min, brak rąk do pracy 9.7 h, czekanie na zasoby 6.3 d, jakiś minerał w pełnym magazynie 5.0 d.
 
 | Dzień | Ludzie | Metal/h | Lód/h | Tytan/h | Krzem/h | Bilans energii/h | Bilans biomasy/h |
 |---|---|---|---|---|---|---|---|
-| 0.5 | 22 | 60 | 42 | 42 | 42 | 11 | 24 |
-| 1 | 70 | 60 | 42 | 42 | 42 | -8 | 8 |
-| 2 | 70 | 75 | 42 | 53 | 53 | 4 | 8 |
-| 3 | 70 | 94 | 53 | 66 | 66 | -3 | 17 |
-| 7 | 130 | 146 | 103 | 103 | 103 | 137 | 32 |
-| 14 | 170 | 146 | 103 | 103 | 103 | 240 | 63 |
-| 21 | 170 | 146 | 103 | 103 | 103 | 240 | 63 |
+| 0.5 | 22 | 60 | 42 | 42 | 42 | 16 | 24 |
+| 1 | 70 | 60 | 42 | 42 | 42 | -11 | 8 |
+| 2 | 70 | 75 | 42 | 53 | 53 | 14 | 8 |
+| 3 | 70 | 94 | 53 | 66 | 66 | -5 | 17 |
+| 7 | 130 | 146 | 103 | 103 | 103 | 153 | 32 |
+| 14 | 170 | 146 | 103 | 103 | 103 | 258 | 63 |
+| 21 | 170 | 146 | 103 | 103 | 103 | 258 | 63 |
 
 ### Pierwsze godziny
 
-- 1.3 h: Elektrownia odnawialna: poziom 1
-- 2.3 h: Farma: poziom 1
-- 3.6 h: Kopalnia metalu: poziom 1
-- 4.0 h: Mieszkanie: poziom 1
-- 4.4 h: Kopalnia krzemu: poziom 1
-- 5.4 h: Kopalnia tytanu: poziom 1
-- 9.3 h: Elektrownia odnawialna: poziom 1
-- 10.4 h: Magazyn: poziom 1
-- 11.5 h: Mieszkanie: poziom 2
-- 11.9 h: Kopalnia lodu: poziom 1
-- 12.3 h: Farma: poziom 2
-- 13.0 h: Huta: poziom 1
-- 13.2 h: Elektrownia odnawialna: poziom 1
-- 16.2 h: Mieszkanie: poziom 3
-- 17.8 h: Rafineria: poziom 1
-- 22.0 h: Kosmoport: poziom 1
-- 23.9 h: Elektrownia odnawialna: poziom 2
-- 33.4 h: Elektrownia odnawialna: poziom 2
-- 34.0 h: Elektrownia odnawialna: poziom 2
-- 34.9 h: Elektrownia odnawialna: poziom 3
-- 36.3 h: Stocznia: poziom 1
-- 37.0 h: Elektrownia odnawialna: poziom 3
+- 1.3 h: Renewable power plant: poziom 1
+- 2.3 h: Farm: poziom 1
+- 3.6 h: Mine metalu: poziom 1
+- 4.0 h: Housing: poziom 1
+- 4.4 h: Mine krzemu: poziom 1
+- 5.4 h: Mine tytanu: poziom 1
+- 9.3 h: Renewable power plant: poziom 1
+- 10.4 h: Warehouse: poziom 1
+- 11.5 h: Housing: poziom 2
+- 11.9 h: Mine lodu: poziom 1
+- 12.3 h: Farm: poziom 2
+- 13.0 h: Smelter: poziom 1
+- 13.2 h: Renewable power plant: poziom 1
+- 16.2 h: Housing: poziom 3
+- 17.8 h: Refinery: poziom 1
+- 22.0 h: Spaceport: poziom 1
+- 26.3 h: Renewable power plant: poziom 2
+- 33.1 h: Renewable power plant: poziom 2
+- 33.7 h: Renewable power plant: poziom 2
+- 34.6 h: Renewable power plant: poziom 3
+- 36.0 h: Shipyard: poziom 1
+- 36.5 h: Workshop: poziom 1
 
 ## Wiele planet: kolonie wspierane przez imperium
 
@@ -118,7 +118,7 @@ Im więcej planet, tym szybciej rozwija się każda następna, bo dojrzałe plan
 | Planet wspierających | Dowóz każdego minerału | Stocznia gotowa | 16 pól zajętych | Maksimum bez specjalnych | Czekanie na zasoby |
 |---|---|---|---|---|---|
 | 0 | 0/h | 1.4 d | 1.6 d | 8.9 d | 6.2 d |
-| 1 | 60/h | 0.3 d | 0.3 d | 5.5 d | 2.8 d |
+| 1 | 60/h | 0.3 d | 0.3 d | 5.4 d | 2.7 d |
 | 2 | 120/h | 0.2 d | 0.2 d | 4.1 d | 1.4 d |
 | 3 | 180/h | 0.1 d | 0.1 d | 3.3 d | 0.6 d |
 | 4 | 240/h | 0.1 d | 0.1 d | 2.7 d | 0.0 d |
@@ -133,7 +133,7 @@ Transportowiec wozi 500 jednostek. Lot w obie strony (spec 12.1.4): 10 LY = 14 p
 
 ### Wnioski
 
-- **Tempo rośnie z liczbą planet**, tak jak chcesz: kolonia bez wsparcia potrzebuje 8.9 d do maksimum bez surowców specjalnych, wspierana przez 1 planetę 5.5 d, przez 2 4.1 d, przez 4 i więcej 2.7 d (dolna granica).
+- **Tempo rośnie z liczbą planet**, tak jak chcesz: kolonia bez wsparcia potrzebuje 8.9 d do maksimum bez surowców specjalnych, wspierana przez 1 planetę 5.4 d, przez 2 4.1 d, przez 4 i więcej 2.7 d (dolna granica).
 - **Hamulce przed kulą śnieżną** (już w specyfikacji): kolejka jednej budowy na planetę (dolna granica ok. 3 dni), koszt paliwa rosnący z odległością, koszt kolonizatora (300 stopów, 50 komponentów, 200 biomasy), utrzymanie floty w biomasie, surowce specjalne powyżej poziomu 4–5, zasięg administracji (−5% produkcji za każde 20 LY ponad 80 LY od stolicy, sekcja 14) i 70% zajętości mapy.
 - **Propozycja do decyzji:** gdyby w testach z AI imperia rosły za szybko, najprostsze dodatkowe hamulce to (a) koszt kolonizatora rosnący z liczbą posiadanych planet (np. +15% za każdą) albo (b) dłuższy czas budowy na koloniach daleko od stolicy. Na razie niczego takiego nie dodaję.
 

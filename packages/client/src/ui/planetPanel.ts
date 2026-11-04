@@ -6,6 +6,7 @@ import {
   buildingTime,
   canStartBuilding,
   canStartUpgrade,
+  constructionLeft,
   energyCapacity,
   fieldsUsed,
   PLANET_TYPES,
@@ -105,7 +106,7 @@ export function foreignPlanetHTML(info: Planet): string {
 }
 
 /** Resources, energy, people and the construction going on (top of the planet panels). */
-export function planetStatusHTML(view: PlanetView, now: number): string {
+export function planetStatusHTML(view: PlanetView): string {
   const { planet: p, info, rates } = view;
   const cap = resourceCapacity(p);
   const parts: string[] = [];
@@ -131,23 +132,23 @@ export function planetStatusHTML(view: PlanetView, now: number): string {
 <div>Stored ${formatAmount(p.energy)} / ${formatAmount(energyCapacity(p))}${rates.efficiency < 1 ? ` · <span class="bad">efficiency ${Math.round(rates.efficiency * 100)}%</span>` : ''}</div>`);
   const workers = view.planet.buildings.reduce((s, b) => s + BUILDINGS[b.kind].workers, 0);
   parts.push(`<div class="section">Population</div>
-<div>Residents ${p.population} / ${rates.housing}${rates.growth !== 0 ? ` · <span class="${rates.growth < 0 ? 'bad' : 'good'}">${formatRate(rates.growth)}</span>` : ''} · workers needed ${workers}${rates.starving ? ' · <span class="bad">STARVING</span>' : ''}</div>`);
+<div>Residents ${p.population}${rates.crews > 0 ? ` + crews ${rates.crews}` : ''} / housing ${rates.housing}${rates.growth !== 0 ? ` · <span class="${rates.growth < 0 ? 'bad' : 'good'}">${formatRate(rates.growth)}</span>` : ''} · workers needed ${workers}${rates.starving ? ' · <span class="bad">STARVING</span>' : ''}</div>`);
 
   // Construction
   if (p.construction) {
     const c = p.construction;
     parts.push(`<div class="section">Construction</div>
-<div class="row-line"><span>${esc(BUILDINGS[c.kind].name)} → level ${c.level} · ${formatDuration(c.endsAt - now)} left</span><button data-action="cancel">Cancel</button></div>`);
+<div class="row-line"><span>${esc(BUILDINGS[c.kind].name)} → level ${c.level} · ${leftText(view)}</span><button data-action="cancel">Cancel</button></div>`);
   }
 
   return parts.join('\n');
 }
 
 /** The full panel of an owned planet (step 1.8). Actions use data-action attributes. */
-export function ownedPlanetHTML(view: PlanetView, player: Player, now: number): string {
+export function ownedPlanetHTML(view: PlanetView, player: Player): string {
   const { planet: p, info, rates } = view;
   const ctx = contextOf(player);
-  const parts: string[] = [planetStatusHTML(view, now)];
+  const parts: string[] = [planetStatusHTML(view)];
 
   // Buildings
   const list = p.buildings
@@ -179,6 +180,14 @@ export function ownedPlanetHTML(view: PlanetView, player: Player, now: number): 
   return parts.join('\n');
 }
 
+/** Time left of the construction, or why it is stalled (owner 4.11.2026: energy sets the pace). */
+function leftText(view: PlanetView): string {
+  const ms = constructionLeft(view.planet, view.rates);
+  if (!Number.isFinite(ms)) return '<span class="bad">stalled: no energy</span>';
+  const slow = view.rates.efficiency < 1 ? ' <span class="bad">(slowed: energy short)</span>' : '';
+  return `${formatDuration(ms)} left${slow}`;
+}
+
 /** Upgrade button of a building (or "max"). */
 function upgradeButton(view: PlanetView, uid: number | undefined, ctx: ModifierContext): string {
   const b = view.planet.buildings.find((x) => x.uid === uid);
@@ -201,7 +210,7 @@ export function surfacePanelHTML(
   slot: number | null,
 ): string {
   const ctx = contextOf(player);
-  const parts: string[] = [planetStatusHTML(view, now)];
+  const parts: string[] = [planetStatusHTML(view)];
   if (slot === null || slot >= slots.length) {
     parts.push(
       '<div class="section">Fields</div><div class="dim">Click a hex field to build on it or to see its building.</div>',
@@ -222,7 +231,7 @@ export function surfacePanelHTML(
     const c = view.planet.construction;
     if (c)
       parts.push(
-        `<div class="row-line"><span>${esc(BUILDINGS[c.kind].name)} under construction · ${formatDuration(c.endsAt - now)} left</span><button data-action="cancel">Cancel</button></div>`,
+        `<div class="row-line"><span>${esc(BUILDINGS[c.kind].name)} under construction · ${leftText(view)}</span><button data-action="cancel">Cancel</button></div>`,
       );
   } else {
     const b = content.building;
@@ -239,12 +248,12 @@ export function surfacePanelHTML(
     const c = view.planet.construction;
     if (c && c.uid === b.uid) {
       parts.push(
-        `<div class="row-line"><span>Upgrading to level ${c.level} · ${formatDuration(c.endsAt - now)} left</span><button data-action="cancel">Cancel</button></div>`,
+        `<div class="row-line"><span>Upgrading to level ${c.level} · ${leftText(view)}</span><button data-action="cancel">Cancel</button></div>`,
       );
     } else {
       parts.push(upgradeButton(view, b.uid, ctx));
     }
-    if (spec.effect.kind === 'shipyard') parts.push(shipyardHTML(view, player, now));
+    if (spec.effect.kind === 'shipyard') parts.push(shipyardHTML(view, player));
   }
   return parts.join('\n');
 }

@@ -486,3 +486,31 @@ export const BUILD_MINUTES_PER_VALUE = 0.1;
 export const HANGAR_REPAIR_PER_HOUR = 0.1;
 /** Militia: free infantry squads per housing building (spec 11.4). */
 export const MILITIA_PER_HOUSING = 1;
+
+/**
+ * Crew of each unit, taken from the residents of the planet that builds it (owner 4.11.2026,
+ * question 36). Crews live in the housing of their home planet: residents + crews ≤ housing.
+ * The colonizer's 10 are the settlers of the new colony (spec 10.5). Defences have none.
+ */
+export const CREW: Record<UnitId, number> = {
+  interceptor: 1,
+  fighter: 1,
+  frigate: 3,
+  bomber: 3,
+  destroyer: 10,
+  cruiser: 10,
+  battleship: 30,
+  probe: 1,
+  transport: 3,
+  heavyTransport: 10,
+  colonizer: 10,
+  repairShip: 3,
+  infantry: 1,
+  assaultTroops: 1,
+  fieldArtillery: 3,
+  tank: 3,
+  aaGun: 0,
+  torpedoLauncher: 0,
+  defenseCannon: 0,
+  orbitalStation: 0,
+};

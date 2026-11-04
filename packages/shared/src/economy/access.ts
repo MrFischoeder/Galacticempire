@@ -24,6 +24,11 @@ export function settleOwned(state: GameState, id: PlanetId): PlanetState | undef
   if (p.updatedAt < state.time)
     settlePlanet(p, galaxyPlanet(state, id), state.time, ownerContext(state, p));
   finalizeResearch(state, id);
+  if (p.news.length > 0) {
+    const name = state.world.galaxy.planets[id]?.name ?? id;
+    for (const n of p.news) state.log.push({ at: n.at, text: `${name}: ${n.text}` });
+    p.news = [];
+  }
   return p;
 }
 

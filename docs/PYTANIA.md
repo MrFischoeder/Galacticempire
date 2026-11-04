@@ -265,3 +265,5 @@ B. Załogi z populacji
 5. Załoga zajmuje miejsce w mieszkaniach planety macierzystej: mieszkańcy + załogi ≤ pojemność mieszkań. Więcej statków = więcej domów, a domy = więcej biomasy z farm. Załogi nie pracują w budynkach; jedzą tak jak dziś (utrzymanie z tabel 10.x).
 6. Bez wolnych mieszkańców (populacja minus potrzebni robotnicy) stocznia nie przyjmie zamówienia. Zniszczona jednostka traci załogę; jednostka, która przeniesie się na inną planetę, przenosi tam załogę (zajmuje tam mieszkania).
 To zmienia balans ekonomii (`docs/BALANS.md`) i wymaga ponownego przeliczenia.
+
+**Odpowiedź (4.11.2026):** propozycja przyjęta; farma też zużywa energię. Liczebności załóg pasują (mogą się jeszcze zmienić). Wdrożone w wersji 0.1.13a, przed transportami.

@@ -31,6 +31,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.9 | 0.1.12 | `v0.1.12-ruch-flot` | ruch flot, paliwo, kosmoport, hangary | ✅ |
 | 1.9 | 0.1.12a | `v0.1.12a-floty-zasady` | zasady flot właściciela: bez stacjonowania, bez kosmoportu, hangar/orbita | ✅ |
 | 1.10a | 0.1.13 | `v0.1.13-stocznia` | stocznia, utrzymanie | ✅ |
+| 1.10a | 0.1.13a | `v0.1.13a-energia-zalogi` | energia tylko dla pracujących budynków i budowy, załogi z populacji | ✅ |
 | 1.10b | 0.1.14 | `v0.1.14-transporty` | transporty, trasy cykliczne, kolonizacja | ⬜ |
 | 1.11 | 0.1.15 | `v0.1.15-mgla-wojny` | `getPlayerView`, sondy, skanery | ⬜ |
 | 1.12 | 0.1.16 | `v0.1.16-sojusze` | sojusze | ⬜ |
@@ -43,6 +44,15 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.1.13a: energia i załogi (pytanie 36, decyzja właściciela 4.11.2026)
+- Energię zużywają tylko pracujące budynki; mieszkanie, magazyn, silos, akumulator, schron i hangar mają 0 (`config/buildings.ts`).
+- Budowa: plac budowy pobiera energię budynku na nowym poziomie (`constructionEnergy`); postęp (`Construction.progress`, `hours`) rośnie w tempie wydajności energii i jest rozliczany razem z planetą (`settlePlanet`), budowa kończy się w punkcie zmiany. Zdarzenie `PlanetJobs` (zastępuje `ConstructionDone` i `UnitBuilt`) sprawdza budowę i stocznię w spodziewanym momencie końca albo co godzinę, gdy stoją; ukończone rzeczy trafiają do dziennika przez `PlanetState.news` w `settleOwned`.
+- Stocznia: postęp jednostki (`ShipOrder.progress`) = wydajność energii × obsada stoczni.
+- Załogi (`CREW` w `config/units.ts`): zamówienie zabiera załogę z wolnych mieszkańców (nie potrzebnych jako robotnicy, z zachowaniem minimum), błąd `NO_CREW`; załogi jednostek (hangary, orbita, w locie, w kolejce stoczni, `crewOf`) zajmują mieszkania planety macierzystej, populacja rośnie tylko do pojemności minus załogi; anulowanie zwraca załogi; jednostka przeniesiona na inną planetę zabiera tam załogę. Pomocnicze `placesOf`, `hangarPlaces`, `landUnits`, `finishConstruction` przeniesione do `economy/planet.ts`.
+- Klient: „Residents X + crews Y / housing Z”, czas budowy według bieżącego tempa („slowed: energy short”, „stalled: no energy”), w stoczni załoga każdej jednostki i liczba wolnych mieszkańców.
+- Balans: model w `tools/balance` liczy pobór energii placu budowy i spowolnienie; `docs/BALANS.md` przeliczony (start trochę szybszy, bo budynki bierne nie biorą energii: stocznia po 36,0 h zamiast 36,3 h).
+- Wersja stanu 12.
 
 ### 0.1.13: stocznia i utrzymanie (krok 1.10a, 3.11.2026)
 - `shared/src/fleet/shipyard.ts`: kolejka stoczni na planecie (`PlanetState.shipyard`, do 5 zamówień, do 50 sztuk w zamówieniu, `config/fleets.ts` `SHIPYARD`). Zamówienie płacone w całości od razu; jednostki budowane po kolei, 1 min na 10 wartości (modyfikatory ras i badań przez `effectiveUnit`); gotowa jednostka ląduje w hangarze albo na orbicie. Odblokowanie według poziomu stoczni (tabela 9.2); budynki obronne nie są budowane w stoczni (zostają w kolejce budynków, faza 2). Anulowanie zwraca 75% kosztu niedokończonych jednostek (jak przy budynkach).

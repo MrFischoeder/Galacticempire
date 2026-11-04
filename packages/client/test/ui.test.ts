@@ -41,7 +41,7 @@ describe('planet and research panels (step 1.8)', () => {
   });
 
   it('renders the owned planet in English with action buttons', () => {
-    const html = ownedPlanetHTML(view, snap.player, snap.time);
+    const html = ownedPlanetHTML(view, snap.player);
     for (const text of [
       'Resources',
       'Energy',

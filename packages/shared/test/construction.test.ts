@@ -82,7 +82,7 @@ describe('construction commands (step 1.5)', () => {
       at,
     );
     const p = s.planets[id]!;
-    expect(p.construction?.endsAt).toBe(at + 3 * MIN);
+    expect(p.construction?.hours).toBeCloseTo(3 / 60, 9);
     expect(p.stock.metal).toBeCloseTo(40 - 25);
     expect(p.buildings).toHaveLength(0);
     s = advanceTo(s, at + 3 * MIN - 1);

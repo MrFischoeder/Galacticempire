@@ -130,14 +130,15 @@ describe('planet production (step 1.4a)', () => {
     ]);
     const g = testPlanet();
     expect(energyCapacity(p)).toBe(300);
-    p.energy = 12;
-    // Use 10 + 1 = 11/h, the core makes 5/h: the store lasts 12 / 6 = 2 hours at full speed.
+    p.energy = 10;
+    // The mine uses 10/h (the accumulator none, question 36), the core makes 5/h: the store
+    // lasts 10 / 5 = 2 hours at full speed.
     run(p, g, 2);
     expect(p.energy).toBeCloseTo(0, 5);
     expect(p.stock.metal).toBeCloseTo(120, 4);
     const r = planetRates(p, g);
-    expect(r.efficiency).toBeCloseTo(5 / 11);
-    expect(r.made.metal).toBeCloseTo(60 * (5 / 11));
+    expect(r.efficiency).toBeCloseTo(5 / 10);
+    expect(r.made.metal).toBeCloseTo(60 * (5 / 10));
     // The core's trickle of other minerals does not need power.
     expect(r.made.titanium).toBeCloseTo(20);
   });

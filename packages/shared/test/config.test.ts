@@ -55,19 +55,19 @@ describe('game config', () => {
     expect(fullAfter(10)).toBeCloseTo(9.5, 1);
   });
 
-  it('energy use of the buildings in spec 5.1', () => {
+  it('energy use of the buildings in spec 5.1; passive buildings draw none (question 36)', () => {
     const table: Partial<Record<keyof typeof BUILDINGS, number>> = {
       mine: 10,
       refinery: 15,
       smelter: 20,
       workshop: 20,
       farm: 5,
-      housing: 2,
-      warehouse: 2,
-      accumulator: 1,
-      silo: 1,
-      bunker: 2,
-      hangar: 5,
+      housing: 0,
+      warehouse: 0,
+      accumulator: 0,
+      silo: 0,
+      bunker: 0,
+      hangar: 0,
       spaceport: 10,
       scanner: 15,
       defenseCannon: 20,

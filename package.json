@@ -1,6 +1,6 @@
 {
   "name": "galactic-empire",
-  "version": "0.1.13",
+  "version": "0.1.13a",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",

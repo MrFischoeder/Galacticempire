@@ -249,7 +249,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     unique: false,
     cost: { metal: 25, titanium: 25, silicon: 10 },
     buildMinutes: 4,
-    energy: 2,
+    energy: 0, // passive buildings draw no energy (owner 4.11.2026, question 36)
     workers: 0,
     requires: [],
     special: gates(),
@@ -262,7 +262,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     unique: false,
     cost: { metal: 30, titanium: 25, silicon: 5 },
     buildMinutes: 4,
-    energy: 2,
+    energy: 0, // passive buildings draw no energy (owner 4.11.2026, question 36)
     workers: 0,
     requires: [],
     special: gates(),
@@ -276,7 +276,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     unique: false,
     cost: { metal: 15, titanium: 15, silicon: 30 },
     buildMinutes: 4,
-    energy: 1,
+    energy: 0, // passive buildings draw no energy (owner 4.11.2026, question 36)
     workers: 0,
     requires: [],
     special: gates({ fromLevel: 5, resource: 'crystalite' }),
@@ -290,7 +290,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     unique: false,
     cost: { metal: 25, titanium: 15, silicon: 20 },
     buildMinutes: 4,
-    energy: 1,
+    energy: 0, // passive buildings draw no energy (owner 4.11.2026, question 36)
     workers: 0,
     requires: [],
     special: gates(),
@@ -303,7 +303,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     unique: false,
     cost: { metal: 30, titanium: 45, silicon: 5 },
     buildMinutes: 6,
-    energy: 2,
+    energy: 0, // passive buildings draw no energy (owner 4.11.2026, question 36)
     workers: 0,
     requires: [],
     special: gates(),
@@ -317,7 +317,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
     unique: false,
     cost: { metal: 45, titanium: 40, silicon: 15 },
     buildMinutes: 8,
-    energy: 5,
+    energy: 0, // passive buildings draw no energy (owner 4.11.2026, question 36)
     workers: 0,
     requires: [],
     special: gates({ fromLevel: 5, resource: 'helium3' }),
