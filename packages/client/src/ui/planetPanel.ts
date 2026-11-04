@@ -19,6 +19,9 @@ import {
   type Player,
   type ResourceId,
   type SlotContent,
+  type PlayerView,
+  type UnitId,
+  UNITS,
 } from '@ge/shared';
 import type { PlanetView } from '../sim/protocol';
 import { shipyardHTML } from './shipyardPanel';
@@ -99,11 +102,23 @@ function depositRows(info: Planet): string {
 }
 
 /** A planet that is not ours: what is known about it. */
-export function foreignPlanetHTML(info: Planet, free = false): string {
+export function foreignPlanetHTML(
+  info: Planet,
+  free = false,
+  intel: { owner?: string; scan?: PlayerView['scans'][string] } = {},
+): string {
+  const sc = intel.scan;
+  const scanPart = sc
+    ? `<div class="section">Scan</div>
+<div class="${sc.stale ? 'bad' : 'dim'}">${formatDuration(sc.age)} ago${sc.stale ? ' · STALE' : ''}</div>
+${sc.buildings.length ? `<div class="small">${esc(sc.buildings.map((b) => `${BUILDINGS[b.kind].name} ${b.level}`).join(', '))}</div>` : '<div class="dim small">No buildings.</div>'}
+${Object.keys(sc.units).length ? `<div class="small">Units: ${esc((Object.entries(sc.units) as [UnitId, number][]).map(([u, n]) => `${n} ${UNITS[u].name}`).join(', '))}</div>` : ''}`
+    : '<div class="dim small">Not scanned: send a probe to see its deposits, buildings and units.</div>';
   return `<div class="panel-title">${esc(info.name)}</div>
-<div class="dim">${esc(planetFacts(info))} · ${info.fields} fields</div>
-<div class="section">Deposits</div><table>${depositRows(info)}</table>
-${free ? `<div class="row"><button data-action="colonize:${info.id}">Colonize…</button></div><div class="dim small">Needs a colonizer at one of your planets (spec 10.5).</div>` : ''}`;
+<div class="dim">${esc(planetFacts(info))} · ${info.fields} fields${intel.owner ? ` · owner ${esc(intel.owner)}` : free ? ' · free' : ''}</div>
+${info.deposits.length ? `<div class="section">Deposits</div><table>${depositRows(info)}</table>` : ''}
+${scanPart}
+<div class="row"><button data-action="probe:${info.id}">Send probe…</button>${free ? `<button data-action="colonize:${info.id}">Colonize…</button>` : ''}</div>`;
 }
 
 /** Resources, energy, people and the construction going on (top of the planet panels). */

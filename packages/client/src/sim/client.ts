@@ -59,6 +59,11 @@ export class SimClient {
     this.send({ type: 'speed', multiplier });
   }
 
+  /** Debug: show everything, ignoring the fog of war. */
+  reveal(on: boolean): void {
+    this.send({ type: 'reveal', on });
+  }
+
   pause(paused: boolean): void {
     this.send({ type: 'pause', paused });
   }

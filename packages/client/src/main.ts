@@ -32,6 +32,7 @@ import { foreignPlanetHTML, surfacePanelHTML } from './ui/planetPanel';
 import { researchHTML } from './ui/researchPanel';
 import {
   draftHTML,
+  alertsHTML,
   fleetListHTML,
   routesHTML,
   planetFleetHTML,
@@ -190,9 +191,12 @@ function renderSide(): void {
           .map((v) => ({ id: v.planet.id, name: v.info.name })),
       );
   } else if (mode === 'planet' && selectedPlanet && galaxy.planets[selectedPlanet]) {
+    const owner = snapshot?.owners[selectedPlanet];
+    const scan = snapshot?.scans[selectedPlanet];
     html = foreignPlanetHTML(
       galaxy.planets[selectedPlanet] as NonNullable<Galaxy['planets'][string]>,
-      !(snapshot?.owners ?? []).includes(selectedPlanet),
+      !owner,
+      { ...(owner ? { owner: owner.name } : {}), ...(scan ? { scan } : {}) },
     );
   } else
     html = `<div class="panel-title">${esc(galaxy.systems[openSystem]?.name ?? '')}</div><div class="dim">Click a planet.</div>`;
@@ -309,15 +313,24 @@ function onAction(e: PointerEvent): void {
         draft = null;
         renderFleets();
       });
-  } else if (kind === 'colonize' && a) {
-    // From the free planet's panel: the nearest own planet with a colonizer sends it.
+  } else if ((kind === 'colonize' || kind === 'probe') && a) {
+    // From a foreign planet's panel: the nearest own planet with the unit sends it.
+    const unit: UnitId = kind === 'colonize' ? 'colonizer' : 'probe';
     const g = galaxy;
     const from = snapshot?.planets
-      .filter((v) => (unitsAt(v.planet).colonizer ?? 0) > 0)
+      .filter((v) => (unitsAt(v.planet)[unit] ?? 0) > 0)
       .map((v) => ({ id: v.planet.id, ly: g ? flightDistance(g, v.planet.id, a).ly : 0 }))
       .sort((x, y) => x.ly - y.ly)[0];
-    if (!from) return showError('No colonizer at any of your planets. Build one in a shipyard.');
-    draft = { ...newDraft(from.id), to: a, mission: 'colonize', units: { colonizer: 1 } };
+    if (!from)
+      return showError(
+        `No ${unit === 'colonizer' ? 'colonizer' : 'probe'} at any of your planets. Build one in a shipyard.`,
+      );
+    draft = {
+      ...newDraft(from.id),
+      to: a,
+      mission: kind === 'colonize' ? 'colonize' : 'scan',
+      units: { [unit]: 1 },
+    };
     picking = false;
     fleetsPanel.hidden = false;
     renderFleets(true);
@@ -372,6 +385,7 @@ function renderFleets(force = false): void {
     sendEl.innerHTML = '';
   }
   const list =
+    alertsHTML(snapshot.alerts, galaxy, snapshot.time) +
     fleetListHTML(snapshot.fleets, galaxy, snapshot.time) +
     routesHTML(snapshot.routes, galaxy, snapshot.time);
   const listEl = $('#fleetList');
@@ -439,7 +453,16 @@ sim.onSnapshot = (s) => {
   const ownedBefore = ownedIds();
   snapshot = s;
   snapshotAt = performance.now();
+  if (s.chart) {
+    // Newly discovered systems or scans (spec 13): redraw the chart, keep the selection.
+    const keep = map.selected;
+    galaxy = s.chart;
+    map.setGalaxy(galaxy);
+    if (keep !== null) map.select(keep);
+    if (mode === 'system' && openSystem !== null) system.show(galaxy, openSystem, ownedIds());
+  }
   map.setFleets(s.fleets);
+  map.setContacts(s.contacts);
   if (mode === 'system' && galaxy && openSystem !== null && ownedIds().size !== ownedBefore.size) {
     system.show(galaxy, openSystem, ownedIds());
   }
@@ -514,6 +537,10 @@ $('#addUnits').addEventListener('click', () => {
     units: { probe: 2, fighter: 6, bomber: 2, transport: 2, cruiser: 1 },
   });
 });
+
+$<HTMLInputElement>('#reveal').addEventListener('change', (e) =>
+  sim.reveal((e.target as HTMLInputElement).checked),
+);
 
 const params = new URLSearchParams(location.search);
 if (params.get('systems')) systemsInput.value = params.get('systems') as string;

@@ -1,4 +1,4 @@
-import { fleetPosition, type Fleet, type Galaxy, type SystemId } from '@ge/shared';
+import { fleetPosition, type Contact, type Fleet, type Galaxy, type SystemId } from '@ge/shared';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
@@ -12,9 +12,13 @@ export const COLORS = {
   background: 0x050a1f,
   cyan: 0x2ef2ff,
   cyanDim: 0x0e4a5a,
+  magenta: 0xff3df2,
   grid: 0x0b2a44,
   selection: 0xffffff,
 } as const;
+
+/** Name of a system the player has not discovered (shared/intel/view.ts). */
+const UNKNOWN = 'Unknown';
 
 /** Closer than this, system names are shown. */
 const NAMES_FROM = 230;
@@ -95,6 +99,9 @@ export class GalaxyMap {
     name: CSS2DObject;
   }[] = [];
   gameTime: () => number = () => 0;
+  /** Foreign fleets seen by the scanners (spec 13), magenta. */
+  private contactGroup = new THREE.Group();
+  private contactKey = '';
   /** Double click on a system. */
   onOpen: (id: SystemId) => void = () => {};
 
@@ -154,6 +161,9 @@ export class GalaxyMap {
     this.fleetGroup = new THREE.Group();
     this.fleetParts = [];
     this.world.add(this.fleetGroup);
+    this.contactKey = '';
+    this.contactGroup = new THREE.Group();
+    this.world.add(this.contactGroup);
     this.galaxy = galaxy;
     this.lineMaterials = [];
     this.nameLabels = [];
@@ -161,20 +171,25 @@ export class GalaxyMap {
 
     // Stars: one glowing point per system.
     const positions: number[] = [];
+    const colors: number[] = [];
     const rich: number[] = [];
     for (const s of galaxy.systems) {
       const p = scenePosition(galaxy, s.id);
       positions.push(...p);
+      // Undiscovered systems (spec 13) are faint.
+      const k = s.name === UNKNOWN ? 0.28 : 1;
+      colors.push(0.75 * k, 0.98 * k, 1 * k);
       if (s.rich) rich.push(...p);
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
     this.stars = new THREE.Points(
       geo,
       new THREE.PointsMaterial({
         size: 4.5,
         map: this.glow,
-        color: 0xbff9ff,
+        vertexColors: true,
         transparent: true,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
@@ -221,7 +236,10 @@ export class GalaxyMap {
     // Names of every system.
     for (const s of galaxy.systems) {
       const [x, y, z] = scenePosition(galaxy, s.id);
-      const name = label(s.name, 'label name');
+      const name = label(
+        s.name === UNKNOWN ? '?' : s.name,
+        `label name${s.name === UNKNOWN ? ' unknown' : ''}`,
+      );
       name.position.set(x, y + 3.2, z);
       this.nameLabels.push(name);
       this.world.add(name);
@@ -269,6 +287,40 @@ export class GalaxyMap {
       const name = label(f.id, 'label fleet');
       this.fleetGroup.add(trail, ahead, mark, name);
       this.fleetParts.push({ f, trail, ahead, mark, name });
+    }
+  }
+
+  /** Foreign fleets: a magenta marker where they are and the trail they came along. */
+  setContacts(contacts: readonly Contact[]): void {
+    const key = JSON.stringify(
+      contacts.map((c) => [c.id, Math.round(c.x * 10), Math.round(c.y * 10)]),
+    );
+    if (key === this.contactKey || !this.galaxy) return;
+    this.contactKey = key;
+    this.contactGroup.traverse((o) => {
+      (o as THREE.Mesh).geometry?.dispose();
+      if (o instanceof CSS2DObject) o.element.remove();
+    });
+    this.contactGroup.clear();
+    for (const c of contacts) {
+      const geo = new LineSegmentsGeometry();
+      geo.setPositions([c.x0, 0, c.y0, c.x, 0, c.y]);
+      const mat = new LineMaterial({
+        color: COLORS.magenta,
+        linewidth: 2,
+        transparent: true,
+        opacity: 0.8,
+      });
+      mat.resolution.set(window.innerWidth, window.innerHeight);
+      this.lineMaterials.push(mat);
+      const mark = new THREE.Mesh(
+        new THREE.OctahedronGeometry(1.3),
+        new THREE.MeshBasicMaterial({ color: COLORS.magenta, wireframe: true }),
+      );
+      mark.position.set(c.x, 0, c.y);
+      const name = label(c.ownerName, 'label contact');
+      name.position.set(c.x, 2.6, c.y);
+      this.contactGroup.add(new LineSegments2(geo, mat), mark, name);
     }
   }
 

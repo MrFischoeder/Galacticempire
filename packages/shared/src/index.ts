@@ -8,4 +8,5 @@ export * from './core';
 export * from './galaxy';
 export * from './economy';
 export * from './fleet';
+export * from './intel';
 export * from './rules';

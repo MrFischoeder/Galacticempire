@@ -84,3 +84,23 @@ describe('simulation worker (steps 1.7-1.8)', () => {
     expect(bad).toMatchObject({ result: { ok: false, error: { code: 'REQUIREMENT' } } });
   });
 });
+
+describe('fog of war in the page (step 1.11)', () => {
+  it('the snapshot carries only the player view; "reveal all" lifts the fog', () => {
+    const state = createWorkerState();
+    handleMessage(state, { type: 'newGame', seed: 'fog', systems: 60, race: 'swarm' });
+    const g = state.game!.world.galaxy;
+    const far = g.systems[g.startSlots[1]!]!;
+    let snap = buildSnapshot(state)!;
+    expect(snap.chart).toBeDefined();
+    expect(snap.chart!.seed).toBe('');
+    expect(snap.chart!.systems[far.id]!.name).toBe('Unknown');
+    expect(snap.chart!.planets[far.planets[0]!]).toBeUndefined();
+    // The chart is sent again only when it changes.
+    expect(buildSnapshot(state)!.chart).toBeUndefined();
+    handleMessage(state, { type: 'reveal', on: true });
+    snap = buildSnapshot(state)!;
+    expect(snap.chart!.systems[far.id]!.name).toBe(far.name);
+    expect(snap.chart!.planets[far.planets[0]!]!.deposits.length).toBeGreaterThan(0);
+  });
+});

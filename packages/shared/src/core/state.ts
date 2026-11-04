@@ -7,10 +7,11 @@ import { generateGalaxy, type GalaxyOptions } from '../galaxy/generate';
 import type { Galaxy, PlanetId } from '../galaxy/types';
 import type { PlanetState } from '../economy/planet';
 import type { Fleet } from '../fleet/fleet';
+import type { Alert, ScanReport } from '../intel/intel';
 import type { Route } from '../fleet/routes';
 
 /** Bump when the shape of GameState changes (saves are migrated by version). */
-export const STATE_VERSION = 14;
+export const STATE_VERSION = 15;
 
 export type PlayerId = string;
 
@@ -21,6 +22,12 @@ export interface Player {
   readonly race?: RaceId;
   /** Researched technology levels (spec 9.3); they belong to the player, not a planet. */
   techs: Partial<Record<TechId, number>>;
+  /** Systems discovered (game time), spec 13: by owning a planet there or by a probe. */
+  known: Record<number, number>;
+  /** Probe scans of planets (spec 13). */
+  scans: Record<PlanetId, ScanReport>;
+  /** Warnings of fleets heading for the player's planets (spec 13). */
+  alerts: Alert[];
 }
 
 /** The generated world. Planets change during the game (owners, buildings, deposits). */
@@ -33,6 +40,8 @@ export interface World {
 export interface LogEntry {
   readonly at: number;
   readonly text: string;
+  /** The player it concerns; absent = everyone (spec 13: each player sees only their own). */
+  readonly who?: PlayerId;
 }
 
 /**

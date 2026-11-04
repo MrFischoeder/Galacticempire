@@ -290,3 +290,27 @@ button:disabled {
   color: #ffd23f;
   margin: 4px 0;
 }
+
+/* --- step 1.11: fog of war --- */
+.label.contact {
+  color: #ff3df2;
+  font-size: 11px;
+}
+.section.bad {
+  color: #ff3df2;
+}
+label.check {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.label.name.unknown {
+  opacity: 0.4;
+}
+#debug label.check {
+  justify-content: flex-start;
+}
+#debug label.check input {
+  width: auto;
+  flex: none;
+}

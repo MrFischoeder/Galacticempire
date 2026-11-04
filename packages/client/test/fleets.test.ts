@@ -13,7 +13,8 @@ function game() {
   });
   if (world?.type !== 'world') throw new Error('no world');
   const home = world.homePlanet;
-  const g = world.galaxy;
+  // The full galaxy (the page only gets the player's chart; tests may look behind it).
+  const g = state.game!.world.galaxy;
   const far = g.systems[g.startSlots[1]!]!.planets[0]!;
   const cmd = (command: Command) => {
     const [r] = handleMessage(state, { type: 'command', id: 1, command });

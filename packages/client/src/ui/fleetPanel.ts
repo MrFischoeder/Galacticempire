@@ -2,6 +2,7 @@ import {
   canRecallFleet,
   canSendFleet,
   cargoCapacity,
+  type Alert,
   loadTime,
   countUnits,
   RESOURCES,
@@ -244,4 +245,16 @@ export function routesHTML(routes: readonly Route[], galaxy: Galaxy, time: numbe
     })
     .join('');
   return `<div class="section">ROUTES</div><table>${rows}</table>`;
+}
+
+/** Incoming foreign fleets seen by the scanners (spec 13). */
+export function alertsHTML(alerts: readonly Alert[], galaxy: Galaxy, time: number): string {
+  if (alerts.length === 0) return '';
+  const rows = alerts
+    .map(
+      (a) =>
+        `<tr class="bad"><td>${esc(unitsText(a.units))} → ${esc(planetName(galaxy, a.target))}</td><td class="num">${formatDuration(a.arriveAt - time)}</td></tr>`,
+    )
+    .join('');
+  return `<div class="section bad">INCOMING</div><table>${rows}</table>`;
 }

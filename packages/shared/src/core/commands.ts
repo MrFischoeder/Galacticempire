@@ -22,6 +22,7 @@ import {
   STORED_RESOURCES,
 } from '../economy/planet';
 import { scheduleEvent, scheduleFleet, schedulePlanetJobs } from './events';
+import { discover } from '../intel/intel';
 import { canOrderUnits, cancelOrder, orderUnits } from '../fleet/shipyard';
 import { canCreateRoute, createRoute } from '../fleet/routes';
 import type { FleetMission } from '../config/fleets';
@@ -361,6 +362,9 @@ export const COMMANDS: Specs = {
         name: c.name.trim(),
         ...(c.race ? { race: c.race } : {}),
         techs: {},
+        known: {},
+        scans: {},
+        alerts: [],
       };
     },
   },
@@ -407,6 +411,7 @@ export const COMMANDS: Specs = {
     },
     apply(state, c) {
       state.planets[c.planetId] = createPlanetState(c.planetId, c.playerId, state.time);
+      discover(state, c.playerId, state.world.galaxy.planets[c.planetId]?.system ?? -1);
     },
   },
   DebugSetBuilding: {

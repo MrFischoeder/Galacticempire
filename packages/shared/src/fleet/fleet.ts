@@ -16,6 +16,7 @@ import {
 } from '../economy/planet';
 import type { Galaxy, PlanetId } from '../galaxy/types';
 import { effectiveUnit, type ModifierContext } from '../rules/modifiers';
+import { discover, scanSystem } from '../intel/intel';
 
 /**
  * Fleets (spec 12.1, step 1.9). A player's units at their own planets live in the planet's
@@ -379,6 +380,8 @@ export function canSendFleet(
     if (total(cargo) > room + 1e-9)
       return fail('CARGO_FULL', `The fleet can carry ${Math.floor(room)} units of cargo.`);
   } else if (total(cargo) > 0) return fail('NO_CARGO_MISSION', 'Only transports carry cargo.');
+  if (o.mission === 'scan' && (o.units.probe ?? 0) < 1)
+    return fail('NO_PROBE', 'A scan needs a probe.');
   if (o.mission === 'colonize') {
     if ((o.units.colonizer ?? 0) < 1)
       return fail('NO_COLONIZER', 'A colonization needs a colonizer.');
@@ -597,6 +600,7 @@ function colonize(state: GameState, f: Fleet, where: PlanetId): string {
   const p = createPlanetState(where, f.owner, state.time, CORE.residents);
   p.buildings.push({ uid: p.nextUid++, kind: 'housing', level: 1, slot: 0 });
   state.planets[where] = p;
+  discover(state, f.owner, state.world.galaxy.planets[where]?.system ?? -1);
   // The colonizer is used up; its crew are the settlers (owner 4.11.2026, question 36).
   releaseAway(state, f);
   const rest: UnitCounts = { ...f.units, colonizer: (f.units.colonizer ?? 0) - 1 };
@@ -614,6 +618,12 @@ export function arriveFleet(state: GameState, id: string): string | null {
   const where = f.leg.to;
   const name = galaxy.planets[where]?.name ?? where;
   const own = state.planets[where]?.owner === f.owner ? state.planets[where] : undefined;
+  if (f.phase === 'out' && f.mission === 'scan') {
+    // A probe discovers the system and scans its planets (spec 13), then comes back.
+    scanSystem(state, f.owner, galaxy.planets[where]?.system ?? -1);
+    turnHome(state, f, where);
+    return `Fleet ${f.id} scanned the ${galaxy.systems[galaxy.planets[where]?.system ?? -1]?.name ?? ''} system and turns back.`;
+  }
   if (f.phase === 'out' && f.mission === 'return') {
     // The fuel for the way back was paid at the start (attacks and raids: phase 2).
     turnHome(state, f, where);

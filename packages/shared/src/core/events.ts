@@ -3,6 +3,7 @@ import { galaxyPlanet, ownerContext, settleOwned } from '../economy/access';
 import { nextJobHours, planetRates } from '../economy/planet';
 import { arriveFleet, recallFleet, unloadTransport } from '../fleet/fleet';
 import { runRoute } from '../fleet/routes';
+import { warningTime } from '../intel/intel';
 import { scheduleResearchCheck } from '../economy/schedule';
 import { enqueue } from './queue';
 import { Rng } from './rng';
@@ -18,7 +19,17 @@ export type GameEvent =
   | ResearchCheckEvent
   | FleetArrivalEvent
   | FleetRetryEvent
-  | RouteTickEvent;
+  | RouteTickEvent
+  | FleetWarningEvent;
+
+/** A fleet heading for a player's planet enters the range of their scanners (spec 13). */
+export interface FleetWarningEvent {
+  readonly type: 'FleetWarning';
+  readonly fleetId: string;
+  readonly player: string;
+  /** Identifies the leg the warning is about. */
+  readonly arriveAt: number;
+}
 
 /** A transport waiting at a full warehouse tries to unload again (spec 12.2). */
 export interface FleetRetryEvent {
@@ -93,7 +104,7 @@ export const EVENT_HANDLERS: Handlers = {
     settleOwned(state, f.leg.to);
     settleOwned(state, f.origin); // its crews' upkeep stops there when they land
     const text = arriveFleet(state, f.id);
-    if (text) state.log.push({ at: state.time, text });
+    if (text) state.log.push({ at: state.time, who: f.owner, text });
     scheduleFleet(state, f.id);
   },
   FleetRetry(state, event) {
@@ -107,7 +118,8 @@ export const EVENT_HANDLERS: Handlers = {
       text = `Fleet ${f.id} cannot unload any more and turns back.`;
     }
     // Only log when something changed (a full warehouse retries quietly).
-    if (f.phase !== 'waiting' || !text.includes('waits')) state.log.push({ at: state.time, text });
+    if (f.phase !== 'waiting' || !text.includes('waits'))
+      state.log.push({ at: state.time, who: f.owner, text });
     scheduleFleet(state, f.id);
   },
   RouteTick(state, event) {
@@ -118,11 +130,34 @@ export const EVENT_HANDLERS: Handlers = {
     const name = (id: string) => state.world.galaxy.planets[id]?.name ?? id;
     state.log.push({
       at: state.time,
+      who: r.owner,
       text: `Route ${name(r.from)} → ${name(r.to)}: ${text.replace(/\.$/, '')}.`,
     });
     for (const f of Object.values(state.fleets))
       if (f.route === r.id && f.leg?.departAt === state.time) scheduleFleet(state, f.id);
     scheduleEvent(state, r.nextAt, { type: 'RouteTick', routeId: r.id, at: r.nextAt });
+  },
+  FleetWarning(state, event) {
+    const f = state.fleets[event.fleetId];
+    const p = state.players[event.player];
+    if (!f?.leg || f.leg.arriveAt !== event.arriveAt || !p) return;
+    if (state.planets[f.leg.to]?.owner !== event.player) return;
+    p.alerts.push({
+      at: state.time,
+      fleetId: f.id,
+      owner: f.owner,
+      target: f.leg.to,
+      arriveAt: f.leg.arriveAt,
+      units: { ...f.units },
+    });
+    if (p.alerts.length > 50) p.alerts.splice(0, p.alerts.length - 50);
+    const name = state.world.galaxy.planets[f.leg.to]?.name ?? f.leg.to;
+    const who = state.players[f.owner]?.name ?? f.owner;
+    state.log.push({
+      at: state.time,
+      who: event.player,
+      text: `WARNING: a fleet of ${who} heads for ${name}, arriving in ${Math.round((f.leg.arriveAt - state.time) / 60000)} min.`,
+    });
   },
   DebugMarker(state, event) {
     let text = `Marker: ${event.label}`;
@@ -157,6 +192,18 @@ export function scheduleFleet(state: GameState, fleetId: string): void {
     return;
   }
   const leg = f?.leg;
+  // Defenders whose planet the fleet flies to are warned when it enters their scanners' range.
+  const defender = leg ? state.planets[leg.to]?.owner : undefined;
+  if (f && leg && defender && defender !== f.owner) {
+    const t = warningTime(state, leg, defender);
+    if (t !== null)
+      scheduleEvent(state, Math.max(state.time, t), {
+        type: 'FleetWarning',
+        fleetId,
+        player: defender,
+        arriveAt: leg.arriveAt,
+      });
+  }
   if (leg)
     scheduleEvent(state, leg.arriveAt, { type: 'FleetArrival', fleetId, arriveAt: leg.arriveAt });
 }

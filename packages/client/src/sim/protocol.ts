@@ -1,5 +1,7 @@
 import type {
+  Alert,
   Command,
+  Contact,
   Deposit,
   Fleet,
   Route,
@@ -10,6 +12,7 @@ import type {
   Planet,
   PlanetRates,
   PlanetState,
+  PlayerView,
   Player,
   RaceId,
   Result,
@@ -27,6 +30,8 @@ export type ToWorker =
   | { readonly type: 'command'; readonly id: number; readonly command: Command }
   | { readonly type: 'speed'; readonly multiplier: TimeMultiplier }
   | { readonly type: 'pause'; readonly paused: boolean }
+  /** Debug: show everything, ignoring the fog of war. */
+  | { readonly type: 'reveal'; readonly on: boolean }
   /** Debug: move the game clock forward. */
   | { readonly type: 'skip'; readonly hours: number }
   /** Real time passed (sent by the worker's own timer; separate so it can be tested). */
@@ -51,8 +56,14 @@ export interface Snapshot {
   /** The player's fleets away from their planets. */
   readonly fleets: Fleet[];
   readonly routes: Route[];
-  /** Planets that have an owner (anyone), for the 'free planet' checks. */
-  readonly owners: string[];
+  /** Owners of the planets in known systems (spec 13). */
+  readonly owners: PlayerView['owners'];
+  readonly scans: PlayerView['scans'];
+  readonly contacts: Contact[];
+  readonly alerts: Alert[];
+  /** The star chart, sent only when it changed (new systems discovered, scans). */
+  readonly chart?: Galaxy;
+  readonly revealAll: boolean;
 }
 
 export type FromWorker =
@@ -71,4 +82,8 @@ export interface WorkerState {
   game: GameState | null;
   clock: GameClock;
   playerId: string;
+  /** Debug: no fog of war. */
+  revealAll: boolean;
+  /** What the chart sent last looked like (to send it only when it changes). */
+  chartKey: string;
 }

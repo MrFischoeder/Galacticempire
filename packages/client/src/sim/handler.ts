@@ -3,9 +3,8 @@ import {
   applyCommand,
   createClock,
   createGameState,
-  ownerContext,
+  getPlayerView,
   peek,
-  planetAt,
   planetRates,
   setMultiplier,
   setPaused,
@@ -19,7 +18,7 @@ import type { FromWorker, PlanetView, Snapshot, ToWorker, WorkerState } from './
 const LOG_LINES = 40;
 
 export function createWorkerState(): WorkerState {
-  return { game: null, clock: createClock(), playerId: 'p1' };
+  return { game: null, clock: createClock(), playerId: 'p1', revealAll: false, chartKey: '' };
 }
 
 /** Processes events that are due by the clock (planets themselves are settled lazily). */
@@ -31,40 +30,44 @@ function catchUp(state: WorkerState): void {
   if (now > game.time && next && next.at <= now) state.game = advanceTo(game, now);
 }
 
+/**
+ * What the page gets: only the player's view of the game (spec 13, step 1.11), never the full
+ * state. The chart goes along only when it changed.
+ */
 export function buildSnapshot(state: WorkerState): Snapshot | null {
   const game = state.game as GameState | null;
   if (!game) return null;
-  const player = game.players[state.playerId];
-  if (!player) return null;
   const time = Math.max(state.clock.gameMs, game.time);
+  const view = getPlayerView(game, state.playerId, time, {
+    revealAll: state.revealAll,
+    logLines: LOG_LINES,
+  });
+  if (!view) return null;
+  const ctx = { ...(view.player.race ? { race: view.player.race } : {}), techs: view.player.techs };
   const planets: PlanetView[] = [];
-  for (const owned of Object.values(game.planets)) {
-    if (owned.owner !== state.playerId) continue;
-    const view = planetAt(game, owned.id, time);
-    if (!view) continue;
-    const info = {
-      ...(game.world.galaxy.planets[owned.id] as NonNullable<
-        GameState['world']['galaxy']['planets'][string]
-      >),
-      deposits: view.deposits,
-    };
-    planets.push({
-      planet: view.planet,
-      info,
-      deposits: view.deposits,
-      rates: planetRates(view.planet, info, ownerContext(game, view.planet)),
-    });
+  for (const p of view.planets) {
+    const info = view.chart.planets[p.id];
+    if (!info) continue;
+    planets.push({ planet: p, info, deposits: info.deposits, rates: planetRates(p, info, ctx) });
   }
+  const key = `${view.known.length}|${Object.keys(view.scans).length}|${state.revealAll}`;
+  const chartChanged = key !== state.chartKey;
+  state.chartKey = key;
   return {
     time,
     multiplier: state.clock.multiplier,
     paused: state.clock.paused,
-    player,
+    player: view.player,
     planets,
-    log: game.log.slice(-LOG_LINES),
-    fleets: Object.values(game.fleets).filter((f) => f.owner === state.playerId),
-    routes: Object.values(game.routes).filter((r) => r.owner === state.playerId),
-    owners: Object.keys(game.planets),
+    log: view.log,
+    fleets: view.fleets,
+    routes: view.routes,
+    owners: view.owners,
+    scans: view.scans,
+    contacts: view.contacts,
+    alerts: view.alerts,
+    revealAll: state.revealAll,
+    ...(chartChanged ? { chart: view.chart } : {}),
   };
 }
 
@@ -88,10 +91,24 @@ export function handleMessage(state: WorkerState, msg: ToWorker): FromWorker[] {
       }
       state.game = game;
       state.clock = createClock();
-      return [{ type: 'world', seed: msg.seed, galaxy, playerId: state.playerId, homePlanet }];
+      state.chartKey = '';
+      const chart = getPlayerView(game, state.playerId, 0, { revealAll: state.revealAll })?.chart;
+      return [
+        {
+          type: 'world',
+          seed: msg.seed,
+          galaxy: chart ?? galaxy,
+          playerId: state.playerId,
+          homePlanet,
+        },
+      ];
     }
     if (msg.type === 'speed') {
       state.clock = setMultiplier(state.clock, msg.multiplier);
+      return [];
+    }
+    if (msg.type === 'reveal') {
+      state.revealAll = msg.on;
       return [];
     }
     if (msg.type === 'pause') {

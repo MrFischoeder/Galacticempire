@@ -17,7 +17,7 @@ export const FLIGHT = {
  * someone else's planet; a fleet goes to one of your planets, or flies out, acts (attack and
  * raid come in phase 2) and comes back, with all the fuel worked out and paid at the start.
  */
-export type FleetMission = 'transfer' | 'return' | 'transport' | 'colonize';
+export type FleetMission = 'transfer' | 'return' | 'transport' | 'colonize' | 'scan';
 
 export const MISSIONS: Record<FleetMission, { name: string; text: string; roundTrip: boolean }> = {
   transfer: {
@@ -34,6 +34,11 @@ export const MISSIONS: Record<FleetMission, { name: string; text: string; roundT
     name: 'Colonize',
     text: 'Settle a free planet with a colonizer (spec 10.5); the colonizer is used up.',
     roundTrip: false,
+  },
+  scan: {
+    name: 'Scan',
+    text: 'A probe discovers the target system, scans its planets and comes back (spec 13).',
+    roundTrip: true,
   },
   return: {
     name: 'There and back',

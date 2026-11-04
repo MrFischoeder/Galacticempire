@@ -176,6 +176,7 @@ export function finalizeResearch(state: GameState, planetId: string): ResearchJo
     for (const job of p.research) {
       state.log.push({
         at: state.time,
+        who: p.owner,
         text: `Research aborted (no laboratory): ${TECHS[job.tech].name} level ${job.level}. The resources paid are lost.`,
       });
     }
@@ -190,6 +191,7 @@ export function finalizeResearch(state: GameState, planetId: string): ResearchJo
     if (player) player.techs[job.tech] = Math.max(player.techs[job.tech] ?? 0, job.level);
     state.log.push({
       at: job.doneAt ?? state.time,
+      who: p.owner,
       text: `Research complete: ${TECHS[job.tech].name} level ${job.level}.`,
     });
   }

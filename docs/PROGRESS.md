@@ -34,7 +34,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.10a | 0.1.13a | `v0.1.13a-energia-zalogi` | energia tylko dla pracujących budynków i budowy, załogi z populacji | ✅ |
 | 1.10a | 0.1.13b | `v0.1.13b-zaloga-koszt` | załoga jako koszt produkcji, przepisanie wyżywienia floty | ✅ |
 | 1.10b | 0.1.14 | `v0.1.14-transporty` | transporty, trasy cykliczne, kolonizacja | ✅ |
-| 1.11 | 0.1.15 | `v0.1.15-mgla-wojny` | `getPlayerView`, sondy, skanery | ⬜ |
+| 1.11 | 0.1.15 | `v0.1.15-mgla-wojny` | `getPlayerView`, sondy, skanery | ✅ |
 | 1.12 | 0.1.16 | `v0.1.16-sojusze` | sojusze | ⬜ |
 | 1.13 | 0.1.17 | `v0.1.17-bot-symulacja` | bot ekonomiczny, `pnpm sim` | ⬜ |
 | 5.1 | — | — | blokady: usunięte (decyzja 3.11.2026) | ✖ |
@@ -45,6 +45,15 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.1.15: mgła wojny i widok gracza (krok 1.11, 4.11.2026)
+- `shared/src/intel/`: `getPlayerView(stan, gracz, czas, {revealAll})` zwraca tylko to, co gracz może wiedzieć: własne planety (rozliczone na czas widoku), mapę nieba (`chart`: położenia wszystkich układów, nazwy i planety tylko odkrytych, złoża tylko z własnych planet i skanów, bez ziarna galaktyki), znane układy, właścicieli planet w nich, skany z wiekiem i oznaczeniem „stale”, własne floty i trasy, obce floty w zasięgu skanerów (`contacts`), ostrzeżenia i własne wpisy dziennika (`LogEntry.who`).
+- `Player.known` / `scans` / `alerts`; `discover`, `scanSystem`, `scannerRange` (25 LY + 10 za poziom × badanie czujników), `scanFreshMs` (6 h + 30 min za poziom czujników), `entersRange` / `warningTime`.
+- Misja `scan` (sonda tam i z powrotem): odkrywa układ i skanuje jego planety. Zdarzenie `FleetWarning`: gdy flota leci do planety innego gracza, ten dostaje ostrzeżenie w chwili wejścia floty w zasięg jego skanera.
+- Klient korzysta już tylko z widoku gracza: migawka powstaje z `getPlayerView`, mapa nieba przychodzi tylko przy zmianie; nieodkryte układy są przygaszone („?”), obce floty magenta ze śladem, lista „INCOMING” w panelu flot, panel obcej planety z właścicielem, skanem (wiek, budynki, jednostki) i przyciskami „Send probe…” / „Colonize…”. Debug: „Reveal all”.
+- Wersja stanu 15. Zasady do potwierdzenia: `docs/PYTANIA.md`, pytanie 39.
+- Testy: `shared/test/intel.test.ts` (widok bez obcych identyfikatorów planet, flot i graczy; bez ziarna; sonda i wiek skanu; zasięg skanera; ostrzeżenie dla myśliwców ~34 min i krążowników ~90 min przed przylotem przy skanerze poz. 3), test migawki z mgłą i „reveal all”.
+- Na później: AI na `getPlayerView` (faza 3), serwer wysyłający tylko widok (faza 4).
 
 ### 0.1.14: transporty, trasy cykliczne, kolonizacja (krok 1.10b, 4.11.2026)
 - Misja `transport` (ładunek `cargo` w `SendFleet`): ładowność z `effectiveUnit` (`cargoCapacity`; Kupcy 625), zasoby i paliwo na obie strony pobierane przy starcie, załadunek przed startem (`loadTime`: kosmoport albo 20 min). U celu rozładunek do magazynu; przy pełnym magazynie flota czeka na orbicie (`phase` `waiting`) i próbuje co 30 min (zdarzenie `FleetRetry`), można ją odwołać; potem wraca. Ładunek po powrocie trafia do magazynu planety macierzystej (nadmiar przepada).
