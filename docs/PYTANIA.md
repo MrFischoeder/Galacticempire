@@ -296,3 +296,11 @@ D. **Koszary orbitalne / kwatery w hangarze:** załogi mieszkają w hangarach (c
 
 ### 40. 🟢 Wspólna obrona z sojusznikiem (pytanie z 3.11.2026)
 **Odpowiedź (4.11.2026):** sojusznik może przesunąć flotę do planety sojusznika, żeby jej broniła (wyjątek od zakazu stacjonowania przy cudzych planetach, spec 16). Wprowadzone w kroku 1.12.
+
+### 41. 🟡 Wnioski z symulacji 14 dni, 6 botów (krok 1.13, `docs/SYMULACJA.md`) — do decyzji o strojeniu liczb
+Liczb w konfiguracji nie zmieniałem (to decyzja właściciela). Co pokazała symulacja:
+1. **Ubogie złoża planety startowej wyczerpują się po ok. 9–12 dniach** (krzem 18 tys., tytan 25 tys., deuter 15 tys. przy kopalniach poz. 5). Gdy na złożu stoi kopalnia, rdzeń nie zbiera awaryjnie tego minerału (spec 8.1), więc po wyczerpaniu planeta traci ten surowiec całkowicie. **Propozycja:** rdzeń zbiera awaryjnie 20/h także wtedy, gdy złoże jest puste (albo pule startowe ×3).
+2. **Planeta startowa osiąga wszystkie progi bez surowców specjalnych po ok. 7–10 dniach** (kopalnie i przetwórstwo poz. 5, reszta 6–8); potem rozwój idzie tylko przez kolonie i surowce specjalne. Zgodne z modelem balansu (`docs/BALANS.md`: ~9 dni do maksimum).
+3. **Kolonie bez energii odnawialnej stoją** (np. planeta lodowa bez słońca/wiatru): nie mają żadnego źródła energii poza reaktorem na materiał rozpadowy. **Propozycja:** rdzeń daje 5 energii/h na każdej planecie (dziś tylko gdzie jest źródło odnawialne) albo bot/gracz musi dowozić materiał rozpadowy.
+4. **Pierwsza kolonia po ok. 80 h** (3,3 dnia) we własnym układzie; boty mają po 14 dniach 2–5 planet.
+5. Wydajność: 14 dni gry z 6 botami liczy się ok. 5–6 s.

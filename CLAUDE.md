@@ -59,7 +59,7 @@ Przeglądarkowa strategia kosmiczna w czasie rzeczywistym. Właściciel: Łukasz
 
 ## Polecenia
 
-- `pnpm install`, `pnpm dev` (klient Vite), `pnpm build`, `pnpm check` (typy, lint, testy), `pnpm format` (Prettier; pliki `*.md` pominięte), `pnpm balance` (model ekonomii w `tools/balance/`, przepisuje `docs/BALANS.md`; uruchom po każdej zmianie kosztów, czasów lub wydajności; `tests/balance.test.ts` pilnuje tempa startu).
+- `pnpm install`, `pnpm dev` (klient Vite), `pnpm build`, `pnpm check` (typy, lint, testy), `pnpm format` (Prettier; pliki `*.md` pominięte), `pnpm sim --days 14 --players 6 --seed 1` (symulacja botów bez grafiki w `tools/sim/`, przepisuje `docs/SYMULACJA.md`; bot ekonomiczny w `packages/ai/src/bot.ts` czyta tylko `getPlayerView`), `pnpm balance` (model ekonomii w `tools/balance/`, przepisuje `docs/BALANS.md`; uruchom po każdej zmianie kosztów, czasów lub wydajności; `tests/balance.test.ts` pilnuje tempa startu).
 - Reguły czystości (`shared`, `ai`) są w `eslint.config.js`; test `tests/purity.test.ts` sprawdza, że wykrywają `Math.random`, `Date.now`, `new Date()`, timery, `window`, `document` i importy Node.
 - Narzędzia: TypeScript 6.0 (typescript-eslint nie wspiera jeszcze 7.x), Vite, Three.js, Vitest, ESLint, Prettier.
 
