@@ -191,6 +191,7 @@ describe('planet production (step 1.4a)', () => {
     expect(g.deposits[0]!.pool).toBe(0);
     // 1.5 h of mining (90 at 60/h), then the core's 20/h up to the core's capacity (150).
     expect(p.stock.metal).toBeCloseTo(150);
+    p.stock.metal = 0; // with room in the store the core keeps gathering
     expect(planetRates(p, g).made.metal ?? 0).toBeCloseTo(20);
     expect(planetRates(p, g).extraction.metal ?? 0).toBe(0);
   });
