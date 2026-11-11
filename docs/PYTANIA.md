@@ -304,3 +304,5 @@ Liczb w konfiguracji nie zmieniałem (to decyzja właściciela). Co pokazała sy
 3. **Kolonie bez energii odnawialnej stoją** (np. planeta lodowa bez słońca/wiatru): nie mają żadnego źródła energii poza reaktorem na materiał rozpadowy. **Propozycja:** rdzeń daje 5 energii/h na każdej planecie (dziś tylko gdzie jest źródło odnawialne) albo bot/gracz musi dowozić materiał rozpadowy.
 4. **Pierwsza kolonia po ok. 80 h** (3,3 dnia) we własnym układzie; boty mają po 14 dniach 2–5 planet.
 5. Wydajność: 14 dni gry z 6 botami liczy się ok. 5–6 s.
+
+**Odpowiedź (11.11.2026):** rdzeń daje 5 energii/h na każdej planecie; rdzeń zbiera awaryjnie 20/h minerału także wtedy, gdy złoże pod kopalnią jest wyczerpane (pule bez zmian). Wprowadzone w 0.1.17a.

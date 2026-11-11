@@ -7,7 +7,7 @@ Plik generowany przez `pnpm balance` (`tools/balance/`). Liczby pochodzą z `pac
 - **Koszt poziomu L** = koszt poziomu 1 × 1.6^(L−1). **Czas** = czas poziomu 1 × 1.8^(L−1). **Energia** = zużycie poziomu 1 × 1.15^(L−1).
 - Poziom 1 kosztuje ok. 60 jednostek wartości (ważne budynki więcej), dzięki czemu ulepszenie 1→2 kopalni kosztuje ok. 100 i zwraca się w ok. 6–7 h, jak w specyfikacji (sekcja 9).
 - **Pusty start:** 16 pustych pól, pusty magazyn. Rdzeń mieści po 150 każdego zasobu, 100 energii i 100 biomasy, **dodaje się do magazynów, silosów i akumulatorów** (decyzja właściciela) i daje schronienie 10 osobom.
-- **Zbiór awaryjny rdzenia:** 20/h każdego minerału podstawowego, ale tylko dopóki na planecie nie działa kopalnia tego minerału; do tego 5 biomasy/h (żyzna planeta) i 5 energii/h (energia odnawialna). 10 osób zjada dokładnie 5 biomasy/h, więc wzrost populacji wymaga farmy.
+- **Zbiór awaryjny rdzenia:** 20/h każdego minerału podstawowego, dopóki na planecie nie pracuje kopalnia tego minerału (także gdy złoże jest wyczerpane); do tego 5 biomasy/h (żyzna planeta) i 5 energii/h na każdej planecie. 10 osób zjada dokładnie 5 biomasy/h, więc wzrost populacji wymaga farmy.
 - **Planeta startowa:** zielona, żyzność 1, wiatr, złoże metalu średnie (×1), pozostałe ubogie (×0.7).
 - **Elektrownia odnawialna:** 25 energii/h na poziomie 1, ×1,3 za poziom (było 15 bez wzrostu: przy pustym starcie bez reaktora planeta nie miała z czego żyć). Maks. 3 na planecie. Reaktor (materiał rozpadowy) i reaktor fuzyjny (hel-3) to droga do większej mocy.
 - **Przetwórstwo i farma** rosną ×1,25 za poziom, tak jak kopalnia (zasada „jedna kopalnia = jeden zakład”).

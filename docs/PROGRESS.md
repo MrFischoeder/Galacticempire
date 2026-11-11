@@ -37,6 +37,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.11 | 0.1.15 | `v0.1.15-mgla-wojny` | `getPlayerView`, sondy, skanery | ✅ |
 | 1.12 | 0.1.16 | `v0.1.16-sojusze` | sojusze, pakt o nieagresji | ✅ |
 | 1.13 | 0.1.17 | `v0.1.17-bot-symulacja` | bot ekonomiczny, `pnpm sim` | ✅ |
+| 1.13 | 0.1.17a | `v0.1.17a-rdzen` | rdzeń: energia na każdej planecie, zbiór po wyczerpaniu złoża | ✅ |
 | 5.1 | — | — | blokady: usunięte (decyzja 3.11.2026) | ✖ |
 | 2.1–2.4 | 0.2.x | `v0.2.x-...` | walka | ⬜ |
 | 3.1–3.5 | 0.3.x → 1.0.0 | `v0.3.x-...`, `v1.0.0-gra-jednoosobowa` | AI i pierwsza grywalna wersja | ⬜ |
@@ -45,6 +46,12 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.1.17a: rdzeń na każdej planecie (pytanie 41, decyzja 11.11.2026)
+- `steadyEnergy`: 5 energii/h z rdzenia na każdej planecie, także bez źródła odnawialnego (kolonie na planetach bez słońca i wiatru już nie stoją).
+- Zbiór awaryjny rdzenia (20/h) działa też, gdy kopalnia stoi na wyczerpanym złożu (`processes`: kopalnia „pracuje” tylko przy niepustym złożu).
+- `docs/BALANS.md` i `docs/SYMULACJA.md` przeliczone: produkcja botów po 14 dniach nie spada do zera (p1 20/h zamiast 0/h, p5 593/h zamiast 403/h).
+- Testy: `production.test.ts` (energia bez źródła odnawialnego, zbiór po wyczerpaniu złoża).
 
 ### 0.1.17: bot ekonomiczny i symulacja bez grafiki (krok 1.13, 7.11.2026)
 - `packages/ai/src/bot.ts`: `botTurn(widok)` korzysta wyłącznie z `getPlayerView` (i czystych funkcji reguł z `shared`) i zwraca komendy. Dla każdej planety: najpierw energia (elektrownie), ręce do pracy (mieszkania), żywność (farmy), potem otwarcie wg spec 7.1 dostosowanego do pustego startu (elektrownia, farma, kopalnie, mieszkanie, magazyn, huta, rafineria, warsztat, stocznia, silos, akumulator), potem równe ulepszenia do progów bez surowców specjalnych; za mały magazyn → magazyn; brak zasobów → czeka (nie wydaje na tańsze). Po rozwinięciu planety zamawia kolonizator i kolonizuje najbliższą wolną znaną planetę. Deterministyczny. `economyOf` liczy wskaźniki do raportu.

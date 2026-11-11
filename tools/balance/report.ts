@@ -63,7 +63,7 @@ out(
   `- **Pusty start:** 16 pustych pól, pusty magazyn. Rdzeń mieści po ${CORE.capacity} każdego zasobu, ${CORE.energy} energii i ${CORE.biomass} biomasy, **dodaje się do magazynów, silosów i akumulatorów** (decyzja właściciela) i daje schronienie ${CORE.residents} osobom.`,
 );
 out(
-  `- **Zbiór awaryjny rdzenia:** ${CORE.tricklePerHour}/h każdego minerału podstawowego, ale tylko dopóki na planecie nie działa kopalnia tego minerału; do tego ${CORE.trickleBiomass} biomasy/h (żyzna planeta) i ${CORE.trickleEnergy} energii/h (energia odnawialna). ${CORE.residents} osób zjada dokładnie ${CORE.residents * 0.5} biomasy/h, więc wzrost populacji wymaga farmy.`,
+  `- **Zbiór awaryjny rdzenia:** ${CORE.tricklePerHour}/h każdego minerału podstawowego, dopóki na planecie nie pracuje kopalnia tego minerału (także gdy złoże jest wyczerpane); do tego ${CORE.trickleBiomass} biomasy/h (żyzna planeta) i ${CORE.trickleEnergy} energii/h na każdej planecie. ${CORE.residents} osób zjada dokładnie ${CORE.residents * 0.5} biomasy/h, więc wzrost populacji wymaga farmy.`,
 );
 out(
   `- **Planeta startowa:** ${STARTER_PLANET.type === 'green' ? 'zielona' : STARTER_PLANET.type}, żyzność ${STARTER_PLANET.fertility}, wiatr, złoże metalu średnie (×${DEPOSIT_CLASS.average}), pozostałe ubogie (×${DEPOSIT_CLASS.poor}).`,

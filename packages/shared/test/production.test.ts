@@ -180,7 +180,7 @@ describe('planet production (step 1.4a)', () => {
     expect(r.energyMade).toBeCloseTo(5);
   });
 
-  it('an exhausted deposit stops its mine', () => {
+  it('an exhausted deposit stops its mine; the core trickles instead (question 41)', () => {
     const g = testPlanet();
     g.deposits[0]!.pool = 90;
     const p = owned([
@@ -189,8 +189,10 @@ describe('planet production (step 1.4a)', () => {
     ]);
     run(p, g, 5);
     expect(g.deposits[0]!.pool).toBe(0);
-    expect(p.stock.metal).toBeCloseTo(90);
-    expect(planetRates(p, g).made.metal ?? 0).toBe(0);
+    // 1.5 h of mining (90 at 60/h), then the core's 20/h up to the core's capacity (150).
+    expect(p.stock.metal).toBeCloseTo(150);
+    expect(planetRates(p, g).made.metal ?? 0).toBeCloseTo(20);
+    expect(planetRates(p, g).extraction.metal ?? 0).toBe(0);
   });
 
   it('10 hours in one step equal 600 one-minute steps', () => {
@@ -327,5 +329,30 @@ describe('planets in the game state', () => {
     });
     const taken = applyCommand(s, { type: 'DebugGivePlanet', playerId: 'p1', planetId: id }, 3 * H);
     expect(taken.result.ok).toBe(false);
+  });
+});
+
+describe('the core keeps a planet alive (question 41, 0.1.17a)', () => {
+  it('gives 5 energy/h on a planet without any renewable source', () => {
+    const p = owned([['mine', 1, 'metal']]);
+    const g = testPlanet({ renewable: null });
+    const r = planetRates(p, g);
+    expect(r.energyMade).toBe(5);
+    expect(r.efficiency).toBeCloseTo(5 / 10);
+  });
+
+  it('gathers a mineral again once its deposit is exhausted', () => {
+    const p = owned([
+      ['mine', 1, 'metal'],
+      ['renewable', 2],
+    ]);
+    const g = testPlanet();
+    const dep = g.deposits.find((d) => d.resource === 'metal')!;
+    dep.pool = 30;
+    run(p, g, 1);
+    expect(dep.pool).toBe(0);
+    const r = planetRates(p, g);
+    expect(r.made.metal).toBeCloseTo(20); // the core's trickle, not the mine
+    expect(r.extraction.metal ?? 0).toBe(0);
   });
 });

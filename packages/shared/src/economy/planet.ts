@@ -392,10 +392,11 @@ function processes(
       });
     }
   });
-  // Emergency gathering by the core (spec 8.1): basic minerals without a mine, biomass on a
-  // fertile planet. Not powered, no workers.
+  // Emergency gathering by the core (spec 8.1): basic minerals without a working mine (also
+  // when the deposit is exhausted, question 41), biomass on a fertile planet. Not powered.
   for (const d of planet.deposits) {
-    if ((BASIC_RESOURCES as readonly string[]).includes(d.resource) && !mined.has(d.resource)) {
+    const working = mined.has(d.resource) && d.pool > EPS;
+    if ((BASIC_RESOURCES as readonly string[]).includes(d.resource) && !working) {
       list.push({
         label: `core:${d.resource}`,
         out: { [d.resource]: CORE.tricklePerHour },
@@ -469,8 +470,9 @@ export function upkeepPerHour(p: PlanetState, ctx: ModifierContext = {}): number
 
 /** Energy that does not depend on fuel: renewables and the core's trickle. */
 function steadyEnergy(p: PlanetState, planet: Planet): number {
-  if (!planet.renewable) return 0;
-  let made = CORE.trickleEnergy;
+  // The core's trickle on every planet (question 41); renewables only where the planet allows.
+  let made: number = CORE.trickleEnergy;
+  if (!planet.renewable) return made;
   for (const b of p.buildings) {
     const e = BUILDINGS[b.kind].effect;
     if (e.kind === 'renewable') made += grow(e.perHour, e.growth, b.level);
