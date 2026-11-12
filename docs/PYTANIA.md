@@ -306,3 +306,13 @@ Liczb w konfiguracji nie zmieniałem (to decyzja właściciela). Co pokazała sy
 5. Wydajność: 14 dni gry z 6 botami liczy się ok. 5–6 s.
 
 **Odpowiedź (11.11.2026):** rdzeń daje 5 energii/h na każdej planecie; rdzeń zbiera awaryjnie 20/h minerału także wtedy, gdy złoże pod kopalnią jest wyczerpane (pule bez zmian). Wprowadzone w 0.1.17a.
+
+### 42. 🟡 Silnik bitwy: turniej z tabeli 10.6 i założenia (krok 2.1, do potwierdzenia)
+Turniej (czyste floty, budżet 30 000, 30–40 bitew na parę) odtwarza tabelę 10.6 niemal co do setnych (np. przechwytywacz vs myśliwiec +0,74, fregata vs niszczyciel −1,00, krążownik vs myśliwiec +0,95). **Żaden znak się nie różni poza parami, które specyfikacja sama uznaje za bliskie zeru** (|wynik| ≤ 0,12): myśliwiec vs pancernik wychodzi 0,00 (spec −0,12), pancernik vs myśliwiec 0,00 (spec +0,12), pancernik vs przechwytywacz −0,21 (spec −0,08). Średnie: przechwytywacz +0,11, myśliwiec −0,13, fregata −0,07, bombowiec −0,06, niszczyciel −0,20, krążownik +0,17, pancernik +0,15 (spec: od −0,18 do +0,14). Liczb nie zmieniałem.
+Założenia przyjęte tam, gdzie specyfikacja milczy:
+1. **Flagowiec Kolosów** = najdroższa jednostka floty (wartość); +50% struktury i ataku; po jej zniszczeniu reszta −15% ataku do końca bitwy.
+2. **Fala Roju:** silnik przyjmuje liczbę fal (`waves`) od warstwy, która łączy floty docierające w oknie 10 min (krok 2.2); +10% ataku za każdą dodatkową falę, maks. +30%.
+3. **Bastion Fortecy:** budynki obronne obrońcy strzelają w każdej rundzie przed atakującym (zabite przez nie jednostki nie oddają strzału w tej rundzie); reszta obrońców strzela jednocześnie z atakującym. Specyfikacja mówi „w pierwszej rundzie przed atakującym” (sekcja 3) — jeśli ma to być tylko pierwsza runda, to jedna linia do zmiany.
+4. **Okręt naprawczy po bitwie:** jeśli przeżył, każda ocalała jednostka jego strony odzyskuje 25% utraconej struktury (naprawa w locie 10%/h: krok 2.2+).
+5. **Obie strony bez jednostek po rundzie** = remis. Po 8 rundach z obiema stronami przy życiu = remis (atakujący się wycofuje).
+6. **Głód** (−25% ataku) przez `ctx.starving` z modułu modyfikatorów; wyliczenie, czy planeta macierzysta floty głoduje, w kroku 2.2.

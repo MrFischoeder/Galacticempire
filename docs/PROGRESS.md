@@ -39,13 +39,23 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.13 | 0.1.17 | `v0.1.17-bot-symulacja` | bot ekonomiczny, `pnpm sim` | ✅ |
 | 1.13 | 0.1.17a | `v0.1.17a-rdzen` | rdzeń: energia na każdej planecie, zbiór po wyczerpaniu złoża | ✅ |
 | 5.1 | — | — | blokady: usunięte (decyzja 3.11.2026) | ✖ |
-| 2.1–2.4 | 0.2.x | `v0.2.x-...` | walka | ⬜ |
+| 2.1 | 0.2.0 | `v0.2.0-silnik-bitwy` | silnik bitwy, turniej 10.6 | ✅ |
+| 2.2 | 0.2.1 | `v0.2.1-obrona-planety` | obrona planety, rozpoczęcie bitew | ⬜ |
+| 2.3 | 0.2.2 | `v0.2.2-grabiez-desant` | grabież, desant, bombardowanie, śmierć gracza | ⬜ |
+| 2.4 | 0.2.3 | `v0.2.3-klient-walka` | klient: walka, raporty, ostrzeżenia | ⬜ |
 | 3.1–3.5 | 0.3.x → 1.0.0 | `v0.3.x-...`, `v1.0.0-gra-jednoosobowa` | AI i pierwsza grywalna wersja | ⬜ |
 | 4.x–6.x | 1.x | | serwer, mechaniki zaawansowane, balans | ⬜ |
 
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.2.0: silnik bitwy (krok 2.1, 12.11.2026)
+- `shared/src/combat/battle.ts`: `resolveBattle(atakujący, obrońca, seed)` → raport (składy przed i po, straty po rundach, wynik attacker / defender / draw, naprawy, seed). Wzór 11.1 (`shotDamage`: A×A/(A+P) × mnożnik klasy, nigdy zero), cele na strzał do losowych celów (strumień `rngStream(seed, 'battle')`), nadmiar przepada, strzały jednoczesne, 8 rund (`config/combat.ts`), wycofanie = remis. Efektywne statystyki z `effectiveUnit` (rasa, badania, głód).
+- Rasy: Bastion (budynki obronne obrońcy-Fortecy strzelają pierwsze), Flagowiec (najdroższa jednostka Kolosów +50% struktury i ataku; po stracie −15% ataku floty), Fala (`Combatant.waves`, +10% za falę do +30%), Kupcy przez modyfikator −10% ataku. Okręt naprawczy po bitwie: 25% utraconej struktury ocalałych.
+- `fleetValue`, `battleScore` (−1..+1 jak w spec 10.6).
+- Testy `test/battle.test.ts`: determinizm, pancerz bez zera, 8 rund, turniej 10.6 (każdy znak zgodny z tabelą poza parami bliskimi zeru), mechaniki ras, głód i naprawa. Założenia i wyniki turnieju: `docs/PYTANIA.md`, pytanie 42.
+- Na później (2.2): bitwa z obrony planety (tarcza, działa, garnizon, milicja), łączenie fal Roju, głód z planety macierzystej, naprawa w hangarze.
 
 ### 0.1.17a: rdzeń na każdej planecie (pytanie 41, decyzja 11.11.2026)
 - `steadyEnergy`: 5 energii/h z rdzenia na każdej planecie, także bez źródła odnawialnego (kolonie na planetach bez słońca i wiatru już nie stoją).

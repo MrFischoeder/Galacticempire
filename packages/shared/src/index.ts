@@ -10,4 +10,5 @@ export * from './economy';
 export * from './fleet';
 export * from './intel';
 export * from './diplomacy';
+export * from './combat';
 export * from './rules';
