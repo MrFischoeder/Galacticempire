@@ -18,6 +18,7 @@ import type { Galaxy, PlanetId } from '../galaxy/types';
 import { effectiveUnit, type ModifierContext } from '../rules/modifiers';
 import { discover, scanSystem } from '../intel/intel';
 import { allianceOf, allied, atPeace } from '../diplomacy/diplomacy';
+import { canAttackPlanet, fightAtPlanet } from '../combat/defense';
 
 /**
  * Fleets (spec 12.1, step 1.9). A player's units at their own planets live in the planet's
@@ -394,6 +395,12 @@ export function canSendFleet(
     if (total(cargo) > room + 1e-9)
       return fail('CARGO_FULL', `The fleet can carry ${Math.floor(room)} units of cargo.`);
   } else if (total(cargo) > 0) return fail('NO_CARGO_MISSION', 'Only transports carry cargo.');
+  if (o.mission === 'attack' || o.mission === 'raid') {
+    const can = canAttackPlanet(state, o.playerId, o.to);
+    if (!can.ok) return can;
+    if (!Object.entries(o.units).some(([u, n]) => (n ?? 0) > 0 && UNITS[u as UnitId].attack > 0))
+      return fail('NO_WARSHIPS', 'An attack needs units that can fight.');
+  }
   if (o.mission === 'scan' && (o.units.probe ?? 0) < 1)
     return fail('NO_PROBE', 'A scan needs a probe.');
   if (o.mission === 'colonize') {
@@ -635,6 +642,32 @@ export function arriveFleet(state: GameState, id: string): string | null {
   const own = state.planets[where]?.owner === f.owner ? state.planets[where] : undefined;
   const targetOwner = state.planets[where]?.owner;
   const ally = targetOwner !== undefined && allied(state, targetOwner, f.owner);
+  if (f.phase === 'out' && (f.mission === 'attack' || f.mission === 'raid')) {
+    const target = state.planets[where];
+    if (!target || canAttackPlanet(state, f.owner, where).ok === false) {
+      turnHome(state, f, where);
+      return `Fleet ${f.id} found nothing to attack at ${name} and turns back.`;
+    }
+    const rec = fightAtPlanet(state, f, target);
+    const r = rec.report;
+    const lostA = Object.values(r.attacker.lost).reduce((x, y) => x + (y ?? 0), 0);
+    const lostD = Object.values(r.defender.lost).reduce((x, y) => x + (y ?? 0), 0);
+    const words =
+      r.outcome === 'attacker'
+        ? 'broke the defences'
+        : r.outcome === 'defender'
+          ? 'was destroyed'
+          : 'withdrew after 8 rounds';
+    const text = `Battle at ${name}: fleet ${f.id} ${words} (lost ${lostA}, defenders lost ${lostD}${rec.shieldBurnt > 0 ? `, shield −${Math.round(rec.shieldBurnt)}` : ''}).`;
+    state.log.push({ at: state.time, who: target.owner, text });
+    if (Object.keys(f.units).length === 0) {
+      releaseAway(state, f);
+      delete state.fleets[f.id];
+      return text;
+    }
+    turnHome(state, f, where);
+    return text;
+  }
   if (f.phase === 'out' && f.mission === 'defend') {
     if (ally && !own) {
       f.phase = 'stationed';

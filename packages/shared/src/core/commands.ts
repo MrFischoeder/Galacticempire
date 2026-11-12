@@ -426,6 +426,8 @@ export const COMMANDS: Specs = {
         known: {},
         scans: {},
         alerts: [],
+        joinedAt: state.time,
+        battles: [],
       };
     },
   },
@@ -631,6 +633,8 @@ export const COMMANDS: Specs = {
         known: {},
         scans: {},
         alerts: [],
+        joinedAt: state.time,
+        battles: [],
       };
       state.planets[planet] = createPlanetState(planet, c.playerId, state.time);
       discover(state, c.playerId, state.world.galaxy.planets[planet]?.system ?? -1);

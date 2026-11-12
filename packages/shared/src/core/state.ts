@@ -8,11 +8,12 @@ import type { Galaxy, PlanetId } from '../galaxy/types';
 import type { PlanetState } from '../economy/planet';
 import type { Fleet } from '../fleet/fleet';
 import type { Alert, ScanReport } from '../intel/intel';
+import type { BattleReport } from '../combat/battle';
 import type { Route } from '../fleet/routes';
 import type { Alliance, Pact } from '../diplomacy/diplomacy';
 
 /** Bump when the shape of GameState changes (saves are migrated by version). */
-export const STATE_VERSION = 16;
+export const STATE_VERSION = 17;
 
 export type PlayerId = string;
 
@@ -29,6 +30,23 @@ export interface Player {
   scans: Record<PlanetId, ScanReport>;
   /** Warnings of fleets heading for the player's planets (spec 13). */
   alerts: Alert[];
+  /** Game time the player joined; protected from attacks for DEFENSE.protectionMs (spec 15). */
+  readonly joinedAt: number;
+  /** Set once the player attacks someone: the protection ends early (spec 15). */
+  attackedAt?: number;
+  /** Battle reports the player took part in (spec 11.2), newest last. */
+  battles: BattleRecord[];
+}
+
+/** A battle fought at a planet, as both sides see it (spec 11.2). */
+export interface BattleRecord {
+  readonly at: number;
+  readonly planetId: PlanetId;
+  readonly attacker: PlayerId;
+  readonly defender: PlayerId;
+  readonly report: BattleReport;
+  /** Shield points the attackers burnt through before the fight (spec 11.3). */
+  readonly shieldBurnt: number;
 }
 
 /** The generated world. Planets change during the game (owners, buildings, deposits). */

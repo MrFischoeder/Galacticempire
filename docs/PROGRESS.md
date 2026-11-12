@@ -40,7 +40,7 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 | 1.13 | 0.1.17a | `v0.1.17a-rdzen` | rdzeń: energia na każdej planecie, zbiór po wyczerpaniu złoża | ✅ |
 | 5.1 | — | — | blokady: usunięte (decyzja 3.11.2026) | ✖ |
 | 2.1 | 0.2.0 | `v0.2.0-silnik-bitwy` | silnik bitwy, turniej 10.6 | ✅ |
-| 2.2 | 0.2.1 | `v0.2.1-obrona-planety` | obrona planety, rozpoczęcie bitew | ⬜ |
+| 2.2 | 0.2.1 | `v0.2.1-obrona-planety` | obrona planety, rozpoczęcie bitew | ✅ |
 | 2.3 | 0.2.2 | `v0.2.2-grabiez-desant` | grabież, desant, bombardowanie, śmierć gracza | ⬜ |
 | 2.4 | 0.2.3 | `v0.2.3-klient-walka` | klient: walka, raporty, ostrzeżenia | ⬜ |
 | 3.1–3.5 | 0.3.x → 1.0.0 | `v0.3.x-...`, `v1.0.0-gra-jednoosobowa` | AI i pierwsza grywalna wersja | ⬜ |
@@ -49,6 +49,13 @@ Każdy krok z `docs/plan-budowy.md` to osobna wersja na osobnej gałęzi (zasady
 Kroki 1.4 i 1.10 są w planie dość duże, dlatego od razu proponuję podział na a/b (numer wersji rośnie o jeden na każdą część). Pozostałe zostają jak w planie; jeśli któryś okaże się za duży, dzielimy go w trakcie.
 
 ## Wpisy
+
+### 0.2.1: obrona planety i rozpoczęcie bitew (krok 2.2, 12.11.2026)
+- `shared/src/combat/defense.ts`: tarcza planetarna (`PlanetState.shield`, `shieldCapacity` 500 ×1,3 na poziom, `shieldRegen` 50/h × Forteca ×2 × badania; regeneracja rozliczana w `settlePlanet`), budynki obronne jako jednostki (`defenceUnits`: poziom = liczba sztuk), `garrisonOf` (działa, jednostki w hangarach i na orbicie, floty sojuszników), `militia`, `burnShield` (pierwsza salwa w tarczę), `fightAtPlanet` (bitwa `resolveBattle` z seedem `świat:planeta:czas:flota`, straty zapisane do planety, flot sojuszników i floty atakującej, raport do `Player.battles`), `canAttackPlanet` (wolna planeta, sojusz/pakt, ochrona 48 h: `DEFENSE.protectionMs`, `protectedUntil`, `Player.joinedAt` / `attackedAt`), `defenceless`.
+- Misje `attack` i `raid` (raid na razie = atak); przylot wrogiej floty uruchamia bitwę także bez obrońcy; dziennik obrońcy dostaje wpis „Battle at…”; Fala Roju liczona z ostatnich 10 min; głód atakującego z planety macierzystej.
+- Klient: tarcza w panelu planety („Defence: Shield x / y · +z/h”), misje Attack / Raid w formularzu floty. Wersja stanu 17.
+- Testy `test/defense.test.ts`: warstwy obrony (czołgi i milicja nie bronią w kosmosie), regeneracja tarczy 50/100 na godzinę do pojemności, bitwa przy przylocie bez obrońcy (straty, raporty, powrót floty), jednostki poza planetą nie bronią, ochrona 48 h i jej koniec po własnym ataku, odmowa ataku na sojusznika, wolną planetę i bez okrętów bojowych.
+- Założenia: `docs/PYTANIA.md`, pytanie 43. Na później (2.3): grabież, desant z milicją, bombardowanie, „bezbronna” planeta, śmierć gracza; raporty z bitew w kliencie (2.4).
 
 ### 0.2.0: silnik bitwy (krok 2.1, 12.11.2026)
 - `shared/src/combat/battle.ts`: `resolveBattle(atakujący, obrońca, seed)` → raport (składy przed i po, straty po rundach, wynik attacker / defender / draw, naprawy, seed). Wzór 11.1 (`shotDamage`: A×A/(A+P) × mnożnik klasy, nigdy zero), cele na strzał do losowych celów (strumień `rngStream(seed, 'battle')`), nadmiar przepada, strzały jednoczesne, 8 rund (`config/combat.ts`), wycofanie = remis. Efektywne statystyki z `effectiveUnit` (rasa, badania, głód).

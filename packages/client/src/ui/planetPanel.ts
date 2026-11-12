@@ -11,6 +11,8 @@ import {
   fieldsUsed,
   PLANET_TYPES,
   resourceCapacity,
+  shieldCapacity,
+  shieldRegen,
   STORED_RESOURCES,
   type BuildingId,
   type MinedResource,
@@ -122,7 +124,7 @@ ${scanPart}
 }
 
 /** Resources, energy, people and the construction going on (top of the planet panels). */
-export function planetStatusHTML(view: PlanetView): string {
+export function planetStatusHTML(view: PlanetView, player?: Player): string {
   const { planet: p, info, rates } = view;
   const cap = resourceCapacity(p);
   const parts: string[] = [];
@@ -146,6 +148,12 @@ export function planetStatusHTML(view: PlanetView): string {
   parts.push(`<div class="section">Energy</div>
 <div>Production ${formatAmount(rates.energyMade)}/h · use ${formatAmount(rates.energyUsed)}/h · <span class="${energyNet < 0 ? 'bad' : 'good'}">${formatRate(energyNet)}</span></div>
 <div>Stored ${formatAmount(p.energy)} / ${formatAmount(energyCapacity(p))}${rates.efficiency < 1 ? ` · <span class="bad">efficiency ${Math.round(rates.efficiency * 100)}%</span>` : ''}</div>`);
+  const ctx0 = player ? contextOf(player) : {};
+  const shieldCap = shieldCapacity(p, ctx0);
+  if (shieldCap > 0)
+    parts.push(
+      `<div class="section">Defence</div><div>Shield ${formatAmount(p.shield ?? 0)} / ${formatAmount(shieldCap)} · +${formatAmount(shieldRegen(p, ctx0))}/h</div>`,
+    );
   const workers = view.planet.buildings.reduce((s, b) => s + BUILDINGS[b.kind].workers, 0);
   parts.push(`<div class="section">Population</div>
 <div>Residents ${p.population} / housing ${rates.housing}${rates.growth !== 0 ? ` · <span class="${rates.growth < 0 ? 'bad' : 'good'}">${formatRate(rates.growth)}</span>` : ''} · workers needed ${workers}${rates.starving ? ' · <span class="bad">STARVING</span>' : ''}</div>`);
@@ -164,7 +172,7 @@ export function planetStatusHTML(view: PlanetView): string {
 export function ownedPlanetHTML(view: PlanetView, player: Player): string {
   const { planet: p, info, rates } = view;
   const ctx = contextOf(player);
-  const parts: string[] = [planetStatusHTML(view)];
+  const parts: string[] = [planetStatusHTML(view, player)];
 
   // Buildings
   const list = p.buildings
@@ -226,7 +234,7 @@ export function surfacePanelHTML(
   slot: number | null,
 ): string {
   const ctx = contextOf(player);
-  const parts: string[] = [planetStatusHTML(view)];
+  const parts: string[] = [planetStatusHTML(view, player)];
   if (slot === null || slot >= slots.length) {
     parts.push(
       '<div class="section">Fields</div><div class="dim">Click a hex field to build on it or to see its building.</div>',

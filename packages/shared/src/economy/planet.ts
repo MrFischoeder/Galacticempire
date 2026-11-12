@@ -82,6 +82,8 @@ export interface PlanetState {
   news: { at: number; text: string }[];
   /** Game time of the scheduled PlanetJobs check (stale checks are ignored). */
   checkAt?: number;
+  /** Planetary shield points (spec 11.3); regenerates with the stores, capped by the generators. */
+  shield: number;
   /**
    * Another planet of the owner that feeds this planet's units (owner 4.11.2026, question 37:
    * a fleet can be reassigned to another planet).
@@ -167,6 +169,7 @@ export function createPlanetState(
     away: {},
     shipyard: [],
     news: [],
+    shield: 0,
   };
 }
 
@@ -257,6 +260,26 @@ function storage(p: PlanetState, store: 'resources' | 'energy' | 'biomass', core
     if (e.kind === 'storage' && e.store === store) cap += grow(e.base, e.growth, b.level);
   }
   return cap;
+}
+
+/** Shield points the generators hold (spec 11.3: 500 at level 1, ×1.3 a level; research). */
+export function shieldCapacity(p: PlanetState, ctx: ModifierContext = {}): number {
+  let cap = 0;
+  for (const b of p.buildings) {
+    const e = BUILDINGS[b.kind].effect;
+    if (e.kind === 'shield') cap += grow(e.capacity, e.growth, b.level);
+  }
+  return cap * economyBonus('shieldCapacity', ctx);
+}
+
+/** Shield points regenerated per hour (spec 11.3: 50/h; Fortress ×2; research). */
+export function shieldRegen(p: PlanetState, ctx: ModifierContext = {}): number {
+  let regen = 0;
+  for (const b of p.buildings) {
+    const e = BUILDINGS[b.kind].effect;
+    if (e.kind === 'shield') regen = Math.max(regen, e.regenPerHour);
+  }
+  return regen * economyBonus('shieldRegen', ctx);
 }
 
 /** Warehouse capacity per resource: the core plus every warehouse (decision 3.11.2026). */
@@ -755,6 +778,9 @@ export function settlePlanet(
   }
   const ecap = energyCapacity(p);
   if (p.energy > ecap) p.energy = ecap;
+  // The shield regenerates steadily (no change points of its own; capped by the generators).
+  const scap = shieldCapacity(p, ctx);
+  p.shield = Math.min(scap, (p.shield ?? 0) + shieldRegen(p, ctx) * left);
   while (left > 0 && segments < MAX_SEGMENTS) {
     segments++;
     const rates = planetRates(p, planet, ctx);

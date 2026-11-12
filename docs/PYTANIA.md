@@ -316,3 +316,13 @@ Założenia przyjęte tam, gdzie specyfikacja milczy:
 4. **Okręt naprawczy po bitwie:** jeśli przeżył, każda ocalała jednostka jego strony odzyskuje 25% utraconej struktury (naprawa w locie 10%/h: krok 2.2+).
 5. **Obie strony bez jednostek po rundzie** = remis. Po 8 rundach z obiema stronami przy życiu = remis (atakujący się wycofuje).
 6. **Głód** (−25% ataku) przez `ctx.starving` z modułu modyfikatorów; wyliczenie, czy planeta macierzysta floty głoduje, w kroku 2.2.
+
+### 43. 🟡 Obrona planety: założenia przyjęte w kroku 2.2 (do potwierdzenia)
+1. **Poziom budynku obronnego = liczba sztuk w bitwie:** działo obronne poziomu 3 walczy jak 3 działa (statystyki z tabeli 11.3). Straty obniżają poziom; poziom 0 = budynek zburzony (zwalnia pole). Specyfikacja nie mówi, co daje poziom działa; alternatywa: jeden egzemplarz o statystykach ×poziom.
+2. **Tarcza** pochłania pierwszą salwę atakujących (atak × cele × mnożnik „planeta/ogromna”, bez pancerza), potem walczy garnizon. Regeneruje się ciągle (50/h, Forteca 100/h, badania), od 0 po zbudowaniu generatora.
+3. **Garnizon w kosmosie:** budynki obronne, jednostki w hangarach i na orbicie (dziś jedno i drugie broni; różnica hangar/orbita — ukrycie przed atakiem z góry — do decyzji przy bombardowaniu, 2.3), floty sojuszników z misji „Defend ally”. Jednostki lądowe i milicja bronią tylko przy desancie (2.3).
+4. **Kolejność strat obrońcy:** budynki obronne, orbita, hangary, floty sojuszników.
+5. **Fala Roju:** liczba fal = 1 + liczba bitew Roju tego gracza o tę planetę w ostatnich 10 min.
+6. **Głód atakującego:** −25% ataku, gdy planeta macierzysta floty nie karmi jednostek w pełni (`upkeepFed` < 1).
+7. **Ochrona początkowa 48 h** od dołączenia; kończy ją własny atak (w chwili bitwy). Atak na chronionego gracza odrzucony (`PROTECTED`).
+8. Misja **Attack** (walka i powrót) i **Raid** (na razie jak atak; łup w 2.3). Flota bez jednostek po bitwie znika; zwycięska wraca do domu. Raporty z bitew (`Player.battles`, do 50) dla atakującego, obrońcy i sojuszników, wpis w dzienniku obrońcy.
